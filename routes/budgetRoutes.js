@@ -1,10 +1,14 @@
-// routes/budgetRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getBudget, updateBudgetEntry } = require('../controllers/budgetController');
+const {
+    getAllBudgets, // Correctly import 'getAllBudgets' instead of 'getBudgets'
+    createBudget
+} = require('../controllers/budgetController');
 const { protect } = require('../middleware/authMiddleware');
 
-router.get('/', protect, getBudget);
-router.post('/entry', protect, updateBudgetEntry);
+// Use router.route() to chain methods for the same endpoint
+router.route('/')
+    .get(protect, getAllBudgets)
+    .post(protect, createBudget);
 
 module.exports = router;
