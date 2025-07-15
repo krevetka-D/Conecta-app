@@ -5,8 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f9d4abe1-c459-42a0-8d6a-608c8b9492d2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend-new/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend-new/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend-new/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend-new/app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend-new/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend-new/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend-new/src/constants/theme.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend-new/src/constants/theme.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,7 +81,7 @@
       <updated>1752478350390</updated>
       <workItem from="1752478351465" duration="686000" />
       <workItem from="1752479132614" duration="45022000" />
-      <workItem from="1752610897414" duration="6931000" />
+      <workItem from="1752610897414" duration="8152000" />
     </task>
     <servers />
   </component>

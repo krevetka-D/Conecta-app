@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export const COLORS = {
     primary: '#4A90E2',
     secondary: '#50E3C2',
@@ -21,11 +23,39 @@ export const SIZES = {
     h3: 16,
 };
 
+// Font families with fallbacks
+const getFontFamily = (weight = 'regular') => {
+    if (Platform.OS === 'ios') {
+        return weight === 'bold' ? 'System' : 'System';
+    }
+    return weight === 'bold' ? 'Roboto' : 'Roboto';
+};
+
 export const FONTS = {
-    h1: { fontFamily: 'Poppins-Bold', fontSize: SIZES.h1, lineHeight: 36 },
-    h2: { fontFamily: 'Poppins-Bold', fontSize: SIZES.h2, lineHeight: 30 },
-    h3: { fontFamily: 'Poppins-Bold', fontSize: SIZES.h3, lineHeight: 22 },
-    body: { fontFamily: 'Poppins-Regular', fontSize: SIZES.font, lineHeight: 22 },
+    h1: {
+        fontFamily: 'Poppins-Bold',
+        fontSize: SIZES.h1,
+        lineHeight: 36,
+        fontWeight: Platform.OS === 'ios' ? '700' : 'bold'
+    },
+    h2: {
+        fontFamily: 'Poppins-Bold',
+        fontSize: SIZES.h2,
+        lineHeight: 30,
+        fontWeight: Platform.OS === 'ios' ? '700' : 'bold'
+    },
+    h3: {
+        fontFamily: 'Poppins-Bold',
+        fontSize: SIZES.h3,
+        lineHeight: 22,
+        fontWeight: Platform.OS === 'ios' ? '600' : 'bold'
+    },
+    body: {
+        fontFamily: 'Poppins-Regular',
+        fontSize: SIZES.font,
+        lineHeight: 22,
+        fontWeight: Platform.OS === 'ios' ? '400' : 'normal'
+    },
 };
 
 const appTheme = { COLORS, SIZES, FONTS };
