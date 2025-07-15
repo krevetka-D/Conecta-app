@@ -1,11 +1,11 @@
-// models/Forum.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const ForumSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    tag: { type: String, required: true, unique: true },
-    description: { type: String },
-    isCitySpecific: { type: Boolean, default: false },
-});
+const forumSchema = new mongoose.Schema({
+    title: { type: String, required: true, unique: true },
+    description: { type: String, required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
+    threads: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Thread' }],
+}, { timestamps: true });
 
-module.exports = mongoose.model('Forum', ForumSchema);
+const Forum = mongoose.model('Forum', forumSchema);
+export default Forum;

@@ -1,39 +1,38 @@
-const Budget = require('../models/Budget');
+import asyncHandler from 'express-async-handler';
+import Transaction from '../models/Budget.js';
 
-// @desc    Get all budgets for a user
-// @route   GET /api/budgets
-// @access  Private
-const getAllBudgets = async (req, res) => {
-    try {
-        // Add await to ensure the query executes
-        const budgets = await Budget.find({ user: req.user._id });
-        res.json(budgets);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+const addTransaction = asyncHandler(async (req, res) => {
+    const { type, category, amount, description } = req.body;
+    if (!type || !category || !amount) {
+        res.status(400);
+        throw new Error('Please provide a type, category, and amount');
     }
-};
+    const transaction = await Transaction.create({ user: req.user._id, type, category, amount, description });
+    res.status(201).json(transaction);
+});
 
-// @desc    Create a new budget
-// @route   POST /api/budgets
-// @access  Private
-const createBudget = async (req, res) => {
-    const { category, amount } = req.body;
+const getTransactions = asyncHandler(async (req, res) => {
+    const transactions = await Transaction.find({ user: req.user._id });
+    res.json(transactions);
+});
 
-    try {
-        const budget = new Budget({
-            user: req.user._id,
-            category,
-            amount,
-        });
+const getBudgetSummary = asyncHandler(async (req, res) => {
+    const transactions = await Transaction.find({ user: req.user._id });
+    const totalIncome = transactions.filter((t) => t.type === 'income').reduce((acc, item) => acc + item.amount, 0);
+    const totalExpenses = transactions.filter((t) => t.type === 'expense').reduce((acc, item) => acc + item.amount, 0);
+    const balance = totalIncome - totalExpenses;
+    res.json({ totalIncome, totalExpenses, balance });
+});
 
-        const createdBudget = await budget.save();
-        res.status(201).json(createdBudget);
-    } catch (error) {
-        res.status(400).json({ message: 'Invalid budget data' });
+const deleteTransaction = asyncHandler(async (req, res) => {
+    const transaction = await Transaction.findById(req.params.id);
+    if (transaction && transaction.user.toString() === req.user._id.toString()) {
+        await transaction.deleteOne();
+        res.json({ message: 'Transaction removed' });
+    } else {
+        res.status(404);
+        throw new Error('Transaction not found');
     }
-};
+});
 
-module.exports = {
-    getAllBudgets,
-    createBudget,
-};
+export { addTransaction, getTransactions, getBudgetSummary, deleteTransaction };

@@ -1,111 +1,49 @@
-const User = require('../models/User');
+import asyncHandler from 'express-async-handler';
+import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
 
-/**
- * @desc    Get user profile
- * @route   GET /api/users/profile
- * @access  Private
- */
-const getUserProfile = async (req, res) => {
-    try {
-        // The 'protect' middleware already attaches the user object to the request.
-        // We select '-password' to exclude the hashed password from the response.
-        const user = await User.findById(req.user.id).select('-password');
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
 
-        if (user) {
-            res.json(user);
-        } else {
-            res.status(404).json({ message: 'User not found' });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+const registerUser = asyncHandler(async (req, res) => {
+    const { name, email, password } = req.body;
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+        res.status(400);
+        throw new Error('User already exists');
     }
-};
-
-/**
- * @desc    Update user onboarding information (path, location, or priorities)
- * @route   PUT /api/users/onboarding
- * @access  Private
- */
-const updateOnboarding = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        const { path, location, priorities } = req.body;
-
-        if (path) user.path = path;
-        if (location) user.location = location;
-        if (priorities) {
-            user.priorities = priorities;
-            user.onboardingComplete = true;
-        }
-
-        const updatedUser = await user.save();
-
-        res.json({
-            message: 'Onboarding information updated successfully.',
-            user: {
-                _id: updatedUser._id,
-                path: updatedUser.path,
-                location: updatedUser.location,
-                priorities: updatedUser.priorities,
-                onboardingComplete: updatedUser.onboardingComplete
-            }
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+    const user = await User.create({ name, email, password });
+    if (user) {
+        res.status(201).json({ _id: user._id, name: user.name, email: user.email, token: generateToken(user._id) });
+    } else {
+        res.status(400);
+        throw new Error('Invalid user data');
     }
-};
+});
 
-/**
- * @desc    Mark a user's priority as complete
- * @route   PUT /api/users/priorities/complete
- * @access  Private
- */
-const completePriority = async (req, res) => {
-    try {
-        const { priority } = req.body;
-        if (!priority) {
-            return res.status(400).json({ message: 'Priority is required.' });
-        }
-
-        const user = await User.findById(req.user.id);
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        if (!user.priorities.includes(priority)) {
-            return res.status(400).json({ message: 'This priority is not on your list.' });
-        }
-
-        if (user.completedPriorities.includes(priority)) {
-            return res.status(400).json({ message: 'This priority has already been completed.' });
-        }
-
-        user.completedPriorities.push(priority);
-        await user.save();
-
-        res.json({
-            message: `'${priority}' marked as complete.`,
-            completedPriorities: user.completedPriorities
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+const authUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (user && (await user.matchPassword(password))) {
+        res.json({ _id: user._id, name: user.name, email: user.email, token: generateToken(user._id) });
+    } else {
+        res.status(401);
+        throw new Error('Invalid email or password');
     }
-};
+});
 
-// Export all the functions so they can be used in your routes
-module.exports = {
-    getUserProfile,
-    updateOnboarding,
-    completePriority
-};
+const logoutUser = asyncHandler(async (req, res) => {
+    res.status(200).json({ message: 'Logout successful' });
+});
+
+const getUserProfile = asyncHandler(async (req, res) => {
+    res.json({ _id: req.user._id, name: req.user.name, email: req.user.email });
+});
+
+const getUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({});
+    res.json(users);
+});
+
+export { registerUser, authUser, logoutUser, getUserProfile, getUsers };

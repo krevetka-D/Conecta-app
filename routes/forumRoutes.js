@@ -1,10 +1,12 @@
-// routes/forumRoutes.js
-const express = require('express');
+import express from 'express';
+import { getForums, createForum, getForum, createThread, createPost } from '../controllers/forumController.js';
+import { protect } from '../middleware/authMiddleware.js';
+
 const router = express.Router();
-const { getRecommendedForums /*, other functions... */ } = require('../controllers/forumController');
-const { protect } = require('../middleware/authMiddleware');
 
-router.get('/recommended', protect, getRecommendedForums);
-// Define other forum/thread/post routes here
+router.route('/').get(getForums).post(protect, createForum);
+router.route('/threads/:threadId/posts').post(protect, createPost);
+router.route('/:id/threads').post(protect, createThread);
+router.route('/:id').get(getForum);
 
-module.exports = router;
+export default router;

@@ -1,14 +1,11 @@
-const express = require('express');
+import express from 'express';
+import { addTransaction, getTransactions, getBudgetSummary, deleteTransaction } from '../controllers/budgetController.js';
+import { protect } from '../middleware/authMiddleware.js';
+
 const router = express.Router();
-const {
-    getAllBudgets, // Correctly import 'getAllBudgets' instead of 'getBudgets'
-    createBudget
-} = require('../controllers/budgetController');
-const { protect } = require('../middleware/authMiddleware');
 
-// Use router.route() to chain methods for the same endpoint
-router.route('/')
-    .get(protect, getAllBudgets)
-    .post(protect, createBudget);
+router.route('/summary').get(protect, getBudgetSummary);
+router.route('/').get(protect, getTransactions).post(protect, addTransaction);
+router.route('/:id').delete(protect, deleteTransaction);
 
-module.exports = router;
+export default router;

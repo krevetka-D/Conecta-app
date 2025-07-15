@@ -1,35 +1,62 @@
-// controllers/forumController.js
-const Forum = require('../models/Forum');
-const Thread = require('../models/Thread');
-const Post = require('../models/Post');
-const User = require('../models/User');
+import asyncHandler from 'express-async-handler';
+import Forum from '../models/Forum.js';
+import Thread from '../models/Thread.js';
+import Post from '../models/Post.js';
 
-// @desc    Get recommended forums based on user profile
-// @route   GET /api/forums/recommended
-const getRecommendedForums = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user || !user.path) {
-            return res.status(400).json({ message: 'User profile is not complete' });
-        }
+const getForums = asyncHandler(async (req, res) => {
+    const forums = await Forum.find({}).populate('user', 'name');
+    res.json(forums);
+});
 
-        const userLocationTag = user.location ? user.location.toLowerCase().replace(/\s+/g, '-') : '';
-
-        const studentTags = [`#student-life-${userLocationTag}`, '#spanish-banking', `#housing-${userLocationTag}`, '#documents-help-students'];
-        const jobSeekerTags = ['#work-and-taxes-spain', '#visas-and-work-permits', '#networking-spain'];
-
-        const recommendedTags = user.path === 'International Student' ? studentTags : jobSeekerTags;
-
-        // This part is a placeholder. You would need to pre-populate your DB with forums.
-        const forums = await Forum.find({ tag: { $in: recommendedTags } });
-
-        res.json(forums);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+const createForum = asyncHandler(async (req, res) => {
+    const { title, description } = req.body;
+    const forumExists = await Forum.findOne({ title });
+    if (forumExists) {
+        res.status(400);
+        throw new Error('A forum with this title already exists');
     }
-};
+    const forum = await Forum.create({ title, description, user: req.user._id });
+    res.status(201).json(forum);
+});
 
-// NOTE: You would add more functions here for creating threads, posts, etc.
+const getForum = asyncHandler(async (req, res) => {
+    const forum = await Forum.findById(req.params.id).populate({
+        path: 'threads',
+        populate: { path: 'author', select: 'name' },
+    });
+    if (forum) {
+        res.json(forum);
+    } else {
+        res.status(404);
+        throw new Error('Forum not found');
+    }
+});
 
-// This line makes the functions available to other files
-module.exports = { getRecommendedForums };
+const createThread = asyncHandler(async (req, res) => {
+    const { title, content } = req.body;
+    const forum = await Forum.findById(req.params.id);
+    if (forum) {
+        const thread = await Thread.create({ title, forum: forum._id, author: req.user._id });
+        await Post.create({ content, thread: thread._id, author: req.user._id });
+        forum.threads.push(thread._id);
+        await forum.save();
+        res.status(201).json(thread);
+    } else {
+        res.status(404);
+        throw new Error('Forum not found');
+    }
+});
+
+const createPost = asyncHandler(async (req, res) => {
+    const { content } = req.body;
+    const thread = await Thread.findById(req.params.threadId);
+    if (thread) {
+        const post = await Post.create({ content, thread: thread._id, author: req.user._id });
+        res.status(201).json(post);
+    } else {
+        res.status(404);
+        throw new Error('Thread not found');
+    }
+});
+
+export { getForums, createForum, getForum, createThread, createPost };
