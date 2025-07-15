@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f9d4abe1-c459-42a0-8d6a-608c8b9492d2" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/mobile_app_main.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/App.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/babel.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/api/api.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/app/slices/authSlice.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/app/slices/budgetSlice.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/app/slices/checklistSlice.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/app/store.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/components/budget/BudgetItem.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/components/budget/BudgetSummary.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/components/common/AppButton.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/components/common/AppTextInput.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/components/common/LoadingSpinner.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/components/home/ModuleCard.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/components/home/PinnedItem.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/constants/routes.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/constants/theme.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/hooks/useAuth.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/navigation/AppNavigator.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/navigation/AuthStack.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/navigation/MainTabs.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Auth/LoginScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Auth/OnboardingScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Auth/RegisterScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Main/BudgetScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Main/ChecklistScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Main/GuidesScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Main/HubScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/screens/Main/ProfileScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-new/src/utils/storage.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="2zr9VlV1QPY6RAwONaUxBLwE3EO" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend-new/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="ReactDesignerToolWindowState">
+    <option name="myId2Visible">
+      <map>
+        <entry key="com.intellij.reactbuddy.reactComponents" value="false" />
+        <entry key="com.intellij.reactbuddy.reactInspector" value="false" />
+        <entry key="com.intellij.reactbuddy.storybook" value="false" />
+      </map>
+    </option>
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/frontend-new" />
+      <recent name="$PROJECT_DIR$/frontend" />
+      <recent name="$PROJECT_DIR$/frontend/Conecta_app" />
+      <recent name="$PROJECT_DIR$/frontend/Conecta_app/src" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-b26f3e71634d-JavaScript-WS-251.26094.131" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f9d4abe1-c459-42a0-8d6a-608c8b9492d2" name="Changes" comment="" />
+      <created>1752478350390</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1752478350390</updated>
+      <workItem from="1752478351465" duration="686000" />
+      <workItem from="1752479132614" duration="45022000" />
+      <workItem from="1752610897414" duration="4103000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
