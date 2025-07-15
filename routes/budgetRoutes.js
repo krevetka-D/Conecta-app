@@ -1,11 +1,12 @@
+// routes/budgetRoutes.js
+
 import express from 'express';
-import { addTransaction, getTransactions, getBudgetSummary, deleteTransaction } from '../controllers/budgetController.js';
+import { getBudget, setBudget, deleteBudget } from '../controllers/budgetController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.route('/summary').get(protect, getBudgetSummary);
-router.route('/').get(protect, getTransactions).post(protect, addTransaction);
-router.route('/:id').delete(protect, deleteTransaction);
+router.route('/').get(protect, getBudget).post(protect, setBudget);
+router.route('/:id').delete(protect, deleteBudget);
 
 export default router;

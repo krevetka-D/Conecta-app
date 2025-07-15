@@ -1,38 +1,40 @@
 import asyncHandler from 'express-async-handler';
-import Transaction from '../models/Budget.js';
+import BudgetEntry from '../models/BudgetEntry.js';
 
-const addTransaction = asyncHandler(async (req, res) => {
-    const { type, category, amount, description } = req.body;
-    if (!type || !category || !amount) {
+const getBudget = asyncHandler(async (req, res) => {
+    const budgetEntries = await BudgetEntry.find({ user: req.user._id });
+    res.status(200).json(budgetEntries);
+});
+
+const setBudget = asyncHandler(async (req, res) => {
+    const { type, category, amount, description, entryDate } = req.body;
+    if (!type || !category || !amount || !entryDate) {
         res.status(400);
-        throw new Error('Please provide a type, category, and amount');
+        throw new Error('Please add all required fields');
     }
-    const transaction = await Transaction.create({ user: req.user._id, type, category, amount, description });
-    res.status(201).json(transaction);
+    const budgetEntry = await BudgetEntry.create({
+        user: req.user._id,
+        type,
+        category,
+        amount,
+        description,
+        entryDate,
+    });
+    res.status(201).json(budgetEntry);
 });
 
-const getTransactions = asyncHandler(async (req, res) => {
-    const transactions = await Transaction.find({ user: req.user._id });
-    res.json(transactions);
-});
-
-const getBudgetSummary = asyncHandler(async (req, res) => {
-    const transactions = await Transaction.find({ user: req.user._id });
-    const totalIncome = transactions.filter((t) => t.type === 'income').reduce((acc, item) => acc + item.amount, 0);
-    const totalExpenses = transactions.filter((t) => t.type === 'expense').reduce((acc, item) => acc + item.amount, 0);
-    const balance = totalIncome - totalExpenses;
-    res.json({ totalIncome, totalExpenses, balance });
-});
-
-const deleteTransaction = asyncHandler(async (req, res) => {
-    const transaction = await Transaction.findById(req.params.id);
-    if (transaction && transaction.user.toString() === req.user._id.toString()) {
-        await transaction.deleteOne();
-        res.json({ message: 'Transaction removed' });
-    } else {
+const deleteBudget = asyncHandler(async (req, res) => {
+    const budgetEntry = await BudgetEntry.findById(req.params.id);
+    if (!budgetEntry) {
         res.status(404);
-        throw new Error('Transaction not found');
+        throw new Error('Budget entry not found');
     }
+    if (budgetEntry.user.toString() !== req.user.id) {
+        res.status(401);
+        throw new Error('User not authorized');
+    }
+    await budgetEntry.remove();
+    res.status(200).json({ id: req.params.id });
 });
 
-export { addTransaction, getTransactions, getBudgetSummary, deleteTransaction };
+export { getBudget, setBudget, deleteBudget };
