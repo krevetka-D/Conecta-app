@@ -1,6 +1,6 @@
 // src/styles/screens/content/GuideDetailScreenStyles.js
 import { StyleSheet } from 'react-native';
-import { colors, fonts, spacing, borderRadius } from '../../../constants';
+import { colors, fonts, spacing, borderRadius } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({
     container: {

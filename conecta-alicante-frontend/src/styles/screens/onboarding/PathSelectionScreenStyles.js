@@ -1,6 +1,6 @@
 // src/styles/screens/onboarding/PathSelectionScreenStyles.js
 import { StyleSheet } from 'react-native';
-import { colors, fonts } from '../../../constants';
+import { colors, fonts } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({
     container: {

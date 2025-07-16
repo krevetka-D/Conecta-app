@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const userData = await authService.default.login(email, password);
+            const userData = await authService.login(email, password);
             // Assuming the user object has an `onboardingCompleted` flag
             // If not, you might need to fetch it or set a default
             if (userData.onboardingCompleted === undefined) {

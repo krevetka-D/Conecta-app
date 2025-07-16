@@ -1,9 +1,9 @@
 // src/components/ui/List.js
 import React from 'react';
 import { FlatList, RefreshControl } from 'react-native';
-import { EmptyState } from '../common/EmptyState';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import { listStyles as styles } from '../../styles/components/ui/ListStyles';
+import EmptyState from '../common/EmptyState';
+import LoadingSpinner from '../common/LoadingSpinner';
+import {styles } from '../../styles/components/ui/ListStyles';
 
 export const List = React.memo(({
                                     data,

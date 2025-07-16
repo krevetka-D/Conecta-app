@@ -10,11 +10,11 @@ const WelcomeScreen = ({ navigation }) => {
             style={styles.container}
         >
             <View style={styles.content}>
-                <Image
-                    source={require('../../../assets/images/logo-white.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                />
+                {/*<Image*/}
+                {/*    source={require('../../../assets/images/logo-white.png')}*/}
+                {/*    style={styles.logo}*/}
+                {/*    resizeMode="contain"*/}
+                {/*/>*/}
 
                 <Text style={styles.title}>Conecta Alicante</Text>
                 <Text style={styles.subtitle}>

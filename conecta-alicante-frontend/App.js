@@ -13,7 +13,7 @@ import NavigationService from './src/navigation/NavigationService';
 
 const App = () => {
     console.log('App.js - Starting');
-    const [fontsLoaded, setFontsLoaded] = useState(false);
+    const [fontsLoaded, setFontsLoaded] = useState(true);
 
     useEffect(() => {
         console.log('App.js - useEffect');

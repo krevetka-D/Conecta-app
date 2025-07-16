@@ -28,7 +28,7 @@ export const styles = StyleSheet.create({
         color: colors.text,
     },
     errorText: {
-        color: colors.danger,
+        color: colors.error,
         fontSize: fonts.sizes.sm,
         marginTop: 4,
     },

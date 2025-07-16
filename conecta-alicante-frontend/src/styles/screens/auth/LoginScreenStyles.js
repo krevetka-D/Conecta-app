@@ -1,7 +1,6 @@
 // src/styles/screens/auth/LoginScreen.js
 import { StyleSheet } from 'react-native';
-import { colors, fonts, spacing, borderRadius } from '../../../constants';
-
+import { colors, fonts, spacing, borderRadius } from '../../../constants/theme';
 export const loginStyles = StyleSheet.create({
     container: {
         flex: 1,

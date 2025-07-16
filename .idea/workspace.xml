@@ -7,16 +7,18 @@
     <list default="true" id="f9d4abe1-c459-42a0-8d6a-608c8b9492d2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/App.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/constants/messages.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/constants/messages.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/auth/LoginScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/auth/LoginScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/budget/BudgetScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/budget/BudgetScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/content/GuideDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/content/GuideDetailScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/checklistService.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/checklistService.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/contentService.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/contentService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/assets/images/logo-white.png" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/assets/images/logo-white.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/components/ui/List.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/components/ui/List.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/auth/WelcomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/auth/WelcomeScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/store/contexts/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/store/contexts/AuthContext.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/components/ui/CardStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/components/ui/CardStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/components/ui/HeaderStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/components/ui/HeaderStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/components/ui/InputStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/components/ui/InputStyles.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/navigation/MainNavigatorStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/navigation/MainNavigatorStyles.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/main/DashboardScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/main/DashboardScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/auth/LoginScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/auth/LoginScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/budget/BudgetScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/budget/BudgetScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/content/GuideDetailScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/content/GuideDetailScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/onboarding/PathSelectionScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/styles/screens/onboarding/PathSelectionScreenStyles.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +94,7 @@
       <updated>1752478350390</updated>
       <workItem from="1752478351465" duration="686000" />
       <workItem from="1752479132614" duration="45022000" />
-      <workItem from="1752610897414" duration="35780000" />
+      <workItem from="1752610897414" duration="38333000" />
     </task>
     <servers />
   </component>
