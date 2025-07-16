@@ -1,11 +1,11 @@
-// src/navigation/AuthNavigator.js
+// frontend/src/navigation/AuthNavigator.js
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+// Import TransitionPresets
+import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import { SCREEN_NAMES } from '../constants/routes';
-import { SCREEN_TRANSITION_CONFIG } from '../constants/animations';
 import { colors } from '../constants/theme';
 
 const Stack = createStackNavigator();
@@ -13,12 +13,13 @@ const Stack = createStackNavigator();
 const AuthNavigator = () => {
     return (
         <Stack.Navigator
+            // Replace the custom config with a standard TransitionPreset
             screenOptions={{
                 headerShown: false,
-                ...SCREEN_TRANSITION_CONFIG,
                 cardStyle: {
                     backgroundColor: colors.background,
                 },
+                ...TransitionPresets.SlideFromRightIOS, // Use this preset
             }}
             initialRouteName={SCREEN_NAMES.WELCOME}
         >

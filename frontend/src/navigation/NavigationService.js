@@ -1,52 +1,23 @@
 // src/navigation/NavigationService.js
-import { CommonActions, StackActions } from '@react-navigation/native';
+import { createNavigationContainerRef } from '@react-navigation/native';
 
-let navigator;
+export const navigationRef = createNavigationContainerRef();
 
-const setTopLevelNavigator = (navigatorRef) => {
-    navigator = navigatorRef;
-};
+export function navigate(name, params) {
+    if (navigationRef.isReady()) {
+        navigationRef.navigate(name, params);
+    } else {
+        console.warn("Navigation service not ready, could not navigate.");
+    }
+}
 
-const navigate = (routeName, params) => {
-    navigator?.dispatch(
-        CommonActions.navigate({
-            name: routeName,
-            params,
-        })
-    );
-};
-
-const push = (routeName, params) => {
-    navigator?.dispatch(StackActions.push(routeName, params));
-};
-
-const goBack = () => {
-    navigator?.dispatch(CommonActions.goBack());
-};
-
-const reset = (routes, index = 0) => {
-    navigator?.dispatch(
-        CommonActions.reset({
-            index,
-            routes,
-        })
-    );
-};
-
-const replace = (routeName, params) => {
-    navigator?.dispatch(StackActions.replace(routeName, params));
-};
-
-const popToTop = () => {
-    navigator?.dispatch(StackActions.popToTop());
-};
-
-export default {
-    setTopLevelNavigator,
-    navigate,
-    push,
-    goBack,
-    reset,
-    replace,
-    popToTop,
-};
+export function resetRoot(routeName = 'Login') {
+    if (navigationRef.isReady()) {
+        navigationRef.reset({
+            index: 0,
+            routes: [{ name: routeName }],
+        });
+    } else {
+        console.warn("Navigation service not ready, could not reset root.");
+    }
+}

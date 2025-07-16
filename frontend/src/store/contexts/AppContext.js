@@ -1,7 +1,16 @@
-// src/store/contexts/AppContext.js
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import axios from 'axios';
+
+// Create the API client here. It will be configured by AuthContext.
+export const api = axios.create({
+    baseURL: 'http://your-api-url.com/api', // Replace with your actual API URL
+    headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+    },
+});
 
 const AppContext = createContext({});
 
@@ -9,49 +18,50 @@ export const useApp = () => useContext(AppContext);
 
 export const AppProvider = ({ children }) => {
     const [isOnline, setIsOnline] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [appState, setAppState] = useState({
-        isFirstLaunch: null,
+        isFirstLaunch: false,
         language: 'en',
         notifications: true,
     });
 
+    // This effect runs once to initialize the app state and network listener.
     useEffect(() => {
-        checkFirstLaunch();
-        setupNetworkListener();
-    }, []);
-
-    const checkFirstLaunch = async () => {
-        try {
-            const hasLaunched = await AsyncStorage.getItem('hasLaunched');
-            if (hasLaunched === null) {
-                await AsyncStorage.setItem('hasLaunched', 'true');
-                setAppState(prev => ({ ...prev, isFirstLaunch: true }));
-            } else {
-                setAppState(prev => ({ ...prev, isFirstLaunch: false }));
+        const initializeApp = async () => {
+            try {
+                const hasLaunched = await AsyncStorage.getItem('hasLaunched');
+                if (hasLaunched === null) {
+                    setAppState(prev => ({ ...prev, isFirstLaunch: true }));
+                    await AsyncStorage.setItem('hasLaunched', 'true');
+                } else {
+                    setAppState(prev => ({ ...prev, isFirstLaunch: false }));
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Error checking first launch:', error);
-        }
-    };
+        };
 
-    const setupNetworkListener = () => {
-        const unsubscribe = NetInfo.addEventListener(state => {
+        initializeApp();
+
+        const unsubscribeNetInfo = NetInfo.addEventListener(state => {
             setIsOnline(state.isConnected);
         });
 
-        return () => unsubscribe();
-    };
+        return () => unsubscribeNetInfo();
+    }, []);
 
-    const updateLanguage = async (language) => {
+    const updateLanguage = useCallback(async (language) => {
         try {
             await AsyncStorage.setItem('language', language);
             setAppState(prev => ({ ...prev, language }));
         } catch (error) {
             console.error('Error updating language:', error);
         }
-    };
+    }, []);
 
-    const toggleNotifications = async () => {
+    const toggleNotifications = useCallback(async () => {
         try {
             const newValue = !appState.notifications;
             await AsyncStorage.setItem('notifications', newValue.toString());
@@ -59,14 +69,20 @@ export const AppProvider = ({ children }) => {
         } catch (error) {
             console.error('Error toggling notifications:', error);
         }
-    };
+    }, [appState.notifications]);
 
-    const value = {
+    // useMemo prevents this value object from being recreated on every render.
+    const value = useMemo(() => ({
         isOnline,
+        loading,
         appState,
         updateLanguage,
         toggleNotifications,
-    };
+    }), [isOnline, loading, appState, updateLanguage, toggleNotifications]);
 
-    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+    return (
+        <AppContext.Provider value={value}>
+            {children}
+        </AppContext.Provider>
+    );
 };

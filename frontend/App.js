@@ -1,35 +1,36 @@
-// App.js - Minimal version without font loading
-import 'react-native-url-polyfill/auto';
+// App.js
+import 'react-native-gesture-handler';
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { Provider as PaperProvider } from 'react-native-paper';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet } from 'react-native';
 
-import { AuthProvider, ThemeProvider, AppProvider} from './src/store';
-import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/common/ErrorBoundary';
-import { theme } from './src/constants';
-import NavigationService from './src/navigation/NavigationService';
+import RootNavigator from './src/navigation/RootNavigator';
+import { AppProvider } from './src/store/contexts/AppContext';
+import { AuthProvider } from './src/store/contexts/AuthContext';
+import { ThemeProvider } from './src/store/contexts/ThemeContext';
 
-const App = () => {
+export default function App() {
     return (
-        <ErrorBoundary>
-            <AppProvider>
-                <AuthProvider>
-                    <ThemeProvider>
-                        <PaperProvider theme={theme}>
-                            <NavigationContainer
-                                ref={(navigatorRef) => {
-                                    NavigationService.setTopLevelNavigator(navigatorRef);
-                                }}
-                            >
-                                <RootNavigator />
-                            </NavigationContainer>
-                        </PaperProvider>
-                    </ThemeProvider>
-                </AuthProvider>
-            </AppProvider>
-        </ErrorBoundary>
+        <GestureHandlerRootView style={styles.container}>
+            <ErrorBoundary>
+                <AppProvider>
+                    <AuthProvider>
+                        <ThemeProvider>
+                            <StatusBar style="auto" />
+                            {/* RootNavigator is now the final child, ensuring all contexts are ready */}
+                            <RootNavigator />
+                        </ThemeProvider>
+                    </AuthProvider>
+                </AppProvider>
+            </ErrorBoundary>
+        </GestureHandlerRootView>
     );
-};
+}
 
-export default App;
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+});

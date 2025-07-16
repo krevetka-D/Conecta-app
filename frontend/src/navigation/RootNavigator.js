@@ -1,82 +1,27 @@
 // src/navigation/RootNavigator.js
-import React, { useEffect } from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import { View, ActivityIndicator } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
-
-// Import navigators
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { useAuth } from '../store/contexts/AuthContext';
+import { useApp } from '../store/contexts/AppContext';
 import AuthNavigator from './AuthNavigator';
-import OnboardingNavigator from './OnboardingNavigator';
-import MainNavigator from './MainNavigator';
-
-// Import screens
-import LoadingScreen from '../screens/LoadingScreen';
-
-// Import contexts and constants
-import { useAuth } from '../store';
-import { useApp } from '../store';
-import { NAVIGATOR_NAMES } from '../constants';
-import { colors } from '../constants';
-
-const Stack = createStackNavigator();
-
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+import MainNavigator from './MainNavigator'; // Corrected from AppNavigator
+import FullScreenLoader from '../components/common/LoadingSpinner';
+import { navigationRef } from './NavigationService'; // Import the ref
 
 const RootNavigator = () => {
     const { user, loading: authLoading } = useAuth();
-    const { appState } = useApp();
+    const { loading: appLoading } = useApp();
 
-    useEffect(() => {
-        // Hide splash screen when loading is complete
-        if (!authLoading) {
-            SplashScreen.hideAsync();
-        }
-    }, [authLoading]);
-
-    // Show loading screen while checking auth state
-    if (authLoading || appState.isFirstLaunch === null) {
-        return <LoadingScreen />;
+    // Show a loader while contexts are initializing
+    if (appLoading || authLoading) {
+        return <FullScreenLoader />;
     }
 
+    // The NavigationContainer now correctly wraps the actual navigators
     return (
-        <Stack.Navigator
-            screenOptions={{
-                headerShown: false,
-                animationEnabled: true,
-            }}
-        >
-            {!user ? (
-                // Not authenticated - show auth flow
-                <Stack.Screen
-                    name={NAVIGATOR_NAMES.AUTH}
-                    component={AuthNavigator}
-                    options={{
-                        animationTypeForReplace: 'pop',
-                    }}
-                />
-            ) : !user.onboardingCompleted ? (
-                // Authenticated but not onboarded - show onboarding
-                <Stack.Screen
-                    name={NAVIGATOR_NAMES.ONBOARDING}
-                    component={OnboardingNavigator}
-                    options={{
-                        gestureEnabled: false,
-                        animationTypeForReplace: 'push',
-                    }}
-                />
-            ) : (
-                // Authenticated and onboarded - show main app
-                <Stack.Screen
-                    name={NAVIGATOR_NAMES.MAIN}
-                    component={MainNavigator}
-                    options={{
-                        gestureEnabled: false,
-                        animationTypeForReplace: 'push',
-                    }}
-                />
-            )}
-        </Stack.Navigator>
+        <NavigationContainer ref={navigationRef}>
+            {user ? <MainNavigator /> : <AuthNavigator />}
+        </NavigationContainer>
     );
 };
 
