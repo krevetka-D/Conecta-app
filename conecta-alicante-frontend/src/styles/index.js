@@ -31,7 +31,7 @@ export * from './screens/main/DashboardScreenStyles';
 export * from './screens/main/ProfileScreenStyles';
 
 export * from './screens/onboarding/PathSelectionScreenStyles';
-export * from './screens/onboarding/PrioritySelectionScreenStyles';
+export * from '../screens/onboarding/PrioritySelectionScreen';
 
 // Navigation styles
 export * from './navigation/MainNavigatorStyles';

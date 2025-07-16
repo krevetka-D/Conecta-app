@@ -1,15 +1,17 @@
 // App.js
+import 'react-native-url-polyfill/auto';
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import * as Font from 'expo-font';
 
-import { AuthProvider } from './src/store/contexts/AuthContext';
-import { ThemeProvider } from './src/store/contexts/ThemeContext';
-import { AppProvider } from './src/store/contexts/AppContext';
+
+import { AuthProvider } from './src/store';
+import { ThemeProvider } from './src/store';
+import { AppProvider } from './src/store';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/common/ErrorBoundary';
-import { theme } from './src/constants/theme';
+import { theme } from './src/constants';
 import NavigationService from './src/navigation/NavigationService';
 
 const App = () => {

@@ -3,9 +3,9 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import PathSelectionScreen from '../screens/onboarding/PathSelectionScreen';
 import PrioritySelectionScreen from '../screens/onboarding/PrioritySelectionScreen';
-import { SCREEN_NAMES } from '../constants/routes';
-import { SCREEN_TRANSITION_CONFIG } from '../constants/animations';
-import { colors } from '../constants/theme';
+import { SCREEN_NAMES } from '../constants';
+import { SCREEN_TRANSITION_CONFIG } from '../constants';
+import { colors } from '../constants';
 
 const Stack = createStackNavigator();
 

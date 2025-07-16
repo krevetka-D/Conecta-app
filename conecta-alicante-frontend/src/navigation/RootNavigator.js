@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, ActivityIndicator } from 'react-native';
-import SplashScreen from 'expo-splash-screen';
+import * as SplashScreen from 'expo-splash-screen';
 
 // Import navigators
 import AuthNavigator from './AuthNavigator';
@@ -13,10 +13,10 @@ import MainNavigator from './MainNavigator';
 import LoadingScreen from '../screens/LoadingScreen';
 
 // Import contexts and constants
-import { useAuth } from '../store/contexts/AuthContext';
-import { useApp } from '../store/contexts/AppContext';
-import { NAVIGATOR_NAMES } from '../constants/routes';
-import { colors } from '../constants/theme';
+import { useAuth } from '../store';
+import { useApp } from '../store';
+import { NAVIGATOR_NAMES } from '../constants';
+import { colors } from '../constants';
 
 const Stack = createStackNavigator();
 

@@ -104,13 +104,22 @@ export const sanitizeInput = (input) => {
 };
 
 // Validate URL to prevent malicious redirects
+// export const isValidUrl = (url) => {
+//     try {
+//         const urlObj = new URL(url);
+//         return ['http:', 'https:'].includes(urlObj.protocol);
+//     } catch {
+//         return false;
+//     }
+// };
+
 export const isValidUrl = (url) => {
-    try {
-        const urlObj = new URL(url);
-        return ['http:', 'https:'].includes(urlObj.protocol);
-    } catch {
+    if (typeof url !== 'string') {
         return false;
     }
+    // A robust regex to check for http and https protocols and a valid domain structure.
+    const urlRegex = /^(https|http):\/\/[^\s$.?#].[^\s]*$/;
+    return urlRegex.test(url);
 };
 
 // Hash sensitive data
