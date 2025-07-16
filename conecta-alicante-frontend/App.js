@@ -5,19 +5,18 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import * as Font from 'expo-font';
 
-
-import { AuthProvider } from './src/store';
-import { ThemeProvider } from './src/store';
-import { AppProvider } from './src/store';
+import { AuthProvider, ThemeProvider, AppProvider} from './src/store';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/components/common/ErrorBoundary';
 import { theme } from './src/constants';
 import NavigationService from './src/navigation/NavigationService';
 
 const App = () => {
+    console.log('App.js - Starting');
     const [fontsLoaded, setFontsLoaded] = useState(false);
 
     useEffect(() => {
+        console.log('App.js - useEffect');
         loadFonts();
     }, []);
 
@@ -34,10 +33,13 @@ const App = () => {
             setFontsLoaded(true);
         }
     };
+    console.log('App.js - Rendering, fontsLoaded:', fontsLoaded);
 
     if (!fontsLoaded) {
+        console.log('App.js - Waiting for fonts');
         return null;
     }
+    console.log('App.js - Rendering main app');
 
     return (
         <ErrorBoundary>

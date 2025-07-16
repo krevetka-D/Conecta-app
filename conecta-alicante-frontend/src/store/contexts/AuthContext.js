@@ -1,7 +1,7 @@
 // src/store/contexts/AuthContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { secureStorage } from '../../utils/security';
-import * as authService from '../../services/authService';
+import authService from '../../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const userData = await authService.login(email, password);
+            const userData = await authService.default.login(email, password);
             // Assuming the user object has an `onboardingCompleted` flag
             // If not, you might need to fetch it or set a default
             if (userData.onboardingCompleted === undefined) {

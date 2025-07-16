@@ -15,7 +15,7 @@ import { useAuth } from '../../store/contexts/AuthContext';
 import { useForm } from '../../hooks/useForm';
 import { validateEmail, validatePassword } from '../../utils/validation';
 import { showErrorAlert } from '../../utils/alerts';
-import { styles } from '../../styles/screens/auth/LoginScreenStyles';
+import { loginStyles as styles } from '../../styles/screens/auth/LoginScreenStyles';
 import { colors } from '../../constants/theme';
 import { SCREEN_NAMES } from '../../constants/routes';
 

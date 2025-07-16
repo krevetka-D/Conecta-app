@@ -6,6 +6,7 @@ import {
     ScrollView,
     TouchableOpacity,
     Platform,
+    RefreshControl
 } from 'react-native';
 import { FAB, Portal, Modal, TextInput, RadioButton, Provider } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';

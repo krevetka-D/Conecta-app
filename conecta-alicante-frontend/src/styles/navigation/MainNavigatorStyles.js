@@ -1,109 +1,358 @@
-import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors } from '../../constants/theme';
+// src/styles/navigation/MainNavigatorStyles.js
+import { StyleSheet, Platform } from 'react-native';
+import { colors, fonts, spacing, borderRadius, shadows } from '../../constants/theme';
+import { TAB_BAR_DIMENSIONS, HEADER_DIMENSIONS } from '../../constants/dimensions';
 
-// Import screens
-import DashboardScreenStyles from '../../screens/main/DashboardScreen';
-import BudgetScreen from '../../screens/budget/BudgetScreen';
-import ChecklistScreen from '../../screens/checklist/ChecklistScreen';
-import ResourcesScreen from '../../screens/content/ResourcesScreen';
-import ProfileScreen from '../../screens/main/ProfileScreen';
+export const styles = StyleSheet.create({
+    // Tab Bar Styles
+    tabBar: {
+        height: TAB_BAR_DIMENSIONS.height,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+        paddingTop: 10,
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        ...shadows.md,
+    },
 
-const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+    tabBarLabel: {
+        fontSize: TAB_BAR_DIMENSIONS.labelFontSize,
+        fontFamily: fonts.families.regular,
+        marginTop: -5,
+        marginBottom: 5,
+    },
 
-// Stack navigators for each tab
-const DashboardStack = () => (
-    <Stack.Navigator>
-        <Stack.Screen
-            name="DashboardHome"
-            component={DashboardScreenStyles}
-            options={{ headerShown: false }}
-        />
-    </Stack.Navigator>
-);
+    tabBarIcon: {
+        marginTop: 5,
+    },
 
-const BudgetStack = () => (
-    <Stack.Navigator>
-        <Stack.Screen
-            name="BudgetHome"
-            component={BudgetScreen}
-            options={{ title: 'Budget Planner' }}
-        />
-    </Stack.Navigator>
-);
+    // Stack Header Styles
+    headerStyle: {
+        backgroundColor: colors.primary,
+        height: HEADER_DIMENSIONS.height,
+        elevation: 0,
+        shadowOpacity: 0,
+    },
 
-const ChecklistStack = () => (
-    <Stack.Navigator>
-        <Stack.Screen
-            name="ChecklistHome"
-            component={ChecklistScreen}
-            options={{ title: 'Checklist' }}
-        />
-    </Stack.Navigator>
-);
+    headerTitleStyle: {
+        fontFamily: fonts.families.semiBold,
+        fontSize: fonts.sizes.lg,
+        color: colors.textInverse,
+    },
 
-const ResourcesStack = () => (
-    <Stack.Navigator>
-        <Stack.Screen
-            name="ResourcesHome"
-            component={ResourcesScreen}
-            options={{ title: 'Resources' }}
-        />
-    </Stack.Navigator>
-);
+    headerBackTitleStyle: {
+        fontFamily: fonts.families.regular,
+        fontSize: fonts.sizes.sm,
+        color: colors.textInverse,
+    },
 
-const ProfileStack = () => (
-    <Stack.Navigator>
-        <Stack.Screen
-            name="ProfileHome"
-            component={ProfileScreen}
-            options={{ title: 'Profile' }}
-        />
-    </Stack.Navigator>
-);
+    headerLeftContainerStyle: {
+        paddingLeft: Platform.OS === 'ios' ? spacing.md : spacing.sm,
+    },
 
-const MainNavigatorStyles = () => {
-    return (
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                tabBarIcon: ({ focused, color, size }) => {
-                    let iconName;
+    headerRightContainerStyle: {
+        paddingRight: Platform.OS === 'ios' ? spacing.md : spacing.sm,
+    },
 
-                    switch (route.name) {
-                        case 'Dashboard':
-                            iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
-                            break;
-                        case 'Budget':
-                            iconName = focused ? 'calculator' : 'calculator-variant-outline';
-                            break;
-                        case 'Checklist':
-                            iconName = focused ? 'checkbox-marked-circle' : 'checkbox-marked-circle-outline';
-                            break;
-                        case 'Resources':
-                            iconName = focused ? 'book-open-page-variant' : 'book-open-page-variant-outline';
-                            break;
-                        case 'Profile':
-                            iconName = focused ? 'account' : 'account-outline';
-                            break;
-                    }
+    // Screen-specific header styles
+    surfaceHeaderStyle: {
+        backgroundColor: colors.surface,
+        elevation: 1,
+        shadowOpacity: 0.1,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+    },
 
-                    return <Icon name={iconName} size={size} color={color} />;
-                },
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.textSecondary,
-                headerShown: false,
-            })}
-        >
-            <Tab.Screen name="Dashboard" component={DashboardStack} />
-            <Tab.Screen name="Budget" component={BudgetStack} />
-            <Tab.Screen name="Checklist" component={ChecklistStack} />
-            <Tab.Screen name="Resources" component={ResourcesStack} />
-            <Tab.Screen name="Profile" component={ProfileStack} />
-        </Tab.Navigator>
-    );
+    surfaceHeaderTitleStyle: {
+        color: colors.text,
+    },
+
+    transparentHeaderStyle: {
+        backgroundColor: 'transparent',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+    },
+
+    // Card style for navigator transitions
+    cardStyle: {
+        backgroundColor: colors.background,
+    },
+
+    // Drawer styles (if using drawer navigator)
+    drawerStyle: {
+        backgroundColor: colors.surface,
+        width: '80%',
+    },
+
+    drawerContentStyle: {
+        paddingTop: Platform.OS === 'ios' ? spacing.xl : 0,
+    },
+
+    drawerItemStyle: {
+        borderRadius: borderRadius.md,
+        marginHorizontal: spacing.sm,
+        marginVertical: spacing.xs,
+    },
+
+    drawerLabelStyle: {
+        fontFamily: fonts.families.regular,
+        fontSize: fonts.sizes.md,
+        marginLeft: -spacing.md,
+    },
+
+    drawerActiveTintColor: {
+        color: colors.primary,
+    },
+
+    drawerInactiveTintColor: {
+        color: colors.text,
+    },
+
+    drawerActiveBackgroundColor: {
+        backgroundColor: colors.primaryLight + '20',
+    },
+
+    // Modal presentation styles
+    modalCardStyle: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+    },
+
+    modalHeaderStyle: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        shadowOpacity: 0,
+        elevation: 0,
+    },
+
+    // Custom tab bar component styles (if using custom tab bar)
+    customTabBar: {
+        flexDirection: 'row',
+        height: TAB_BAR_DIMENSIONS.height,
+        backgroundColor: colors.surface,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: colors.border,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+        ...shadows.md,
+    },
+
+    customTabBarItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: spacing.sm,
+    },
+
+    customTabBarItemActive: {
+        // Active tab item styles
+    },
+
+    customTabBarIcon: {
+        marginBottom: spacing.xs,
+    },
+
+    customTabBarLabel: {
+        fontSize: TAB_BAR_DIMENSIONS.labelFontSize,
+        fontFamily: fonts.families.regular,
+        textAlign: 'center',
+    },
+
+    customTabBarLabelActive: {
+        color: colors.primary,
+        fontFamily: fonts.families.semiBold,
+    },
+
+    customTabBarLabelInactive: {
+        color: colors.textSecondary,
+    },
+
+    // Badge styles for tab bar
+    tabBarBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -10,
+        backgroundColor: colors.error,
+        borderRadius: borderRadius.full,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: spacing.xs,
+    },
+
+    tabBarBadgeText: {
+        color: colors.textInverse,
+        fontSize: fonts.sizes.xs,
+        fontFamily: fonts.families.semiBold,
+    },
+
+    // Focus indicator for accessibility
+    focusIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        left: '20%',
+        right: '20%',
+        height: 3,
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.full,
+    },
+
+    // Loading state for lazy-loaded screens
+    screenLoading: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+    },
+
+    // Error boundary styles
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+        padding: spacing.xl,
+    },
+
+    errorText: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginTop: spacing.md,
+    },
+});
+
+// Animation configurations
+export const navigationAnimations = {
+    // Default slide animation
+    slideFromRight: {
+        cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+                transform: [
+                    {
+                        translateX: current.progress.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [layouts.screen.width, 0],
+                        }),
+                    },
+                ],
+            },
+        }),
+    },
+
+    // Fade animation
+    fade: {
+        cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+                opacity: current.progress,
+            },
+        }),
+    },
+
+    // Modal slide from bottom
+    modalSlideFromBottom: {
+        cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+                transform: [
+                    {
+                        translateY: current.progress.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [layouts.screen.height, 0],
+                        }),
+                    },
+                ],
+            },
+        }),
+    },
+
+    // Scale animation
+    scale: {
+        cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+                opacity: current.progress,
+                transform: [
+                    {
+                        scale: current.progress.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.9, 1],
+                        }),
+                    },
+                ],
+            },
+        }),
+    },
 };
 
-export default MainNavigatorStyles;
+// Screen options presets
+export const screenOptionsPresets = {
+    // Default stack screen options
+    defaultStack: {
+        headerStyle: styles.headerStyle,
+        headerTitleStyle: styles.headerTitleStyle,
+        headerBackTitleStyle: styles.headerBackTitleStyle,
+        headerTintColor: colors.textInverse,
+        cardStyle: styles.cardStyle,
+        ...navigationAnimations.slideFromRight,
+    },
+
+    // Surface header stack options
+    surfaceStack: {
+        headerStyle: styles.surfaceHeaderStyle,
+        headerTitleStyle: styles.surfaceHeaderTitleStyle,
+        headerTintColor: colors.text,
+        cardStyle: styles.cardStyle,
+        ...navigationAnimations.slideFromRight,
+    },
+
+    // Modal stack options
+    modalStack: {
+        presentation: 'modal',
+        headerStyle: styles.modalHeaderStyle,
+        headerTitleStyle: styles.surfaceHeaderTitleStyle,
+        headerTintColor: colors.text,
+        cardStyle: styles.modalCardStyle,
+        ...navigationAnimations.modalSlideFromBottom,
+    },
+
+    // Transparent header options
+    transparentHeader: {
+        headerStyle: styles.transparentHeaderStyle,
+        headerTitleStyle: styles.headerTitleStyle,
+        headerTintColor: colors.primary,
+        headerTransparent: true,
+        cardStyle: styles.cardStyle,
+    },
+
+    // No header options
+    noHeader: {
+        headerShown: false,
+        cardStyle: styles.cardStyle,
+    },
+};
+
+// Tab screen options preset
+export const tabScreenOptions = {
+    tabBarStyle: styles.tabBar,
+    tabBarLabelStyle: styles.tabBarLabel,
+    tabBarIconStyle: styles.tabBarIcon,
+    tabBarActiveTintColor: colors.primary,
+    tabBarInactiveTintColor: colors.textSecondary,
+    headerShown: false,
+};
+
+// Helper function to get icon name based on route and focus state
+export const getTabBarIcon = (routeName, focused) => {
+    const icons = {
+        Dashboard: focused ? 'view-dashboard' : 'view-dashboard-outline',
+        Budget: focused ? 'calculator' : 'calculator-variant-outline',
+        Checklist: focused ? 'checkbox-marked-circle' : 'checkbox-marked-circle-outline',
+        Resources: focused ? 'book-open-page-variant' : 'book-open-page-variant-outline',
+        Profile: focused ? 'account' : 'account-outline',
+    };
+
+    return icons[routeName] || 'circle';
+};

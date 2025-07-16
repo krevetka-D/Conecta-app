@@ -1,11 +1,4 @@
 // src/screens/content/GuideDetailScreen.js
-import React, { useState, useEffect } from 'react';
-import {
-    ScrollView,
-    View,
-    Text,
-    ActivityIndicator,
-} from 'react-native';
 import { WebView } from 'react-native-webview';
 import { styles } from '../../styles/screens/content/GuideDetailScreenStyles';
 import { useApi } from '../../hooks/useApi';
@@ -13,7 +6,18 @@ import contentService from '../../services/contentService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { showErrorAlert } from '../../utils/alerts';
-
+import React, { useState, useEffect } from 'react';
+import {
+    ScrollView,
+    View,
+    Text,
+    ActivityIndicator,
+    TouchableOpacity,
+} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Add this
+import { Button } from '../../components/ui/Button'; // Add this
+import { colors } from '../../constants/theme'; // Add this
+import { SCREEN_NAMES } from '../../constants/routes';
 const GuideDetailScreen = ({ route, navigation }) => {
     const { slug, title } = route.params || {};
     const [guide, setGuide] = useState(null);
