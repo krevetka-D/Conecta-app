@@ -10,7 +10,7 @@ import {
     Alert,
 } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
-import { useAuth } from '../../store/AuthContext';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
 
 const RegisterScreen = ({ navigation }) => {

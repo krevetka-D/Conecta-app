@@ -1,94 +1,128 @@
-import React, { useState, useEffect } from 'react';
+// src/screens/budget/BudgetScreen.js
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Alert,
     Platform,
 } from 'react-native';
-import { FAB, Card, Portal, Modal, TextInput, Button, RadioButton, Provider } from 'react-native-paper';
+import { FAB, Portal, Modal, TextInput, RadioButton, Provider } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useAuth } from '../../store/AuthContext';
+import { format } from 'date-fns';
+
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { List } from '../../components/ui/List';
+import { useAuth } from '../../store/contexts/AuthContext';
+import { useApi } from '../../hooks/useApi';
+import { useForm } from '../../hooks/useForm';
+import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
+import { formatCurrency } from '../../utils/formatting';
+import { styles } from '../../styles/screens/budget/BudgetScreenStyles';
 import { colors } from '../../constants/theme';
 import { BUDGET_CATEGORIES, PROFESSIONAL_PATHS } from '../../constants/config';
+import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants/messages';
 import budgetService from '../../services/budgetService';
-import { format } from 'date-fns';
 
 const BudgetScreen = () => {
     const { user } = useAuth();
     const [entries, setEntries] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
-    // Form states
-    const [entryType, setEntryType] = useState('INCOME');
-    const [category, setCategory] = useState('');
-    const [amount, setAmount] = useState('');
-    const [description, setDescription] = useState('');
-    const [entryDate, setEntryDate] = useState(new Date());
+    const { execute: loadEntries, loading } = useApi(budgetService.getBudgetEntries);
+    const { execute: createEntry, loading: creating } = useApi(budgetService.createBudgetEntry);
+    const { execute: deleteEntry } = useApi(budgetService.deleteBudgetEntry);
+
+    const { values, errors, handleChange, validateForm, resetForm, setValues } = useForm({
+        initialValues: {
+            type: 'INCOME',
+            category: '',
+            amount: '',
+            description: '',
+            entryDate: new Date(),
+        },
+        validationRules: {
+            category: (value) => !value ? 'Category is required' : null,
+            amount: (value) => {
+                if (!value) return 'Amount is required';
+                if (isNaN(value) || parseFloat(value) <= 0) return 'Invalid amount';
+                return null;
+            },
+        },
+    });
 
     useEffect(() => {
         loadBudgetEntries();
     }, []);
 
-    const loadBudgetEntries = async () => {
-        setLoading(true);
+    const loadBudgetEntries = useCallback(async () => {
         try {
-            const data = await budgetService.getBudgetEntries();
+            const data = await loadEntries();
             setEntries(data);
         } catch (error) {
-            Alert.alert('Error', 'Failed to load budget entries');
-        } finally {
-            setLoading(false);
+            showErrorAlert('Error', ERROR_MESSAGES.GENERIC_ERROR);
         }
-    };
+    }, [loadEntries]);
 
-    const getCategories = () => {
+    const handleRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await loadBudgetEntries();
+        setRefreshing(false);
+    }, [loadBudgetEntries]);
+
+    const getCategories = useCallback(() => {
         const isFreelancer = user?.professionalPath === PROFESSIONAL_PATHS.FREELANCER;
-        if (entryType === 'INCOME') {
+        if (values.type === 'INCOME') {
             return isFreelancer ? BUDGET_CATEGORIES.FREELANCER_INCOME : BUDGET_CATEGORIES.ENTREPRENEUR_INCOME;
         } else {
             return isFreelancer ? BUDGET_CATEGORIES.FREELANCER_EXPENSE : BUDGET_CATEGORIES.ENTREPRENEUR_EXPENSE;
         }
-    };
+    }, [user?.professionalPath, values.type]);
 
-    const handleAddEntry = async () => {
-        if (!category || !amount) {
-            Alert.alert('Error', 'Please fill in all required fields');
-            return;
-        }
+    const handleAddEntry = useCallback(async () => {
+        const isValid = validateForm();
+        if (!isValid) return;
 
         try {
             const entry = {
-                type: entryType,
-                category,
-                amount: parseFloat(amount),
-                description,
-                entryDate: entryDate.toISOString(),
+                type: values.type,
+                category: values.category,
+                amount: parseFloat(values.amount),
+                description: values.description,
+                entryDate: values.entryDate.toISOString(),
             };
 
-            await budgetService.createBudgetEntry(entry);
+            await createEntry(entry);
             await loadBudgetEntries();
+            showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_ADDED);
             resetForm();
             setModalVisible(false);
         } catch (error) {
-            Alert.alert('Error', 'Failed to add entry');
+            showErrorAlert('Error', ERROR_MESSAGES.BUDGET_ENTRY_FAILED);
         }
-    };
+    }, [values, validateForm, createEntry, loadBudgetEntries, resetForm]);
 
-    const resetForm = () => {
-        setEntryType('INCOME');
-        setCategory('');
-        setAmount('');
-        setDescription('');
-        setEntryDate(new Date());
-    };
+    const handleDeleteEntry = useCallback(async (id) => {
+        try {
+            await deleteEntry(id);
+            await loadBudgetEntries();
+            showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_DELETED);
+        } catch (error) {
+            showErrorAlert('Error', ERROR_MESSAGES.GENERIC_ERROR);
+        }
+    }, [deleteEntry, loadBudgetEntries]);
 
-    const calculateTotals = () => {
+    const handleDateChange = useCallback((event, selectedDate) => {
+        const currentDate = selectedDate || values.entryDate;
+        setShowDatePicker(Platform.OS === 'ios');
+        setValues(prev => ({ ...prev, entryDate: currentDate }));
+    }, [values.entryDate, setValues]);
+
+    const totals = useMemo(() => {
         const income = entries
             .filter(e => e.type === 'INCOME')
             .reduce((sum, e) => sum + e.amount, 0);
@@ -96,79 +130,82 @@ const BudgetScreen = () => {
             .filter(e => e.type === 'EXPENSE')
             .reduce((sum, e) => sum + e.amount, 0);
         return { income, expenses, balance: income - expenses };
-    };
+    }, [entries]);
 
-    const handleDateChange = (event, selectedDate) => {
-        const currentDate = selectedDate || entryDate;
-        setShowDatePicker(Platform.OS === 'ios');
-        setEntryDate(currentDate);
-    };
-
-    const totals = calculateTotals();
+    const renderEntry = useCallback(({ item }) => (
+        <Card style={styles.entryCard}>
+            <View style={styles.entryHeader}>
+                <View style={styles.entryInfo}>
+                    <Text style={styles.entryCategory}>{item.category}</Text>
+                    {item.description && (
+                        <Text style={styles.entryDescription}>{item.description}</Text>
+                    )}
+                    <Text style={styles.entryDate}>
+                        {format(new Date(item.entryDate), 'MMM d, yyyy')}
+                    </Text>
+                </View>
+                <Text style={[
+                    styles.entryAmount,
+                    item.type === 'INCOME' ? styles.incomeAmount : styles.expenseAmount
+                ]}>
+                    {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
+                </Text>
+            </View>
+        </Card>
+    ), []);
 
     return (
         <Provider>
             <View style={styles.container}>
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            tintColor={colors.primary}
+                        />
+                    }
+                >
                     {/* Summary Cards */}
                     <View style={styles.summaryContainer}>
                         <Card style={[styles.summaryCard, styles.incomeCard]}>
-                            <Card.Content>
-                                <Text style={styles.summaryLabel}>Income</Text>
-                                <Text style={styles.summaryAmount}>€{totals.income.toFixed(2)}</Text>
-                            </Card.Content>
+                            <Text style={styles.summaryLabel}>Income</Text>
+                            <Text style={styles.summaryAmount}>
+                                {formatCurrency(totals.income)}
+                            </Text>
                         </Card>
 
                         <Card style={[styles.summaryCard, styles.expenseCard]}>
-                            <Card.Content>
-                                <Text style={styles.summaryLabel}>Expenses</Text>
-                                <Text style={styles.summaryAmount}>€{totals.expenses.toFixed(2)}</Text>
-                            </Card.Content>
+                            <Text style={styles.summaryLabel}>Expenses</Text>
+                            <Text style={styles.summaryAmount}>
+                                {formatCurrency(totals.expenses)}
+                            </Text>
                         </Card>
 
                         <Card style={[styles.summaryCard, styles.balanceCard]}>
-                            <Card.Content>
-                                <Text style={styles.summaryLabel}>Balance</Text>
-                                <Text style={[
-                                    styles.summaryAmount,
-                                    totals.balance >= 0 ? styles.positiveBalance : styles.negativeBalance
-                                ]}>
-                                    €{totals.balance.toFixed(2)}
-                                </Text>
-                            </Card.Content>
+                            <Text style={styles.summaryLabel}>Balance</Text>
+                            <Text style={[
+                                styles.summaryAmount,
+                                totals.balance >= 0 ? styles.positiveBalance : styles.negativeBalance
+                            ]}>
+                                {formatCurrency(totals.balance)}
+                            </Text>
                         </Card>
                     </View>
 
                     {/* Entries List */}
                     <View style={styles.entriesSection}>
                         <Text style={styles.sectionTitle}>Recent Transactions</Text>
-                        {entries.length === 0 ? (
-                            <Text style={styles.emptyText}>No entries yet. Add your first transaction!</Text>
-                        ) : (
-                            entries.map((entry) => (
-                                <Card key={entry._id} style={styles.entryCard}>
-                                    <Card.Content>
-                                        <View style={styles.entryHeader}>
-                                            <View style={styles.entryInfo}>
-                                                <Text style={styles.entryCategory}>{entry.category}</Text>
-                                                {entry.description && (
-                                                    <Text style={styles.entryDescription}>{entry.description}</Text>
-                                                )}
-                                                <Text style={styles.entryDate}>
-                                                    {format(new Date(entry.entryDate), 'MMM d, yyyy')}
-                                                </Text>
-                                            </View>
-                                            <Text style={[
-                                                styles.entryAmount,
-                                                entry.type === 'INCOME' ? styles.incomeAmount : styles.expenseAmount
-                                            ]}>
-                                                {entry.type === 'INCOME' ? '+' : '-'}€{entry.amount.toFixed(2)}
-                                            </Text>
-                                        </View>
-                                    </Card.Content>
-                                </Card>
-                            ))
-                        )}
+                        <List
+                            data={entries}
+                            renderItem={renderEntry}
+                            keyExtractor={(item) => item._id}
+                            emptyIcon="cash-off"
+                            emptyTitle="No transactions yet"
+                            emptyMessage="Add your first income or expense!"
+                            loading={loading}
+                        />
                     </View>
                 </ScrollView>
 
@@ -192,7 +229,10 @@ const BudgetScreen = () => {
                         <ScrollView>
                             <Text style={styles.modalTitle}>Add Transaction</Text>
 
-                            <RadioButton.Group onValueChange={setEntryType} value={entryType}>
+                            <RadioButton.Group
+                                onValueChange={handleChange('type')}
+                                value={values.type}
+                            >
                                 <View style={styles.radioGroup}>
                                     <RadioButton.Item label="Income" value="INCOME" />
                                     <RadioButton.Item label="Expense" value="EXPENSE" />
@@ -201,44 +241,41 @@ const BudgetScreen = () => {
 
                             <TextInput
                                 label="Amount"
-                                value={amount}
-                                onChangeText={setAmount}
+                                value={values.amount}
+                                onChangeText={handleChange('amount')}
                                 keyboardType="decimal-pad"
                                 mode="outlined"
                                 style={styles.input}
                                 left={<TextInput.Affix text="€" />}
+                                error={!!errors.amount}
                             />
+                            {errors.amount && (
+                                <Text style={styles.errorText}>{errors.amount}</Text>
+                            )}
 
                             <TouchableOpacity
                                 style={styles.categorySelector}
                                 onPress={() => {
                                     const categories = getCategories();
-                                    Alert.alert(
-                                        'Select Category',
-                                        '',
-                                        [
-                                            ...categories.map(cat => ({
-                                                text: cat,
-                                                onPress: () => setCategory(cat),
-                                            })),
-                                            { text: 'Cancel', style: 'cancel' }
-                                        ]
-                                    );
+                                    // Show category picker
                                 }}
                             >
                                 <Text style={[
                                     styles.categorySelectorText,
-                                    !category && styles.placeholderText
+                                    !values.category && styles.placeholderText
                                 ]}>
-                                    {category || 'Select Category *'}
+                                    {values.category || 'Select Category *'}
                                 </Text>
                                 <Icon name="chevron-down" size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
+                            {errors.category && (
+                                <Text style={styles.errorText}>{errors.category}</Text>
+                            )}
 
                             <TextInput
                                 label="Description (optional)"
-                                value={description}
-                                onChangeText={setDescription}
+                                value={values.description}
+                                onChangeText={handleChange('description')}
                                 mode="outlined"
                                 style={styles.input}
                                 multiline
@@ -251,13 +288,13 @@ const BudgetScreen = () => {
                             >
                                 <Icon name="calendar" size={24} color={colors.primary} />
                                 <Text style={styles.dateSelectorText}>
-                                    {format(entryDate, 'MMMM d, yyyy')}
+                                    {format(values.entryDate, 'MMMM d, yyyy')}
                                 </Text>
                             </TouchableOpacity>
 
                             {showDatePicker && (
                                 <DateTimePicker
-                                    value={entryDate}
+                                    value={values.entryDate}
                                     mode="date"
                                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                                     onChange={handleDateChange}
@@ -267,23 +304,21 @@ const BudgetScreen = () => {
 
                             <View style={styles.modalButtons}>
                                 <Button
-                                    mode="outlined"
+                                    title="Cancel"
                                     onPress={() => {
                                         resetForm();
                                         setModalVisible(false);
                                     }}
+                                    variant="outline"
                                     style={styles.modalButton}
-                                >
-                                    Cancel
-                                </Button>
+                                />
                                 <Button
-                                    mode="contained"
+                                    title="Add Entry"
                                     onPress={handleAddEntry}
+                                    loading={creating}
+                                    disabled={creating}
                                     style={styles.modalButton}
-                                    disabled={!category || !amount}
-                                >
-                                    Add Entry
-                                </Button>
+                                />
                             </View>
                         </ScrollView>
                     </Modal>
@@ -293,174 +328,4 @@ const BudgetScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    scrollContent: {
-        paddingBottom: 80,
-    },
-    summaryContainer: {
-        padding: 20,
-    },
-    summaryCard: {
-        marginBottom: 12,
-        borderRadius: 12,
-    },
-    incomeCard: {
-        backgroundColor: '#E0F2FE',
-    },
-    expenseCard: {
-        backgroundColor: '#FEE2E2',
-    },
-    balanceCard: {
-        backgroundColor: 'white',
-    },
-    summaryLabel: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-        marginBottom: 4,
-    },
-    summaryAmount: {
-        fontSize: 24,
-        fontFamily: 'Poppins-Bold',
-        color: colors.text,
-    },
-    positiveBalance: {
-        color: colors.success,
-    },
-    negativeBalance: {
-        color: colors.error,
-    },
-    entriesSection: {
-        paddingHorizontal: 20,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontFamily: 'Poppins-SemiBold',
-        color: colors.text,
-        marginBottom: 16,
-    },
-    emptyText: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginTop: 40,
-    },
-    entryCard: {
-        marginBottom: 12,
-        borderRadius: 12,
-    },
-    entryHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    entryInfo: {
-        flex: 1,
-    },
-    entryCategory: {
-        fontSize: 16,
-        fontFamily: 'Poppins-SemiBold',
-        color: colors.text,
-        marginBottom: 2,
-    },
-    entryDescription: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-        marginBottom: 2,
-    },
-    entryDate: {
-        fontSize: 12,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-    },
-    entryAmount: {
-        fontSize: 18,
-        fontFamily: 'Poppins-Bold',
-    },
-    incomeAmount: {
-        color: colors.success,
-    },
-    expenseAmount: {
-        color: colors.error,
-    },
-    fab: {
-        position: 'absolute',
-        margin: 16,
-        right: 0,
-        bottom: 0,
-        backgroundColor: colors.primary,
-    },
-    modal: {
-        backgroundColor: 'white',
-        padding: 20,
-        margin: 20,
-        borderRadius: 12,
-        maxHeight: '80%',
-    },
-    modalTitle: {
-        fontSize: 24,
-        fontFamily: 'Poppins-Bold',
-        color: colors.text,
-        marginBottom: 20,
-    },
-    radioGroup: {
-        flexDirection: 'row',
-        marginBottom: 20,
-    },
-    input: {
-        marginBottom: 16,
-        backgroundColor: 'white',
-    },
-    categorySelector: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 4,
-        padding: 16,
-        marginBottom: 16,
-        backgroundColor: 'white',
-    },
-    categorySelectorText: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
-        color: colors.text,
-    },
-    placeholderText: {
-        color: colors.textSecondary,
-    },
-    dateSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 4,
-        marginBottom: 20,
-        backgroundColor: 'white',
-    },
-    dateSelectorText: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
-        color: colors.text,
-        marginLeft: 12,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 10,
-    },
-    modalButton: {
-        flex: 1,
-        marginHorizontal: 4,
-    },
-});
-
-export default BudgetScreen;
+export default React.memo(BudgetScreen);

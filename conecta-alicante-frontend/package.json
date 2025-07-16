@@ -1,6 +1,6 @@
 {
   "name": "conecta-alicante-frontend",
-  "main": "index.js",
+  "main": "src/components/ui/index.js",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",

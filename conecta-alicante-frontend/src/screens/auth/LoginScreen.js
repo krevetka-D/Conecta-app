@@ -1,47 +1,84 @@
-import React, { useState } from 'react';
+// src/screens/auth/LoginScreen.js
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Alert,
 } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
-import { useAuth } from '../../store/AuthContext';
+import { TextInput } from 'react-native-paper';
+
+import { Button } from '../../components/ui/Button';
+import { useAuth } from '../../store/contexts/AuthContext';
+import { useForm } from '../../hooks/useForm';
+import { validateEmail, validatePassword } from '../../utils/validation';
+import { showErrorAlert } from '../../utils/alerts';
+import { styles } from '../../styles/screens/auth/LoginScreenStyles';
 import { colors } from '../../constants/theme';
+import { SCREEN_NAMES } from '../../constants/routes';
 
 const LoginScreen = ({ navigation }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
     const { login } = useAuth();
 
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
+    const { values, errors, handleChange, handleBlur, validateForm } = useForm({
+        initialValues: {
+            email: '',
+            password: '',
+        },
+        validationRules: {
+            email: (value) => {
+                if (!value) return 'Email is required';
+                if (!validateEmail(value)) return 'Invalid email format';
+                return null;
+            },
+            password: (value) => {
+                if (!value) return 'Password is required';
+                if (!validatePassword(value)) return 'Password must be at least 6 characters';
+                return null;
+            },
+        },
+    });
+
+    const togglePasswordVisibility = useCallback(() => {
+        setShowPassword(prev => !prev);
+    }, []);
+
+    const handleLogin = useCallback(async () => {
+        const isValid = validateForm();
+        if (!isValid) return;
 
         setLoading(true);
         try {
-            await login(email, password);
+            await login(values.email, values.password);
         } catch (error) {
-            Alert.alert('Login Failed', error.message);
+            showErrorAlert('Login Failed', error.message);
         } finally {
             setLoading(false);
         }
-    };
+    }, [values, validateForm, login]);
+
+    const navigateToRegister = useCallback(() => {
+        navigation.navigate(SCREEN_NAMES.REGISTER);
+    }, [navigation]);
+
+    const inputTheme = useMemo(() => ({
+        colors: { primary: colors.primary }
+    }), []);
 
     return (
         <KeyboardAvoidingView
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.header}>
                     <Text style={styles.title}>Welcome Back!</Text>
                     <Text style={styles.subtitle}>Sign in to continue</Text>
@@ -50,45 +87,61 @@ const LoginScreen = ({ navigation }) => {
                 <View style={styles.form}>
                     <TextInput
                         label="Email"
-                        value={email}
-                        onChangeText={setEmail}
+                        value={values.email}
+                        onChangeText={handleChange('email')}
+                        onBlur={handleBlur('email')}
                         mode="outlined"
                         keyboardType="email-address"
                         autoCapitalize="none"
+                        autoComplete="email"
+                        textContentType="emailAddress"
                         style={styles.input}
-                        theme={{ colors: { primary: colors.primary } }}
+                        theme={inputTheme}
+                        error={!!errors.email}
+                        disabled={loading}
                     />
+                    {errors.email && (
+                        <Text style={styles.errorText}>{errors.email}</Text>
+                    )}
 
                     <TextInput
                         label="Password"
-                        value={password}
-                        onChangeText={setPassword}
+                        value={values.password}
+                        onChangeText={handleChange('password')}
+                        onBlur={handleBlur('password')}
                         mode="outlined"
                         secureTextEntry={!showPassword}
+                        autoComplete="password"
+                        textContentType="password"
                         style={styles.input}
-                        theme={{ colors: { primary: colors.primary } }}
+                        theme={inputTheme}
+                        error={!!errors.password}
+                        disabled={loading}
                         right={
                             <TextInput.Icon
                                 icon={showPassword ? 'eye-off' : 'eye'}
-                                onPress={() => setShowPassword(!showPassword)}
+                                onPress={togglePasswordVisibility}
+                                disabled={loading}
                             />
                         }
                     />
+                    {errors.password && (
+                        <Text style={styles.errorText}>{errors.password}</Text>
+                    )}
 
                     <Button
-                        mode="contained"
+                        title="Sign In"
                         onPress={handleLogin}
                         loading={loading}
                         disabled={loading}
                         style={styles.button}
-                        contentStyle={styles.buttonContent}
-                    >
-                        Sign In
-                    </Button>
+                        fullWidth
+                    />
 
                     <TouchableOpacity
-                        onPress={() => navigation.navigate('Register')}
+                        onPress={navigateToRegister}
                         style={styles.linkContainer}
+                        disabled={loading}
                     >
                         <Text style={styles.linkText}>
                             Don't have an account? <Text style={styles.linkBold}>Sign Up</Text>
@@ -100,57 +153,4 @@ const LoginScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 30,
-    },
-    header: {
-        marginBottom: 40,
-    },
-    title: {
-        fontSize: 28,
-        fontFamily: 'Poppins-Bold',
-        color: colors.text,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-    },
-    form: {
-        width: '100%',
-    },
-    input: {
-        marginBottom: 16,
-        backgroundColor: 'white',
-    },
-    button: {
-        marginTop: 8,
-        marginBottom: 20,
-        borderRadius: 25,
-    },
-    buttonContent: {
-        paddingVertical: 8,
-    },
-    linkContainer: {
-        alignItems: 'center',
-    },
-    linkText: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-    },
-    linkBold: {
-        fontFamily: 'Poppins-SemiBold',
-        color: colors.primary,
-    },
-});
-
-export default LoginScreen;
+export default React.memo(LoginScreen);

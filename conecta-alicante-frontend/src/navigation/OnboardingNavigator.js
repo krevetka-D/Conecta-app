@@ -1,7 +1,11 @@
+// src/navigation/OnboardingNavigator.js
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import PathSelectionScreen from '../screens/onboarding/PathSelectionScreen';
 import PrioritySelectionScreen from '../screens/onboarding/PrioritySelectionScreen';
+import { SCREEN_NAMES } from '../constants/routes';
+import { SCREEN_TRANSITION_CONFIG } from '../constants/animations';
+import { colors } from '../constants/theme';
 
 const Stack = createStackNavigator();
 
@@ -10,24 +14,27 @@ const OnboardingNavigator = () => {
         <Stack.Navigator
             screenOptions={{
                 headerShown: false,
-                cardStyleInterpolator: ({ current, layouts }) => {
-                    return {
-                        cardStyle: {
-                            transform: [
-                                {
-                                    translateX: current.progress.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: [layouts.screen.width, 0],
-                                    }),
-                                },
-                            ],
-                        },
-                    };
+                ...SCREEN_TRANSITION_CONFIG,
+                cardStyle: {
+                    backgroundColor: colors.background,
                 },
             }}
+            initialRouteName={SCREEN_NAMES.PATH_SELECTION}
         >
-            <Stack.Screen name="PathSelection" component={PathSelectionScreen} />
-            <Stack.Screen name="PrioritySelection" component={PrioritySelectionScreen} />
+            <Stack.Screen
+                name={SCREEN_NAMES.PATH_SELECTION}
+                component={PathSelectionScreen}
+                options={{
+                    gestureEnabled: false, // Prevent going back
+                }}
+            />
+            <Stack.Screen
+                name={SCREEN_NAMES.PRIORITY_SELECTION}
+                component={PrioritySelectionScreen}
+                options={{
+                    gestureEnabled: true,
+                }}
+            />
         </Stack.Navigator>
     );
 };

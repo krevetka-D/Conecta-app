@@ -1,40 +1,37 @@
+// src/components/common/EmptyState.js
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors } from '../../constants/theme';
+import { styles } from '../../styles/components/common/EmptyStateStyles';
 
-const EmptyState = ({ icon, title, message }) => {
+const EmptyState = ({
+                        icon = 'inbox-outline',
+                        title = 'No data available',
+                        message = 'There is nothing to display at the moment.',
+                        iconSize = 64,
+                        iconColor,
+                        action,
+                        style,
+                        titleStyle,
+                        messageStyle,
+                    }) => {
     return (
-        <View style={styles.container}>
-            <Icon name={icon} size={64} color={colors.textSecondary} />
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.message}>{message}</Text>
+        <View style={[styles.container, style]}>
+            <Icon
+                name={icon}
+                size={iconSize}
+                color={iconColor || styles.icon.color}
+                style={styles.icon}
+            />
+            <Text style={[styles.title, titleStyle]}>{title}</Text>
+            <Text style={[styles.message, messageStyle]}>{message}</Text>
+            {action && (
+                <View style={styles.actionContainer}>
+                    {action}
+                </View>
+            )}
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 40,
-    },
-    title: {
-        fontSize: 20,
-        fontFamily: 'Poppins-SemiBold',
-        color: colors.text,
-        marginTop: 16,
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    message: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-        textAlign: 'center',
-        lineHeight: 24,
-    },
-});
 
 export default EmptyState;

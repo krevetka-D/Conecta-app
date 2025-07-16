@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Card, Checkbox, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useAuth } from '../../store/AuthContext';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
 import { CHECKLIST_ITEMS } from '../../constants/config';
 import checklistService from '../../services/checklistService';
