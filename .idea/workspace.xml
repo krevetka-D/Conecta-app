@@ -5,51 +5,34 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f9d4abe1-c459-42a0-8d6a-608c8b9492d2" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/App.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/babel.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/components/common/EmptyState.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/components/common/LoadingSpinner.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/constants/config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/constants/theme.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/navigation/AuthNavigator.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/navigation/MainNavigator.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/navigation/OnboardingNavigator.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/navigation/RootNavigator.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/LoadingScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/auth/LoginScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/auth/RegisterScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/auth/WelcomeScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/budget/BudgetScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/checklist/ChecklistScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/main/DashboardScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/onboarding/PathSelectionScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/screens/onboarding/PrioritySelectionScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/api.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/authService.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/budgetService.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/checklistService.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/services/contentService.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/store/AuthContext.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/utils/storage.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conecta-alicante-frontend/src/utils/validation.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/.env" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/App.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/app.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/fonts/SpaceMono-Regular.ttf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/adaptive-icon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/favicon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/icon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/partial-react-logo.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/react-logo.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/react-logo@2x.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/react-logo@3x.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/assets/images/splash.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/babel.config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/api/api.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/app/slices/authSlice.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/app/slices/budgetSlice.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/app/slices/checklistSlice.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/app/store.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/components/budget/BudgetItem.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/components/budget/BudgetSummary.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/components/common/AppButton.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/components/common/AppTextInput.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/components/common/LoadingSpinner.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/components/home/ModuleCard.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/components/home/PinnedItem.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/constants/routes.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/constants/theme.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/hooks/useAuth.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/navigation/AppNavigator.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/navigation/AuthStack.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/navigation/MainTabs.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Auth/LoginScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Auth/OnboardingScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Auth/RegisterScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Main/BudgetScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Main/ChecklistScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Main/GuidesScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Main/HubScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/screens/Main/ProfileScreen.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/src/utils/storage.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend-new/tsconfig.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,6 +41,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/conecta-alicante-frontend/src/screens/main/DashboardScreen.js" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
@@ -99,6 +85,7 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/conecta-alicante-frontend/src" />
       <recent name="$PROJECT_DIR$/frontend-new" />
       <recent name="$PROJECT_DIR$/frontend" />
       <recent name="$PROJECT_DIR$/frontend/Conecta_app" />
@@ -121,7 +108,7 @@
       <updated>1752478350390</updated>
       <workItem from="1752478351465" duration="686000" />
       <workItem from="1752479132614" duration="45022000" />
-      <workItem from="1752610897414" duration="13096000" />
+      <workItem from="1752610897414" duration="16439000" />
     </task>
     <servers />
   </component>
