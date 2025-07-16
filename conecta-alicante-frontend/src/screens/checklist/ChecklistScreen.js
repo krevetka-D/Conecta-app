@@ -59,51 +59,80 @@ const ChecklistScreen = ({ navigation }) => {
 
     return (
         <ScrollView style={styles.container}>
-            {/* Profile Header */}
-            <View style={styles.header}>
-                <Avatar.Text
-                    size={80}
-                    label={user?.name?.charAt(0).toUpperCase() || 'U'}
-                    style={styles.avatar}
+            {/* Progress Section */}
+            <View style={styles.progressSection}>
+                <Text style={styles.progressTitle}>Your Progress</Text>
+                <Text style={styles.progressText}>
+                    {completedCount} of {items.length} steps completed
+                </Text>
+                <ProgressBar
+                    progress={progress}
+                    color={colors.primary}
+                    style={styles.progressBar}
                 />
-                <Text style={styles.name}>{user?.name}</Text>
-                <Text style={styles.email}>{user?.email}</Text>
-                <View style={styles.pathBadge}>
-                    <Icon
-                        name={user?.professionalPath === 'FREELANCER' ? 'laptop' : 'rocket-launch'}
-                        size={16}
-                        color={colors.primary}
-                    />
-                    <Text style={styles.pathText}>
-                        {user?.professionalPath === 'FREELANCER' ? 'Freelancer' : 'Entrepreneur'}
-                    </Text>
-                </View>
             </View>
 
-            {/* Menu Items */}
-            <Card style={styles.menuCard}>
-                {menuItems.map((item, index) => (
-                    <React.Fragment key={item.title}>
-                        <List.Item
-                            title={item.title}
-                            left={() => <List.Icon icon={item.icon} color={colors.primary} />}
-                            right={() => <List.Icon icon="chevron-right" />}
-                            onPress={item.onPress}
-                            titleStyle={styles.menuItemTitle}
-                        />
-                        {index < menuItems.length - 1 && <Divider />}
-                    </React.Fragment>
-                ))}
-            </Card>
+            {/* Checklist Items */}
+            <View style={styles.checklistSection}>
+                {items.map((item) => {
+                    const checklistItem = checklistData.find(d => d.itemKey === item.key);
+                    const isCompleted = checklistItem?.isCompleted || false;
 
-            {/* Logout Button */}
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Icon name="logout" size={20} color={colors.error} />
-                <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
+                    return (
+                        <Card key={item.key} style={[
+                            styles.checklistCard,
+                            isCompleted && styles.completedCard
+                        ]}>
+                            <TouchableOpacity
+                                onPress={() => handleToggle(item.key, isCompleted)}
+                                style={styles.cardContent}
+                            >
+                                <Checkbox
+                                    status={isCompleted ? 'checked' : 'unchecked'}
+                                    color={colors.primary}
+                                />
+                                <View style={styles.cardTextContainer}>
+                                    <Text style={[
+                                        styles.cardTitle,
+                                        isCompleted && styles.completedText
+                                    ]}>
+                                        {item.title}
+                                    </Text>
+                                    <Text style={styles.cardDescription}>
+                                        {item.description}
+                                    </Text>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        // Navigate to relevant guide
+                                        navigation.navigate('Resources');
+                                    }}
+                                    style={styles.infoButton}
+                                >
+                                    <Icon name="information-outline" size={24} color={colors.primary} />
+                                </TouchableOpacity>
+                            </TouchableOpacity>
+                        </Card>
+                    );
+                })}
+            </View>
 
-            {/* Version Info */}
-            <Text style={styles.versionText}>Version 1.0.0</Text>
+            {/* Tips Section */}
+            <View style={styles.tipsSection}>
+                <Card style={styles.tipCard}>
+                    <Card.Content>
+                        <View style={styles.tipHeader}>
+                            <Icon name="lightbulb-outline" size={24} color={colors.warning} />
+                            <Text style={styles.tipTitle}>Pro Tip</Text>
+                        </View>
+                        <Text style={styles.tipText}>
+                            {user?.professionalPath === 'FREELANCER'
+                                ? "Start with obtaining your NIE - it's required for all other steps!"
+                                : "Consider consulting with a gestor for company formation - they can handle most of the paperwork."}
+                        </Text>
+                    </Card.Content>
+                </Card>
+            </View>
         </ScrollView>
     );
 };
@@ -113,70 +142,90 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    header: {
-        alignItems: 'center',
-        paddingVertical: 30,
+    progressSection: {
+        padding: 20,
         backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
     },
-    avatar: {
-        backgroundColor: colors.primary,
-        marginBottom: 16,
-    },
-    name: {
+    progressTitle: {
         fontSize: 24,
         fontFamily: 'Poppins-Bold',
         color: colors.text,
-        marginBottom: 4,
+        marginBottom: 8,
     },
-    email: {
+    progressText: {
         fontSize: 16,
         fontFamily: 'Poppins-Regular',
         color: colors.textSecondary,
+        marginBottom: 16,
+    },
+    progressBar: {
+        height: 8,
+        borderRadius: 4,
+    },
+    checklistSection: {
+        padding: 20,
+    },
+    checklistCard: {
         marginBottom: 12,
-    },
-    pathBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.background,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    pathText: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
-        color: colors.primary,
-        marginLeft: 6,
-    },
-    menuCard: {
-        margin: 16,
         borderRadius: 12,
     },
-    menuItemTitle: {
-        fontFamily: 'Poppins-Regular',
-        fontSize: 16,
+    completedCard: {
+        opacity: 0.8,
     },
-    logoutButton: {
+    cardContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 20,
-        marginBottom: 10,
-        paddingVertical: 12,
+        padding: 16,
     },
-    logoutText: {
+    cardTextContainer: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    cardTitle: {
         fontSize: 16,
         fontFamily: 'Poppins-SemiBold',
-        color: colors.error,
-        marginLeft: 8,
+        color: colors.text,
+        marginBottom: 4,
     },
-    versionText: {
-        fontSize: 12,
+    completedText: {
+        textDecorationLine: 'line-through',
+        color: colors.textSecondary,
+    },
+    cardDescription: {
+        fontSize: 14,
         fontFamily: 'Poppins-Regular',
         color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 30,
+    },
+    infoButton: {
+        padding: 8,
+    },
+    tipsSection: {
+        padding: 20,
+        paddingTop: 0,
+    },
+    tipCard: {
+        borderRadius: 12,
+        backgroundColor: '#FEF3C7',
+    },
+    tipHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    tipTitle: {
+        fontSize: 16,
+        fontFamily: 'Poppins-SemiBold',
+        color: colors.text,
+        marginLeft: 8,
+    },
+    tipText: {
+        fontSize: 14,
+        fontFamily: 'Poppins-Regular',
+        color: colors.text,
+        lineHeight: 20,
     },
 });
 
-export default ProfileScreen;
+export default ChecklistScreen;

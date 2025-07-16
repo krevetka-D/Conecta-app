@@ -11,12 +11,18 @@ export default function App() {
 
     useEffect(() => {
         async function loadFonts() {
-            await Font.loadAsync({
-                'Poppins-Regular': require('./assets/fonts/Poppins-Regular.ttf'),
-                'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
-                'Poppins-SemiBold': require('./assets/fonts/Poppins-SemiBold.ttf'),
-            });
-            setFontsLoaded(true);
+            try {
+                await Font.loadAsync({
+                    'Poppins-Regular': require('./assets/fonts/Poppins-Regular.ttf'),
+                    'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
+                    'Poppins-SemiBold': require('./assets/fonts/Poppins-SemiBold.ttf'),
+                });
+            } catch (error) {
+                console.warn('Error loading fonts:', error);
+                // Continue without custom fonts
+            } finally {
+                setFontsLoaded(true);
+            }
         }
         loadFonts();
     }, []);
