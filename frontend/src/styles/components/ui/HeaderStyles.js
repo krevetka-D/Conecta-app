@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
         paddingTop: Platform.OS === 'ios' ? 40 : 0,
     },
     title: {
-        fontSize: fonts.sizes.x1,
+        fontSize: fonts.sizes.xl,
         fontFamily: fonts.families.bold,
         color: colors.textInverse,
     },

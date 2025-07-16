@@ -1,5 +1,6 @@
 // src/constants/theme.js
 import { DefaultTheme } from 'react-native-paper';
+import { Platform } from 'react-native';
 
 // Color Palette
 export const colors = {
@@ -68,12 +69,24 @@ export const colors = {
     shadow: '#000000',
 };
 
-// Typography
+// Typography with fallback fonts
 export const fonts = {
     families: {
-        regular: 'Poppins-Regular',
-        semiBold: 'Poppins-SemiBold',
-        bold: 'Poppins-Bold',
+        regular: Platform.select({
+            ios: 'Poppins-Regular, System',
+            android: 'Poppins-Regular, Roboto',
+            default: 'Poppins-Regular, sans-serif'
+        }),
+        semiBold: Platform.select({
+            ios: 'Poppins-SemiBold, System',
+            android: 'Poppins-SemiBold, Roboto',
+            default: 'Poppins-SemiBold, sans-serif'
+        }),
+        bold: Platform.select({
+            ios: 'Poppins-Bold, System',
+            android: 'Poppins-Bold, Roboto',
+            default: 'Poppins-Bold, sans-serif'
+        }),
     },
     sizes: {
         xs: 12,
