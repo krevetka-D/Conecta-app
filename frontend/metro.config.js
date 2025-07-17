@@ -1,11 +1,12 @@
-const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
 
-/**
- * Metro configuration
- * https://facebook.github.io/metro/docs/configuration
- *
- * @type {import('metro-config').MetroConfig}
- */
-const config = {};
+/** @type {import('expo/metro-config').MetroConfig} */
+const config = getDefaultConfig(__dirname, {
+    // Use CSS for styling web builds.
+    isCSSEnabled: true,
+});
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+// Enable `require.context` for Expo Router.
+config.transformer.unstable_allowRequireContext = true;
+
+module.exports = config;

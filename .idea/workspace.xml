@@ -10,16 +10,18 @@
       <change afterPath="$PROJECT_DIR$/backend/controllers/dashboardController.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/routes/configRoutes.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/routes/dashboardRoutes.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/metro.config.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/checklistController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/checklistController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/userController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/userController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/models/ChecklistItem.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/ChecklistItem.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/userRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/userRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/metro.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/metro.config.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/services/api/endpoints.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/api/endpoints.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/constants/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/constants/config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/constants/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/constants/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/onboarding/PathSelectionScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/onboarding/PathSelectionScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/onboarding/PrioritySelectionScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/onboarding/PrioritySelectionScreen.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,7 +97,7 @@
       <updated>1752478350390</updated>
       <workItem from="1752478351465" duration="686000" />
       <workItem from="1752479132614" duration="45022000" />
-      <workItem from="1752610897414" duration="56568000" />
+      <workItem from="1752610897414" duration="59251000" />
     </task>
     <servers />
   </component>

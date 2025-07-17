@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { SCREEN_NAMES } from '../../constants/routes';
-import { PROFESSIONAL_PATHS } from '../../../../backend/config/constants';
+import { PROFESSIONAL_PATHS } from '../../constants/config';
 import { colors } from '../../constants/theme';
 import { styles } from '../../styles/screens/onboarding/PathSelectionScreenStyles';
 
