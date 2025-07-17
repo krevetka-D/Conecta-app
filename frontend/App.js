@@ -4,6 +4,7 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
+import { PaperProvider } from 'react-native-paper'; // Import PaperProvider
 
 import ErrorBoundary from './src/components/common/ErrorBoundary';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -18,9 +19,11 @@ export default function App() {
                 <AppProvider>
                     <AuthProvider>
                         <ThemeProvider>
-                            <StatusBar style="auto" />
-                            {/* RootNavigator is now the final child, ensuring all contexts are ready */}
-                            <RootNavigator />
+                            {/* Wrap the navigator with PaperProvider */}
+                            <PaperProvider>
+                                <StatusBar style="auto" />
+                                <RootNavigator />
+                            </PaperProvider>
                         </ThemeProvider>
                     </AuthProvider>
                 </AppProvider>

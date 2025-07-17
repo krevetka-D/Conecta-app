@@ -1,3 +1,4 @@
+// frontend/src/screens/budget/BudgetScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -5,165 +6,184 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Alert,
     RefreshControl,
     SafeAreaView,
+    Platform,
 } from 'react-native';
-import { Card, Checkbox, ProgressBar } from 'react-native-paper';
+import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors, fonts, spacing, borderRadius, shadows } from '../../constants/theme';
-import checklistService from '../../services/checklistService';
-import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
+import budgetService from '../../services/budgetService';
+import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import EmptyState from '../../components/common/EmptyState';
+import { formatCurrency, formatDate } from '../../utils/formatting';
 
-const ChecklistScreen = ({ navigation }) => {
+const BudgetScreen = ({ navigation }) => {
     const { user } = useAuth();
-    const [checklistData, setChecklistData] = useState([]);
+    const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [updating, setUpdating] = useState({});
+    const [modalVisible, setModalVisible] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+    const [categories, setCategories] = useState({ income: [], expense: [] });
 
-    // Define checklist items based on professional path
-    const CHECKLIST_ITEMS = {
-        FREELANCER: [
-            {
-                key: 'OBTAIN_NIE',
-                title: 'Obtain your NIE',
-                description: 'Get your foreigner identification number',
-                icon: 'card-account-details',
-                infoLink: 'nie-guide'
-            },
-            {
-                key: 'REGISTER_AUTONOMO',
-                title: 'Register as Autónomo',
-                description: 'Complete your self-employment registration',
-                icon: 'briefcase-account',
-                infoLink: 'autonomo-guide'
-            },
-            {
-                key: 'UNDERSTAND_TAXES',
-                title: 'Understand Tax Obligations',
-                description: 'Learn about IVA and IRPF requirements',
-                icon: 'calculator',
-                infoLink: 'taxes-guide'
-            },
-            {
-                key: 'OPEN_BANK_ACCOUNT',
-                title: 'Open Spanish Bank Account',
-                description: 'Set up your business banking',
-                icon: 'bank',
-                infoLink: 'banking-guide'
-            },
-        ],
-        ENTREPRENEUR: [
-            {
-                key: 'OBTAIN_NIE',
-                title: 'Obtain your NIE',
-                description: 'Get your foreigner identification number',
-                icon: 'card-account-details',
-                infoLink: 'nie-guide'
-            },
-            {
-                key: 'FORM_SL_COMPANY',
-                title: 'Form an S.L. Company',
-                description: 'Establish your limited liability company',
-                icon: 'domain',
-                infoLink: 'company-formation-guide'
-            },
-            {
-                key: 'GET_COMPANY_NIF',
-                title: 'Get Company NIF',
-                description: 'Obtain your company tax ID',
-                icon: 'identifier',
-                infoLink: 'company-nif-guide'
-            },
-            {
-                key: 'RESEARCH_FUNDING',
-                title: 'Research Funding Options',
-                description: 'Explore grants and investment opportunities',
-                icon: 'cash-multiple',
-                infoLink: 'funding-guide'
-            },
-        ],
+    // Form state
+    const [formData, setFormData] = useState({
+        type: 'EXPENSE',
+        category: '',
+        amount: '',
+        description: '',
+        entryDate: new Date(),
+    });
+
+    const [formErrors, setFormErrors] = useState({});
+
+    // Load budget categories based on user's professional path
+    useEffect(() => {
+        loadCategories();
+    }, [user?.professionalPath]);
+
+    // Load budget entries on mount
+    useEffect(() => {
+        loadBudgetEntries();
+    }, []);
+
+    const loadCategories = async () => {
+        try {
+            const response = await budgetService.getCategories();
+            setCategories(response);
+        } catch (error) {
+            console.error('Failed to load categories:', error);
+            // Fallback to default categories
+            const defaultCategories = user?.professionalPath === 'FREELANCER'
+                ? {
+                    income: ['Project-Based Income', 'Recurring Clients', 'Passive Income', 'Other Income'],
+                    expense: ['Cuota de Autónomo', 'Office/Coworking', 'Software & Tools', 'Professional Services', 'Marketing', 'Travel & Transport', 'Other Expenses']
+                }
+                : {
+                    income: ['Product Sales', 'Service Revenue', 'Investor Funding', 'Grants', 'Other Income'],
+                    expense: ['Salaries & Payroll', 'Office Rent', 'Legal & Accounting', 'Marketing & Sales', 'R&D', 'Operations', 'Other Expenses']
+                };
+            setCategories(defaultCategories);
+        }
     };
 
-    const loadChecklist = useCallback(async () => {
+    const loadBudgetEntries = useCallback(async () => {
         try {
-            const data = await checklistService.getChecklist();
-            setChecklistData(data || []);
+            const data = await budgetService.getBudgetEntries();
+            setEntries(data || []);
         } catch (error) {
-            console.error('Failed to load checklist:', error);
-            showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_LOAD_FAILED);
+            console.error('Failed to load budget entries:', error);
+            if (!refreshing) {
+                showErrorAlert('Error', ERROR_MESSAGES.BUDGET_LOAD_FAILED);
+            }
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
-    }, []);
+    }, [refreshing]);
 
-    useEffect(() => {
-        loadChecklist();
-    }, [loadChecklist]);
-
-    const handleRefresh = useCallback(async () => {
+    const handleRefresh = useCallback(() => {
         setRefreshing(true);
-        await loadChecklist();
-        setRefreshing(false);
-    }, [loadChecklist]);
+        loadBudgetEntries();
+    }, [loadBudgetEntries]);
 
-    const handleToggle = useCallback(async (itemKey, currentStatus) => {
-        setUpdating(prev => ({ ...prev, [itemKey]: true }));
+    const validateForm = () => {
+        const errors = {};
+
+        if (!formData.category) {
+            errors.category = 'Please select a category';
+        }
+
+        if (!formData.amount || parseFloat(formData.amount) <= 0) {
+            errors.amount = 'Please enter a valid amount';
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
 
         try {
-            await checklistService.updateChecklistItem(itemKey, !currentStatus);
-            await loadChecklist();
+            const entryData = {
+                ...formData,
+                amount: parseFloat(formData.amount),
+            };
 
-            if (!currentStatus) {
-                showSuccessAlert('Great job!', SUCCESS_MESSAGES.TASK_COMPLETED);
-            }
+            await budgetService.createBudgetEntry(entryData);
+            showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_ADDED);
+            setModalVisible(false);
+            resetForm();
+            loadBudgetEntries();
         } catch (error) {
-            console.error('Failed to update checklist item:', error);
-            showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_UPDATE_FAILED);
-        } finally {
-            setUpdating(prev => ({ ...prev, [itemKey]: false }));
+            console.error('Failed to add budget entry:', error);
+            showErrorAlert('Error', ERROR_MESSAGES.BUDGET_ENTRY_FAILED);
         }
-    }, [loadChecklist]);
+    };
 
-    const handleInfoPress = useCallback((infoLink) => {
-        Alert.alert(
-            'Guide Coming Soon',
-            'Detailed guides are being prepared. Check back soon!',
-            [
-                { text: 'OK' }
-            ]
+    const handleDelete = async (entryId) => {
+        showConfirmAlert(
+            'Delete Entry',
+            'Are you sure you want to delete this entry?',
+            async () => {
+                try {
+                    await budgetService.deleteBudgetEntry(entryId);
+                    showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_DELETED);
+                    loadBudgetEntries();
+                } catch (error) {
+                    console.error('Failed to delete entry:', error);
+                    showErrorAlert('Error', ERROR_MESSAGES.BUDGET_DELETE_FAILED);
+                }
+            }
         );
-        // In future, navigate to guide:
-        // navigation.navigate('GuideDetail', { slug: infoLink });
-    }, []);
+    };
 
-    const getChecklistInfo = () => {
-        const items = user?.professionalPath === 'FREELANCER'
-            ? CHECKLIST_ITEMS.FREELANCER
-            : CHECKLIST_ITEMS.ENTREPRENEUR;
+    const resetForm = () => {
+        setFormData({
+            type: 'EXPENSE',
+            category: '',
+            amount: '',
+            description: '',
+            entryDate: new Date(),
+        });
+        setFormErrors({});
+        setSelectedCategory('');
+    };
 
-        const completedCount = checklistData.filter(item => item.isCompleted).length;
-        const progress = items.length > 0 ? completedCount / items.length : 0;
+    const handleDateChange = (event, selectedDate) => {
+        setShowDatePicker(false);
+        if (selectedDate) {
+            setFormData({ ...formData, entryDate: selectedDate });
+        }
+    };
 
-        return { items, completedCount, progress };
+    const calculateSummary = () => {
+        const income = entries
+            .filter(entry => entry.type === 'INCOME')
+            .reduce((sum, entry) => sum + entry.amount, 0);
+
+        const expenses = entries
+            .filter(entry => entry.type === 'EXPENSE')
+            .reduce((sum, entry) => sum + entry.amount, 0);
+
+        const balance = income - expenses;
+
+        return { income, expenses, balance };
     };
 
     if (loading) {
-        return <LoadingSpinner fullScreen text="Loading your checklist..." />;
+        return <LoadingSpinner fullScreen text="Loading your budget..." />;
     }
 
-    const { items, completedCount, progress } = getChecklistInfo();
-
-    const getMotivationalMessage = () => {
-        if (progress === 0) return "Let's get started! 🚀";
-        if (progress < 0.5) return "Great progress! Keep going! 💪";
-        if (progress < 1) return "Almost there! You're doing amazing! 🌟";
-        return "All done! You're ready to rock! 🎉";
-    };
+    const { income, expenses, balance } = calculateSummary();
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -179,142 +199,250 @@ const ChecklistScreen = ({ navigation }) => {
                 }
                 showsVerticalScrollIndicator={false}
             >
-                {/* Progress Section */}
-                <View style={styles.progressSection}>
-                    <View style={styles.progressHeader}>
-                        <Text style={styles.progressTitle}>Your Progress</Text>
-                        <Text style={styles.progressPercentage}>
-                            {Math.round(progress * 100)}%
-                        </Text>
-                    </View>
-                    <Text style={styles.progressText}>
-                        {completedCount} of {items.length} steps completed
-                    </Text>
-                    <ProgressBar
-                        progress={progress}
-                        color={colors.primary}
-                        style={styles.progressBar}
-                    />
-                    <Text style={styles.motivationalText}>
-                        {getMotivationalMessage()}
-                    </Text>
-                </View>
-
-                {/* Checklist Items */}
-                <View style={styles.checklistSection}>
-                    {items.map((item, index) => {
-                        const checklistItem = checklistData.find(d => d.itemKey === item.key);
-                        const isCompleted = checklistItem?.isCompleted || false;
-                        const isUpdating = updating[item.key] || false;
-
-                        return (
-                            <Card
-                                key={item.key}
-                                style={[
-                                    styles.checklistCard,
-                                    isCompleted && styles.completedCard,
-                                    index === 0 && styles.firstCard,
-                                    index === items.length - 1 && styles.lastCard,
-                                ]}
-                            >
-                                <TouchableOpacity
-                                    onPress={() => handleToggle(item.key, isCompleted)}
-                                    disabled={isUpdating}
-                                    style={styles.cardTouchable}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.cardContent}>
-                                        <View style={styles.checkboxContainer}>
-                                            {isUpdating ? (
-                                                <View style={styles.loadingCheckbox}>
-                                                    <LoadingSpinner size="small" />
-                                                </View>
-                                            ) : (
-                                                <Checkbox
-                                                    status={isCompleted ? 'checked' : 'unchecked'}
-                                                    color={colors.primary}
-                                                    disabled={isUpdating}
-                                                />
-                                            )}
-                                        </View>
-
-                                        <View style={styles.cardTextContainer}>
-                                            <View style={styles.titleRow}>
-                                                <Icon
-                                                    name={item.icon}
-                                                    size={20}
-                                                    color={isCompleted ? colors.textSecondary : colors.primary}
-                                                    style={styles.itemIcon}
-                                                />
-                                                <Text style={[
-                                                    styles.cardTitle,
-                                                    isCompleted && styles.completedText
-                                                ]}>
-                                                    {item.title}
-                                                </Text>
-                                            </View>
-                                            <Text style={[
-                                                styles.cardDescription,
-                                                isCompleted && styles.completedDescription
-                                            ]}>
-                                                {item.description}
-                                            </Text>
-                                        </View>
-
-                                        <TouchableOpacity
-                                            onPress={() => handleInfoPress(item.infoLink)}
-                                            style={styles.infoButton}
-                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                        >
-                                            <Icon
-                                                name="information-outline"
-                                                size={24}
-                                                color={colors.primary}
-                                            />
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableOpacity>
-                            </Card>
-                        );
-                    })}
-                </View>
-
-                {/* Tips Section */}
-                <View style={styles.tipsSection}>
-                    <Card style={styles.tipCard}>
+                {/* Summary Cards */}
+                <View style={styles.summaryContainer}>
+                    <Card style={[styles.summaryCard, styles.incomeCard]}>
                         <Card.Content>
-                            <View style={styles.tipHeader}>
-                                <Icon name="lightbulb-outline" size={24} color={colors.warning} />
-                                <Text style={styles.tipTitle}>Pro Tip</Text>
-                            </View>
-                            <Text style={styles.tipText}>
-                                {user?.professionalPath === 'FREELANCER'
-                                    ? "Start with obtaining your NIE - it's required for all other steps! The process usually takes 2-4 weeks, so plan ahead."
-                                    : "Consider consulting with a gestor for company formation - they can handle most of the paperwork and save you time."}
+                            <Text style={styles.summaryLabel}>Income</Text>
+                            <Text style={[styles.summaryAmount, { color: colors.success }]}>
+                                {formatCurrency(income)}
                             </Text>
                         </Card.Content>
                     </Card>
 
-                    {/* Additional Resources Card */}
-                    <Card style={styles.resourceCard}>
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate('Resources')}
-                            style={styles.resourceTouchable}
-                        >
-                            <Card.Content style={styles.resourceContent}>
-                                <Icon name="book-open-variant" size={24} color={colors.primary} />
-                                <View style={styles.resourceTextContainer}>
-                                    <Text style={styles.resourceTitle}>Need more help?</Text>
-                                    <Text style={styles.resourceDescription}>
-                                        Explore our guides and service directory
-                                    </Text>
-                                </View>
-                                <Icon name="chevron-right" size={24} color={colors.textSecondary} />
-                            </Card.Content>
-                        </TouchableOpacity>
+                    <Card style={[styles.summaryCard, styles.expenseCard]}>
+                        <Card.Content>
+                            <Text style={styles.summaryLabel}>Expenses</Text>
+                            <Text style={[styles.summaryAmount, { color: colors.error }]}>
+                                {formatCurrency(expenses)}
+                            </Text>
+                        </Card.Content>
+                    </Card>
+
+                    <Card style={[styles.summaryCard, styles.balanceCard]}>
+                        <Card.Content>
+                            <Text style={styles.summaryLabel}>Balance</Text>
+                            <Text style={[
+                                styles.summaryAmount,
+                                balance >= 0 ? styles.positiveBalance : styles.negativeBalance
+                            ]}>
+                                {formatCurrency(balance)}
+                            </Text>
+                        </Card.Content>
                     </Card>
                 </View>
+
+                {/* Entries List */}
+                <View style={styles.entriesSection}>
+                    <Text style={styles.sectionTitle}>Recent Transactions</Text>
+
+                    {entries.length === 0 ? (
+                        <EmptyState
+                            icon="cash-off"
+                            title="No transactions yet"
+                            message="Start tracking your income and expenses by adding your first entry"
+                            action={
+                                <Button
+                                    mode="contained"
+                                    onPress={() => setModalVisible(true)}
+                                    icon="plus"
+                                >
+                                    Add Entry
+                                </Button>
+                            }
+                        />
+                    ) : (
+                        entries.map((entry) => (
+                            <Card key={entry._id} style={styles.entryCard}>
+                                <Card.Content>
+                                    <View style={styles.entryHeader}>
+                                        <View style={styles.entryInfo}>
+                                            <Text style={styles.entryCategory}>{entry.category}</Text>
+                                            {entry.description && (
+                                                <Text style={styles.entryDescription}>{entry.description}</Text>
+                                            )}
+                                            <Text style={styles.entryDate}>
+                                                {formatDate(entry.entryDate)}
+                                            </Text>
+                                        </View>
+                                        <Text style={[
+                                            styles.entryAmount,
+                                            entry.type === 'INCOME' ? styles.incomeAmount : styles.expenseAmount
+                                        ]}>
+                                            {entry.type === 'INCOME' ? '+' : '-'}{formatCurrency(entry.amount)}
+                                        </Text>
+                                    </View>
+                                </Card.Content>
+                                <Card.Actions>
+                                    <Button
+                                        onPress={() => handleDelete(entry._id)}
+                                        textColor={colors.error}
+                                    >
+                                        Delete
+                                    </Button>
+                                </Card.Actions>
+                            </Card>
+                        ))
+                    )}
+                </View>
             </ScrollView>
+
+            {/* Floating Action Button */}
+            <FAB
+                icon="plus"
+                style={styles.fab}
+                onPress={() => setModalVisible(true)}
+            />
+
+            {/* Add Entry Modal */}
+            <Portal>
+                <Modal
+                    visible={modalVisible}
+                    onDismiss={() => {
+                        setModalVisible(false);
+                        resetForm();
+                    }}
+                    contentContainerStyle={styles.modal}
+                >
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        <Text style={styles.modalTitle}>Add New Entry</Text>
+
+                        {/* Type Selection */}
+                        <RadioButton.Group
+                            onValueChange={value => setFormData({ ...formData, type: value })}
+                            value={formData.type}
+                        >
+                            <View style={styles.radioGroup}>
+                                <RadioButton.Item
+                                    label="Income"
+                                    value="INCOME"
+                                    color={colors.success}
+                                />
+                                <RadioButton.Item
+                                    label="Expense"
+                                    value="EXPENSE"
+                                    color={colors.error}
+                                />
+                            </View>
+                        </RadioButton.Group>
+
+                        {/* Category Selection */}
+                        <TouchableOpacity
+                            style={[styles.categorySelector, formErrors.category && { borderColor: colors.error }]}
+                            onPress={() => setShowCategoryPicker(true)}
+                        >
+                            <Text style={[
+                                styles.categorySelectorText,
+                                !formData.category && styles.placeholderText
+                            ]}>
+                                {formData.category || 'Select Category'}
+                            </Text>
+                            <Icon name="chevron-down" size={24} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                        {formErrors.category && (
+                            <Text style={styles.errorText}>{formErrors.category}</Text>
+                        )}
+
+                        {/* Amount Input */}
+                        <TextInput
+                            label="Amount (€)"
+                            value={formData.amount}
+                            onChangeText={text => setFormData({ ...formData, amount: text })}
+                            mode="outlined"
+                            keyboardType="decimal-pad"
+                            style={styles.input}
+                            error={!!formErrors.amount}
+                            theme={{ colors: { primary: colors.primary } }}
+                        />
+                        {formErrors.amount && (
+                            <Text style={styles.errorText}>{formErrors.amount}</Text>
+                        )}
+
+                        {/* Description Input */}
+                        <TextInput
+                            label="Description (Optional)"
+                            value={formData.description}
+                            onChangeText={text => setFormData({ ...formData, description: text })}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={2}
+                            style={styles.input}
+                            theme={{ colors: { primary: colors.primary } }}
+                        />
+
+                        {/* Date Selection */}
+                        <TouchableOpacity
+                            style={styles.dateSelector}
+                            onPress={() => setShowDatePicker(true)}
+                        >
+                            <Icon name="calendar" size={24} color={colors.primary} />
+                            <Text style={styles.dateSelectorText}>
+                                {formatDate(formData.entryDate)}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* Action Buttons */}
+                        <View style={styles.modalButtons}>
+                            <Button
+                                mode="outlined"
+                                onPress={() => {
+                                    setModalVisible(false);
+                                    resetForm();
+                                }}
+                                style={styles.modalButton}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                mode="contained"
+                                onPress={handleSubmit}
+                                style={styles.modalButton}
+                            >
+                                Add Entry
+                            </Button>
+                        </View>
+                    </ScrollView>
+                </Modal>
+            </Portal>
+
+            {/* Date Picker */}
+            {showDatePicker && (
+                <DateTimePicker
+                    value={formData.entryDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                />
+            )}
+
+            {/* Category Picker Modal */}
+            <Portal>
+                <Modal
+                    visible={showCategoryPicker}
+                    onDismiss={() => setShowCategoryPicker(false)}
+                    contentContainerStyle={[styles.modal, { maxHeight: '50%' }]}
+                >
+                    <Text style={styles.modalTitle}>Select Category</Text>
+                    <ScrollView>
+                        {categories[formData.type.toLowerCase()]?.map((category) => (
+                            <TouchableOpacity
+                                key={category}
+                                style={styles.categoryOption}
+                                onPress={() => {
+                                    setFormData({ ...formData, category });
+                                    setShowCategoryPicker(false);
+                                }}
+                            >
+                                <Text style={styles.categoryOptionText}>{category}</Text>
+                                {formData.category === category && (
+                                    <Icon name="check" size={24} color={colors.primary} />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </Modal>
+            </Portal>
         </SafeAreaView>
     );
 };
@@ -329,173 +457,189 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     scrollContent: {
-        paddingBottom: spacing.xxl,
+        paddingBottom: 80, // Space for FAB
     },
-    progressSection: {
-        padding: spacing.lg,
-        backgroundColor: colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        ...shadows.sm,
-    },
-    progressHeader: {
+    summaryContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
+        padding: spacing.md,
+        gap: spacing.sm,
     },
-    progressTitle: {
-        fontSize: fonts.sizes.xxl,
-        fontFamily: fonts.families.bold,
-        color: colors.text,
+    summaryCard: {
+        flex: 1,
+        borderRadius: borderRadius.lg,
+        elevation: 2,
     },
-    progressPercentage: {
-        fontSize: fonts.sizes.xl,
-        fontFamily: fonts.families.bold,
-        color: colors.primary,
+    incomeCard: {
+        backgroundColor: colors.successLight + '20',
     },
-    progressText: {
-        fontSize: fonts.sizes.md,
+    expenseCard: {
+        backgroundColor: colors.errorLight + '20',
+    },
+    balanceCard: {
+        backgroundColor: colors.primaryLight + '20',
+    },
+    summaryLabel: {
+        fontSize: fonts.sizes.sm,
         fontFamily: fonts.families.regular,
         color: colors.textSecondary,
-        marginBottom: spacing.md,
-    },
-    progressBar: {
-        height: 8,
-        borderRadius: borderRadius.sm,
-        backgroundColor: colors.background,
-    },
-    motivationalText: {
-        fontSize: fonts.sizes.sm,
-        fontFamily: fonts.families.semiBold,
-        color: colors.primary,
-        marginTop: spacing.sm,
+        marginBottom: spacing.xs,
         textAlign: 'center',
     },
-    checklistSection: {
-        padding: spacing.lg,
+    summaryAmount: {
+        fontSize: fonts.sizes.lg,
+        fontFamily: fonts.families.bold,
+        textAlign: 'center',
     },
-    checklistCard: {
-        marginBottom: spacing.sm,
-        borderRadius: borderRadius.lg,
-        overflow: 'hidden',
-        ...shadows.sm,
+    positiveBalance: {
+        color: colors.success,
     },
-    firstCard: {
-        marginTop: 0,
+    negativeBalance: {
+        color: colors.error,
     },
-    lastCard: {
-        marginBottom: 0,
-    },
-    completedCard: {
-        opacity: 0.8,
-        backgroundColor: colors.surfaceVariant,
-    },
-    cardTouchable: {
-        width: '100%',
-    },
-    cardContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    entriesSection: {
         padding: spacing.md,
     },
-    checkboxContainer: {
-        marginRight: spacing.sm,
+    sectionTitle: {
+        fontSize: fonts.sizes.lg,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+        marginBottom: spacing.md,
     },
-    loadingCheckbox: {
-        width: 24,
-        height: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
+    entryCard: {
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surface,
+        ...shadows.sm,
     },
-    cardTextContainer: {
-        flex: 1,
-        marginRight: spacing.sm,
-    },
-    titleRow: {
+    entryHeader: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xs / 2,
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
     },
-    itemIcon: {
-        marginRight: spacing.xs,
+    entryInfo: {
+        flex: 1,
+        marginRight: spacing.md,
     },
-    cardTitle: {
+    entryCategory: {
         fontSize: fonts.sizes.md,
         fontFamily: fonts.families.semiBold,
         color: colors.text,
-        flex: 1,
+        marginBottom: spacing.xs / 2,
     },
-    completedText: {
-        textDecorationLine: 'line-through',
-        color: colors.textSecondary,
-    },
-    cardDescription: {
+    entryDescription: {
         fontSize: fonts.sizes.sm,
         fontFamily: fonts.families.regular,
         color: colors.textSecondary,
-        lineHeight: fonts.sizes.sm * fonts.lineHeights.normal,
+        marginBottom: spacing.xs,
     },
-    completedDescription: {
+    entryDate: {
+        fontSize: fonts.sizes.xs,
+        fontFamily: fonts.families.regular,
         color: colors.textTertiary,
     },
-    infoButton: {
-        padding: spacing.xs,
+    entryAmount: {
+        fontSize: fonts.sizes.lg,
+        fontFamily: fonts.families.bold,
     },
-    tipsSection: {
+    incomeAmount: {
+        color: colors.success,
+    },
+    expenseAmount: {
+        color: colors.error,
+    },
+    fab: {
+        position: 'absolute',
+        margin: spacing.md,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.primary,
+    },
+    modal: {
+        backgroundColor: colors.surface,
         padding: spacing.lg,
-        paddingTop: 0,
-    },
-    tipCard: {
+        margin: spacing.lg,
         borderRadius: borderRadius.lg,
-        backgroundColor: '#FEF3C7',
-        marginBottom: spacing.md,
-        ...shadows.sm,
+        maxHeight: '80%',
     },
-    tipHeader: {
+    modalTitle: {
+        fontSize: fonts.sizes.xl,
+        fontFamily: fonts.families.bold,
+        color: colors.text,
+        marginBottom: spacing.lg,
+    },
+    radioGroup: {
+        flexDirection: 'row',
+        marginBottom: spacing.md,
+    },
+    input: {
+        marginBottom: spacing.md,
+        backgroundColor: colors.surface,
+    },
+    errorText: {
+        color: colors.error,
+        fontSize: fonts.sizes.sm,
+        marginTop: -spacing.sm,
+        marginBottom: spacing.sm,
+        marginLeft: spacing.xs,
+    },
+    categorySelector: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.sm,
+        justifyContent: 'space-between',
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginBottom: spacing.md,
     },
-    tipTitle: {
+    categorySelectorText: {
         fontSize: fonts.sizes.md,
-        fontFamily: fonts.families.semiBold,
+        fontFamily: fonts.families.regular,
+        color: colors.text,
+    },
+    placeholderText: {
+        color: colors.placeholder,
+    },
+    dateSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginBottom: spacing.lg,
+    },
+    dateSelectorText: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.regular,
         color: colors.text,
         marginLeft: spacing.sm,
     },
-    tipText: {
-        fontSize: fonts.sizes.sm,
-        fontFamily: fonts.families.regular,
-        color: colors.text,
-        lineHeight: fonts.sizes.sm * fonts.lineHeights.relaxed,
-    },
-    resourceCard: {
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.surface,
-        ...shadows.sm,
-    },
-    resourceTouchable: {
-        width: '100%',
-    },
-    resourceContent: {
+    modalButtons: {
         flexDirection: 'row',
-        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
     },
-    resourceTextContainer: {
+    modalButton: {
         flex: 1,
-        marginLeft: spacing.md,
     },
-    resourceTitle: {
+    categoryOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    categoryOptionText: {
         fontSize: fonts.sizes.md,
-        fontFamily: fonts.families.semiBold,
-        color: colors.text,
-    },
-    resourceDescription: {
-        fontSize: fonts.sizes.sm,
         fontFamily: fonts.families.regular,
-        color: colors.textSecondary,
-        marginTop: spacing.xs / 2,
+        color: colors.text,
     },
 });
 
-export default React.memo(ChecklistScreen);
+export default React.memo(BudgetScreen);
