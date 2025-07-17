@@ -172,24 +172,24 @@ const BudgetScreen = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.summaryContainer}>
-                    <Card style={[styles.summaryCard, styles.incomeCard]}>
-                        <Card.Content>
+                    <View style={[styles.summaryCard, styles.incomeCard]}>
+                        <View style={styles.summaryCardContent}>
                             <Text style={styles.summaryLabel}>Income</Text>
                             <Text style={[styles.summaryAmount, { color: colors.success }]}>{formatCurrency(income)}</Text>
-                        </Card.Content>
-                    </Card>
-                    <Card style={[styles.summaryCard, styles.expenseCard]}>
-                        <Card.Content>
+                        </View>
+                    </View>
+                    <View style={[styles.summaryCard, styles.expenseCard]}>
+                        <View style={styles.summaryCardContent}>
                             <Text style={styles.summaryLabel}>Expenses</Text>
                             <Text style={[styles.summaryAmount, { color: colors.error }]}>{formatCurrency(expenses)}</Text>
-                        </Card.Content>
-                    </Card>
-                    <Card style={[styles.summaryCard, styles.balanceCard]}>
-                        <Card.Content>
+                        </View>
+                    </View>
+                    <View style={[styles.summaryCard, styles.balanceCard]}>
+                        <View style={styles.summaryCardContent}>
                             <Text style={styles.summaryLabel}>Balance</Text>
                             <Text style={[styles.summaryAmount, balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>{formatCurrency(balance)}</Text>
-                        </Card.Content>
-                    </Card>
+                        </View>
+                    </View>
                 </View>
 
                 <View style={styles.entriesSection}>

@@ -1,6 +1,6 @@
 // frontend/src/screens/checklist/ChecklistScreen.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -20,75 +20,146 @@ import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { checklistStyles as styles } from '../../styles/screens/checklist/ChecklistScreenStyles';
 
+const CHECKLIST_ITEMS = {
+    FREELANCER: [
+        {
+            key: 'OBTAIN_NIE',
+            title: 'Obtain your NIE',
+            description: 'Get your foreigner identification number',
+            icon: 'card-account-details',
+            infoLink: 'nie-guide'
+        },
+        {
+            key: 'REGISTER_AUTONOMO',
+            title: 'Register as Autónomo',
+            description: 'Complete your self-employment registration',
+            icon: 'briefcase-account',
+            infoLink: 'autonomo-guide'
+        },
+        {
+            key: 'UNDERSTAND_TAXES',
+            title: 'Understand Tax Obligations',
+            description: 'Learn about IVA and IRPF requirements',
+            icon: 'calculator',
+            infoLink: 'taxes-guide'
+        },
+        {
+            key: 'OPEN_BANK_ACCOUNT',
+            title: 'Open Spanish Bank Account',
+            description: 'Set up your business banking',
+            icon: 'bank',
+            infoLink: 'banking-guide'
+        },
+    ],
+    ENTREPRENEUR: [
+        {
+            key: 'OBTAIN_NIE',
+            title: 'Obtain your NIE',
+            description: 'Get your foreigner identification number',
+            icon: 'card-account-details',
+            infoLink: 'nie-guide'
+        },
+        {
+            key: 'FORM_SL_COMPANY',
+            title: 'Form an S.L. Company',
+            description: 'Establish your limited liability company',
+            icon: 'domain',
+            infoLink: 'company-formation-guide'
+        },
+        {
+            key: 'GET_COMPANY_NIF',
+            title: 'Get Company NIF',
+            description: 'Obtain your company tax ID',
+            icon: 'identifier',
+            infoLink: 'company-nif-guide'
+        },
+        {
+            key: 'RESEARCH_FUNDING',
+            title: 'Research Funding Options',
+            description: 'Explore grants and investment opportunities',
+            icon: 'cash-multiple',
+            infoLink: 'funding-guide'
+        },
+    ],
+};
+
+const ChecklistItem = React.memo(({ item, checklistItem, isUpdating, onToggle, onInfoPress }) => {
+    const isCompleted = checklistItem?.isCompleted || false;
+
+    return (
+        <Card
+            style={[
+                styles.checklistCard,
+                isCompleted && styles.completedCard,
+            ]}
+        >
+            <TouchableOpacity
+                onPress={() => onToggle(item.key, isCompleted)}
+                disabled={isUpdating}
+                style={styles.cardTouchable}
+                activeOpacity={0.7}
+            >
+                <View style={styles.cardContent}>
+                    <View style={styles.checkboxContainer}>
+                        {isUpdating ? (
+                            <View style={styles.loadingCheckbox}>
+                                <LoadingSpinner size="small" />
+                            </View>
+                        ) : (
+                            <Checkbox
+                                status={isCompleted ? 'checked' : 'unchecked'}
+                                color={colors.primary}
+                                disabled={isUpdating}
+                            />
+                        )}
+                    </View>
+
+                    <View style={styles.cardTextContainer}>
+                        <View style={styles.titleRow}>
+                            <Icon
+                                name={item.icon}
+                                size={20}
+                                color={isCompleted ? colors.textSecondary : colors.primary}
+                                style={styles.itemIcon}
+                            />
+                            <Text style={[
+                                styles.cardTitle,
+                                isCompleted && styles.completedText
+                            ]}>
+                                {item.title}
+                            </Text>
+                        </View>
+                        <Text style={[
+                            styles.cardDescription,
+                            isCompleted && styles.completedDescription
+                        ]}>
+                            {item.description}
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity
+                        onPress={() => onInfoPress(item.infoLink)}
+                        style={styles.infoButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Icon
+                            name="information-outline"
+                            size={24}
+                            color={colors.primary}
+                        />
+                    </TouchableOpacity>
+                </View>
+            </TouchableOpacity>
+        </Card>
+    );
+});
+
 const ChecklistScreen = ({ navigation }) => {
     const { user } = useAuth();
     const [checklistData, setChecklistData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [updating, setUpdating] = useState({});
-
-    const CHECKLIST_ITEMS = {
-        FREELANCER: [
-            {
-                key: 'OBTAIN_NIE',
-                title: 'Obtain your NIE',
-                description: 'Get your foreigner identification number',
-                icon: 'card-account-details',
-                infoLink: 'nie-guide'
-            },
-            {
-                key: 'REGISTER_AUTONOMO',
-                title: 'Register as Autónomo',
-                description: 'Complete your self-employment registration',
-                icon: 'briefcase-account',
-                infoLink: 'autonomo-guide'
-            },
-            {
-                key: 'UNDERSTAND_TAXES',
-                title: 'Understand Tax Obligations',
-                description: 'Learn about IVA and IRPF requirements',
-                icon: 'calculator',
-                infoLink: 'taxes-guide'
-            },
-            {
-                key: 'OPEN_BANK_ACCOUNT',
-                title: 'Open Spanish Bank Account',
-                description: 'Set up your business banking',
-                icon: 'bank',
-                infoLink: 'banking-guide'
-            },
-        ],
-        ENTREPRENEUR: [
-            {
-                key: 'OBTAIN_NIE',
-                title: 'Obtain your NIE',
-                description: 'Get your foreigner identification number',
-                icon: 'card-account-details',
-                infoLink: 'nie-guide'
-            },
-            {
-                key: 'FORM_SL_COMPANY',
-                title: 'Form an S.L. Company',
-                description: 'Establish your limited liability company',
-                icon: 'domain',
-                infoLink: 'company-formation-guide'
-            },
-            {
-                key: 'GET_COMPANY_NIF',
-                title: 'Get Company NIF',
-                description: 'Obtain your company tax ID',
-                icon: 'identifier',
-                infoLink: 'company-nif-guide'
-            },
-            {
-                key: 'RESEARCH_FUNDING',
-                title: 'Research Funding Options',
-                description: 'Explore grants and investment opportunities',
-                icon: 'cash-multiple',
-                infoLink: 'funding-guide'
-            },
-        ],
-    };
 
     const loadChecklist = useCallback(async () => {
         try {
@@ -140,7 +211,8 @@ const ChecklistScreen = ({ navigation }) => {
         );
     }, []);
 
-    const getChecklistInfo = () => {
+    // Use useMemo for calculations that depend on state/props
+    const { items, completedCount, progress } = useMemo(() => {
         const items = user?.professionalPath === 'FREELANCER'
             ? CHECKLIST_ITEMS.FREELANCER
             : CHECKLIST_ITEMS.ENTREPRENEUR;
@@ -149,20 +221,18 @@ const ChecklistScreen = ({ navigation }) => {
         const progress = items.length > 0 ? completedCount / items.length : 0;
 
         return { items, completedCount, progress };
-    };
+    }, [user?.professionalPath, checklistData]);
 
-    if (loading) {
-        return <LoadingSpinner fullScreen text="Loading your checklist..." />;
-    }
-
-    const { items, completedCount, progress } = getChecklistInfo();
-
-    const getMotivationalMessage = () => {
+    const motivationalMessage = useMemo(() => {
         if (progress === 0) return "Let's get started! 🚀";
         if (progress < 0.5) return "Great progress! Keep going! 💪";
         if (progress < 1) return "Almost there! You're doing amazing! 🌟";
         return "All done! You're ready to rock! 🎉";
-    };
+    }, [progress]);
+
+    if (loading) {
+        return <LoadingSpinner fullScreen text="Loading your checklist..." />;
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -194,84 +264,25 @@ const ChecklistScreen = ({ navigation }) => {
                         style={styles.progressBar}
                     />
                     <Text style={styles.motivationalText}>
-                        {getMotivationalMessage()}
+                        {motivationalMessage}
                     </Text>
                 </View>
 
                 <View style={styles.checklistSection}>
                     {items.map((item, index) => {
                         const checklistItem = checklistData.find(d => d.itemKey === item.key);
-                        const isCompleted = checklistItem?.isCompleted || false;
                         const isUpdating = updating[item.key] || false;
 
                         return (
-                            <Card
-                                key={item.key}
-                                style={[
-                                    styles.checklistCard,
-                                    isCompleted && styles.completedCard,
-                                    index === 0 && styles.firstCard,
-                                    index === items.length - 1 && styles.lastCard,
-                                ]}
-                            >
-                                <TouchableOpacity
-                                    onPress={() => handleToggle(item.key, isCompleted)}
-                                    disabled={isUpdating}
-                                    style={styles.cardTouchable}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.cardContent}>
-                                        <View style={styles.checkboxContainer}>
-                                            {isUpdating ? (
-                                                <View style={styles.loadingCheckbox}>
-                                                    <LoadingSpinner size="small" />
-                                                </View>
-                                            ) : (
-                                                <Checkbox
-                                                    status={isCompleted ? 'checked' : 'unchecked'}
-                                                    color={colors.primary}
-                                                    disabled={isUpdating}
-                                                />
-                                            )}
-                                        </View>
-
-                                        <View style={styles.cardTextContainer}>
-                                            <View style={styles.titleRow}>
-                                                <Icon
-                                                    name={item.icon}
-                                                    size={20}
-                                                    color={isCompleted ? colors.textSecondary : colors.primary}
-                                                    style={styles.itemIcon}
-                                                />
-                                                <Text style={[
-                                                    styles.cardTitle,
-                                                    isCompleted && styles.completedText
-                                                ]}>
-                                                    {item.title}
-                                                </Text>
-                                            </View>
-                                            <Text style={[
-                                                styles.cardDescription,
-                                                isCompleted && styles.completedDescription
-                                            ]}>
-                                                {item.description}
-                                            </Text>
-                                        </View>
-
-                                        <TouchableOpacity
-                                            onPress={() => handleInfoPress(item.infoLink)}
-                                            style={styles.infoButton}
-                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                        >
-                                            <Icon
-                                                name="information-outline"
-                                                size={24}
-                                                color={colors.primary}
-                                            />
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableOpacity>
-                            </Card>
+                            <View key={item.key} style={index === 0 ? styles.firstCard : index === items.length - 1 ? styles.lastCard : null}>
+                                <ChecklistItem
+                                    item={item}
+                                    checklistItem={checklistItem}
+                                    isUpdating={isUpdating}
+                                    onToggle={handleToggle}
+                                    onInfoPress={handleInfoPress}
+                                />
+                            </View>
                         );
                     })}
                 </View>

@@ -8,11 +8,15 @@ export const setupInterceptors = (apiClient) => {
     // Request interceptor
     apiClient.interceptors.request.use(
         (config) => {
-            // Add timestamp to prevent caching
-            config.params = {
-                ...config.params,
-                _t: Date.now(),
-            };
+            // Add timestamp to prevent caching as a query parameter
+            const timestamp = Date.now();
+
+            // Create URL object to properly handle query parameters
+            const url = new URL(config.url, config.baseURL);
+            url.searchParams.append('_t', timestamp);
+
+            // Update config.url with the relative path including query params
+            config.url = `${url.pathname}${url.search}`;
 
             // Log request in development
             if (__DEV__) {

@@ -25,6 +25,11 @@ export const budgetStyles = StyleSheet.create({
         flex: 1,
         borderRadius: borderRadius.lg,
         elevation: 2,
+        padding: spacing.md,
+        ...shadows.sm,
+    },
+    summaryCardContent: {
+        alignItems: 'center',
     },
     incomeCard: {
         backgroundColor: `${colors.successLight}20`,

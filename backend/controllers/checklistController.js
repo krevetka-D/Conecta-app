@@ -23,12 +23,26 @@ const getChecklist = asyncHandler(async (req, res) => {
 const updateChecklistItem = asyncHandler(async (req, res) => {
     const { itemKey } = req.params;
     const { isCompleted } = req.body;
-    const item = await ChecklistItem.findOneAndUpdate(
-        { user: req.user._id, itemKey: itemKey }, // Changed from userId to user
-        { isCompleted },
-        { new: true }
-    );
-    if (!item) { res.status(404); throw new Error('Checklist item not found'); }
+
+    // First, try to find the item
+    let item = await ChecklistItem.findOne({
+        user: req.user._id,
+        itemKey: itemKey
+    });
+
+    if (!item) {
+        // If item doesn't exist, create it
+        item = await ChecklistItem.create({
+            user: req.user._id,
+            itemKey: itemKey,
+            isCompleted: isCompleted
+        });
+    } else {
+        // Update existing item
+        item.isCompleted = isCompleted;
+        await item.save();
+    }
+
     res.status(200).json(item);
 });
 
