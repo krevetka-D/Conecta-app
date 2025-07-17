@@ -1,3 +1,4 @@
+// backend/controllers/checklistController.js
 import asyncHandler from 'express-async-handler';
 import ChecklistItem from '../models/ChecklistItem.js';
 import User from '../models/User.js';
@@ -6,16 +7,16 @@ const FREELANCER_CHECKLIST = [ 'OBTAIN_NIE', 'REGISTER_AUTONOMO', 'UNDERSTAND_TA
 const ENTREPRENEUR_CHECKLIST = [ 'OBTAIN_NIE', 'FORM_SL_COMPANY', 'GET_COMPANY_NIF', 'RESEARCH_FUNDING' ];
 
 const getChecklist = asyncHandler(async (req, res) => {
-    let items = await ChecklistItem.find({ user: req.user._id }); // Changed from userId to user
+    let items = await ChecklistItem.find({ user: req.user._id });
     if (items.length === 0) {
-        const user = await User.findById(req.user._id); // Changed from req.user.id to req.user._id
+        const user = await User.findById(req.user._id);
         const defaultItems = user.professionalPath === 'FREELANCER' ? FREELANCER_CHECKLIST : ENTREPRENEUR_CHECKLIST;
         const itemsToCreate = defaultItems.map(itemKey => ({
-            user: req.user._id, // Changed from userId to user
+            user: req.user._id,
             itemKey
         }));
         await ChecklistItem.insertMany(itemsToCreate);
-        items = await ChecklistItem.find({ user: req.user._id }); // Changed from userId to user
+        items = await ChecklistItem.find({ user: req.user._id });
     }
     res.status(200).json(items);
 });
@@ -24,21 +25,23 @@ const updateChecklistItem = asyncHandler(async (req, res) => {
     const { itemKey } = req.params;
     const { isCompleted } = req.body;
 
-    // First, try to find the item
+    if (!req.user || !req.user._id) {
+        res.status(401);
+        throw new Error('User not authenticated');
+    }
+
     let item = await ChecklistItem.findOne({
         user: req.user._id,
         itemKey: itemKey
     });
 
     if (!item) {
-        // If item doesn't exist, create it
         item = await ChecklistItem.create({
             user: req.user._id,
             itemKey: itemKey,
             isCompleted: isCompleted
         });
     } else {
-        // Update existing item
         item.isCompleted = isCompleted;
         await item.save();
     }
@@ -46,4 +49,5 @@ const updateChecklistItem = asyncHandler(async (req, res) => {
     res.status(200).json(item);
 });
 
+// IMPORTANT: Add this export statement
 export { getChecklist, updateChecklistItem };
