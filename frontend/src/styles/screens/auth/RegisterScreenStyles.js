@@ -1,7 +1,7 @@
 // frontend/src/styles/screens/auth/RegisterScreenStyles.js
 
 import { StyleSheet } from 'react-native';
-import { colors, fonts } from '../../../constants/theme';
+import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
 export const registerStyles = StyleSheet.create({
     container: {
@@ -15,7 +15,7 @@ export const registerStyles = StyleSheet.create({
         paddingVertical: 40,
     },
     header: {
-        marginBottom: 40,
+        marginBottom: 30,
         alignItems: 'center',
     },
     title: {
@@ -38,7 +38,7 @@ export const registerStyles = StyleSheet.create({
         backgroundColor: 'white',
     },
     button: {
-        marginTop: 8,
+        marginTop: 24,
         marginBottom: 20,
     },
     linkContainer: {
@@ -54,10 +54,71 @@ export const registerStyles = StyleSheet.create({
         color: colors.primary,
     },
     errorText: {
-        color: colors.danger,
+        color: colors.error,
         fontSize: fonts.sizes.small,
         fontFamily: fonts.families.regular,
         marginBottom: 10,
         marginLeft: 5,
+    },
+    
+    // Professional Path Selection Styles
+    pathSection: {
+        marginTop: spacing.lg,
+        marginBottom: spacing.md,
+    },
+    pathTitle: {
+        fontSize: fonts.sizes.lg,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+        marginBottom: spacing.xs,
+        textAlign: 'center',
+    },
+    pathSubtitle: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        marginBottom: spacing.md,
+        textAlign: 'center',
+    },
+    pathCard: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 2,
+        borderColor: colors.border,
+        marginBottom: spacing.sm,
+        padding: spacing.md,
+        ...shadows.sm,
+    },
+    pathCardSelected: {
+        borderColor: colors.primary,
+        backgroundColor: colors.primaryLight + '10',
+    },
+    pathCardError: {
+        borderColor: colors.error,
+    },
+    pathCardContent: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    pathCardTextContainer: {
+        flex: 1,
+        marginLeft: spacing.sm,
+    },
+    pathCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+    },
+    pathCardTitle: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+        marginLeft: spacing.sm,
+    },
+    pathCardDescription: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        lineHeight: fonts.sizes.sm * fonts.lineHeights.normal,
     },
 });

@@ -11,12 +11,19 @@ const authService = {
         return response;
     },
 
-    register: async (name, email, password) => {
-        const response = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, {
+    register: async (name, email, password, professionalPath = null) => {
+        const payload = {
             name,
             email,
             password
-        });
+        };
+        
+        // Only include professionalPath if it's provided
+        if (professionalPath) {
+            payload.professionalPath = professionalPath;
+        }
+        
+        const response = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, payload);
         return response;
     },
 

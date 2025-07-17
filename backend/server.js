@@ -17,6 +17,8 @@ import budgetRoutes from './routes/budgetRoutes.js';
 import checklistRoutes from './routes/checklistRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import configRoutes from './routes/configRoutes.js';
+import forumRoutes from './routes/forumRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 
 dotenv.config();
 
@@ -62,6 +64,8 @@ app.use('/api/budget', budgetRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/forums', forumRoutes);
+app.use('/api/events', eventRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

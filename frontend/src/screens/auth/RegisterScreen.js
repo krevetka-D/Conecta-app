@@ -9,7 +9,8 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import { TextInput, RadioButton, Card } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../store/contexts/AuthContext';
@@ -23,13 +24,15 @@ import { showErrorAlert } from '../../utils/alerts';
 import { registerStyles as styles } from '../../styles/screens/auth/RegisterScreenStyles';
 import { colors } from '../../constants/theme';
 import { SCREEN_NAMES } from '../../constants/routes';
+import { PROFESSIONAL_PATHS } from '../../constants/config';
 
 const RegisterScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [selectedPath, setSelectedPath] = useState('');
     const { register } = useAuth();
 
-    const { values, errors, handleChange, handleBlur, validateForm } = useForm({
+    const { values, errors, handleChange, handleBlur, validateForm, setErrors } = useForm({
         initialValues: {
             name: '',
             email: '',
@@ -67,18 +70,35 @@ const RegisterScreen = ({ navigation }) => {
     }, []);
 
     const handleRegister = useCallback(async () => {
+        // Validate form fields
         const isValid = validateForm();
+        
+        // Check if professional path is selected
+        if (!selectedPath) {
+            setErrors(prev => ({ ...prev, professionalPath: 'Please select your professional path' }));
+            return;
+        }
+        
         if (!isValid) return;
 
         setLoading(true);
         try {
-            await register(values.name, values.email, values.password);
+            // Create user object with professional path
+            const userData = {
+                name: values.name,
+                email: values.email,
+                password: values.password,
+                professionalPath: selectedPath,
+            };
+            
+            await register(userData.name, userData.email, userData.password, userData.professionalPath);
+            // Navigation will be handled by AuthContext after successful registration
         } catch (error) {
             showErrorAlert('Registration Failed', error.message);
         } finally {
             setLoading(false);
         }
-    }, [values, validateForm, register]);
+    }, [values, validateForm, register, selectedPath, setErrors]);
 
     const navigateToLogin = useCallback(() => {
         navigation.navigate(SCREEN_NAMES.LOGIN);
@@ -87,6 +107,14 @@ const RegisterScreen = ({ navigation }) => {
     const inputTheme = useMemo(() => ({
         colors: { primary: colors.primary },
     }), []);
+
+    const handlePathSelection = useCallback((path) => {
+        setSelectedPath(path);
+        // Clear professional path error if it exists
+        if (errors.professionalPath) {
+            setErrors(prev => ({ ...prev, professionalPath: null }));
+        }
+    }, [errors.professionalPath, setErrors]);
 
     return (
         <KeyboardAvoidingView
@@ -184,6 +212,75 @@ const RegisterScreen = ({ navigation }) => {
                             {errors.confirmPassword}
                         </Text>
                     )}
+
+                    {/* Professional Path Selection */}
+                    <View style={styles.pathSection}>
+                        <Text style={styles.pathTitle}>What brings you to Alicante?</Text>
+                        <Text style={styles.pathSubtitle}>Choose your professional path</Text>
+                        
+                        <RadioButton.Group 
+                            onValueChange={handlePathSelection} 
+                            value={selectedPath}
+                        >
+                            <TouchableOpacity
+                                style={[
+                                    styles.pathCard,
+                                    selectedPath === PROFESSIONAL_PATHS.FREELANCER && styles.pathCardSelected,
+                                    errors.professionalPath && styles.pathCardError
+                                ]}
+                                onPress={() => handlePathSelection(PROFESSIONAL_PATHS.FREELANCER)}
+                                disabled={loading}
+                            >
+                                <View style={styles.pathCardContent}>
+                                    <RadioButton
+                                        value={PROFESSIONAL_PATHS.FREELANCER}
+                                        color={colors.primary}
+                                        disabled={loading}
+                                    />
+                                    <View style={styles.pathCardTextContainer}>
+                                        <View style={styles.pathCardHeader}>
+                                            <Icon name="briefcase-account" size={24} color={colors.primary} />
+                                            <Text style={styles.pathCardTitle}>Freelancer / Remote Worker</Text>
+                                        </View>
+                                        <Text style={styles.pathCardDescription}>
+                                            Register as autónomo, manage clients, and track your freelance business
+                                        </Text>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.pathCard,
+                                    selectedPath === PROFESSIONAL_PATHS.ENTREPRENEUR && styles.pathCardSelected,
+                                    errors.professionalPath && styles.pathCardError
+                                ]}
+                                onPress={() => handlePathSelection(PROFESSIONAL_PATHS.ENTREPRENEUR)}
+                                disabled={loading}
+                            >
+                                <View style={styles.pathCardContent}>
+                                    <RadioButton
+                                        value={PROFESSIONAL_PATHS.ENTREPRENEUR}
+                                        color={colors.primary}
+                                        disabled={loading}
+                                    />
+                                    <View style={styles.pathCardTextContainer}>
+                                        <View style={styles.pathCardHeader}>
+                                            <Icon name="rocket-launch" size={24} color={colors.primary} />
+                                            <Text style={styles.pathCardTitle}>Entrepreneur / Founder</Text>
+                                        </View>
+                                        <Text style={styles.pathCardDescription}>
+                                            Form a company, find funding, and build your startup in Spain
+                                        </Text>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        </RadioButton.Group>
+                        
+                        {errors.professionalPath && (
+                            <Text style={styles.errorText}>{errors.professionalPath}</Text>
+                        )}
+                    </View>
 
                     <Button
                         title="Create Account"

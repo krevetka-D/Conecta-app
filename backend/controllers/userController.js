@@ -8,11 +8,17 @@ import generateToken from '../utils/generateToken.js';
  * @access  Public
  */
 export const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, professionalPath } = req.body;
 
     if (!name || !email || !password) {
         res.status(400);
         throw new Error('Please provide all required fields');
+    }
+
+    // Validate professional path
+    if (professionalPath && !['FREELANCER', 'ENTREPRENEUR'].includes(professionalPath)) {
+        res.status(400);
+        throw new Error('Invalid professional path');
     }
 
     const userExists = await User.findOne({ email });
@@ -26,6 +32,8 @@ export const registerUser = asyncHandler(async (req, res) => {
         name,
         email,
         password,
+        professionalPath: professionalPath || undefined, // Let it default to schema default if not provided
+        onboardingCompleted: !!professionalPath, // If path is selected during registration, mark onboarding as completed
     });
 
     if (user) {
