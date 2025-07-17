@@ -5,13 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f9d4abe1-c459-42a0-8d6a-608c8b9492d2" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/controllers/dashboardController.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/routes/dashboardRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/App.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/navigation/AuthNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/navigation/AuthNavigator.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/userController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/userController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/ChecklistItem.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/ChecklistItem.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/userRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/userRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/navigation/NavigationService.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/navigation/NavigationService.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/navigation/RootNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/navigation/RootNavigator.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/screens/budget/BudgetScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/budget/BudgetScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/screens/main/DashboardScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/main/DashboardScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/services/api/client.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/api/client.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/store/contexts/AppContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/store/contexts/AppContext.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/store/contexts/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/store/contexts/AuthContext.js" afterDir="false" />
     </list>
@@ -51,7 +54,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/conecta-alicante-frontend/node_modules/typescript/lib",
+    "ts.external.directory.path": "/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -89,7 +92,7 @@
       <updated>1752478350390</updated>
       <workItem from="1752478351465" duration="686000" />
       <workItem from="1752479132614" duration="45022000" />
-      <workItem from="1752610897414" duration="45415000" />
+      <workItem from="1752610897414" duration="50427000" />
     </task>
     <servers />
   </component>

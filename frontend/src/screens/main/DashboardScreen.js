@@ -1,172 +1,18 @@
-// src/screens/main/DashboardScreen.js
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     View,
     Text,
     FlatList,
-    TouchableOpacity,
+    StyleSheet,
     RefreshControl,
     ActivityIndicator,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { format } from 'date-fns';
-
-import { api } from '../../store/contexts/AppContext'; // Import the configured api
-import { useAuth } from '../../store/contexts/AuthContext';
+import apiClient from '../../services/api/client';
 import { useApp } from '../../store/contexts/AppContext';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { styles } from '../../styles/screens/main/DashboardScreenStyles'; // Your styles
-import { colors } from '../../constants/theme'; // For tintColor and icons
-import { SCREEN_NAMES } from '../../constants/routes';
+// Import your theme constants directly
+import { colors, spacing, fonts, borderRadius, shadows } from '../../constants/theme';
 
-// --- Header Component ---
-const DashboardHeader = React.memo(({ user, isOnline, navigation }) => {
-    const renderPinnedModule = useCallback((moduleId) => {
-        const moduleConfigs = {
-            autonomo_checklist: {
-                title: 'Autónomo Checklist',
-                subtitle: '0/5 steps completed',
-                icon: 'clipboard-check',
-                onPress: () => navigation.navigate(SCREEN_NAMES.CHECKLIST),
-            },
-            tax_guides: {
-                title: 'Tax Guides',
-                subtitle: 'IVA & IRPF explained',
-                icon: 'calculator',
-                onPress: () => navigation.navigate(SCREEN_NAMES.RESOURCES),
-            },
-            coworking_finder: {
-                title: 'Coworking Finder',
-                subtitle: 'Top-rated spaces',
-                icon: 'office-building',
-                onPress: () => navigation.navigate(SCREEN_NAMES.RESOURCES),
-            },
-            company_formation: {
-                title: "Founder's Checklist",
-                subtitle: '0/4 steps completed',
-                icon: 'domain',
-                onPress: () => navigation.navigate(SCREEN_NAMES.CHECKLIST),
-            },
-            funding_guide: {
-                title: 'Funding & Grants',
-                subtitle: 'ENISA, ICO, and more',
-                icon: 'cash',
-                onPress: () => navigation.navigate(SCREEN_NAMES.RESOURCES),
-            },
-        };
-        const config = moduleConfigs[moduleId];
-        if (!config) return null;
-
-        return (
-            <Card key={moduleId} onPress={config.onPress} style={styles.pinnedCard}>
-                <View style={styles.pinnedCardIcon}>
-                    <Icon name={config.icon} size={24} color={colors.primary} />
-                </View>
-                <View style={styles.pinnedCardContent}>
-                    <Text style={styles.pinnedCardTitle}>{config.title}</Text>
-                    <Text style={styles.pinnedCardSubtitle}>{config.subtitle}</Text>
-                </View>
-                <Icon name="chevron-right" size={24} color={colors.textSecondary} />
-            </Card>
-        );
-    }, [navigation]);
-
-    return (
-        <>
-            <View style={styles.header}>
-                <Text style={styles.greeting}>Hello, {user?.name}!</Text>
-                <Text style={styles.subGreeting}>
-                    {user?.professionalPath === 'FREELANCER'
-                        ? 'Your freelance journey in Alicante'
-                        : 'Building your startup in Alicante'}
-                </Text>
-                {!isOnline && (
-                    <Badge text="Offline Mode" variant="warning" style={styles.offlineBadge} />
-                )}
-            </View>
-
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Your Priorities</Text>
-                <View style={styles.pinnedModules}>
-                    {user?.pinnedModules?.map(renderPinnedModule)}
-                </View>
-            </View>
-        </>
-    );
-});
-
-// --- Event Item Component ---
-const EventItem = React.memo(({ item }) => (
-    <Card style={styles.eventCard}>
-        <View style={styles.eventHeader}>
-            <View style={styles.eventInfo}>
-                <Text style={styles.eventTitle}>{item.title}</Text>
-                <Text style={styles.eventDate}>
-                    {format(new Date(item.date), 'EEEE, MMM d · h:mm a')}
-                </Text>
-                <View style={styles.eventLocationRow}>
-                    <Icon name="map-marker" size={14} color={colors.textSecondary} />
-                    <Text style={styles.eventLocation}>{item.location}</Text>
-                </View>
-            </View>
-            <Badge
-                text={`${item.attendees}`}
-                icon={<Icon name="account-group" size={16} color={colors.primary} />}
-                variant="primary"
-            />
-        </View>
-    </Card>
-));
-
-// --- Footer Component ---
-const DashboardFooter = React.memo(({ navigation }) => {
-    const quickActions = useMemo(() => [
-        {
-            icon: 'currency-eur',
-            text: 'Add Income',
-            onPress: () => navigation.navigate(SCREEN_NAMES.BUDGET, { type: 'income' }),
-        },
-        {
-            icon: 'receipt',
-            text: 'Log Expense',
-            onPress: () => navigation.navigate(SCREEN_NAMES.BUDGET, { type: 'expense' }),
-        },
-        {
-            icon: 'book-open-variant',
-            text: 'Browse Guides',
-            onPress: () => navigation.navigate(SCREEN_NAMES.RESOURCES),
-        },
-        {
-            icon: 'phone',
-            text: 'Find Services',
-            onPress: () => navigation.navigate(SCREEN_NAMES.RESOURCES, { tab: 'directory' }),
-        },
-    ], [navigation]);
-
-    return (
-        <View style={[styles.section, styles.quickActions]}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionGrid}>
-                {quickActions.map((action, index) => (
-                    <TouchableOpacity
-                        key={index}
-                        style={styles.actionButton}
-                        onPress={action.onPress}
-                        activeOpacity={0.8}
-                    >
-                        <Icon name={action.icon} size={28} color={colors.primary} />
-                        <Text style={styles.actionText}>{action.text}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        </View>
-    );
-});
-
-// --- Main Dashboard Screen ---
-const DashboardScreen = ({ navigation }) => {
-    const { user } = useAuth();
+const DashboardScreen = () => {
     const { isOnline } = useApp();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -174,85 +20,125 @@ const DashboardScreen = ({ navigation }) => {
     const [error, setError] = useState(null);
 
     const loadDashboardData = useCallback(async () => {
-        if (!isOnline) {
-            setError("You're offline. Data may be outdated.");
-            // Don't set loading to false immediately, to avoid flash of old content
-        }
+        if (!refreshing) setLoading(true);
+        setError(null);
+
         try {
-            setError(null);
-            const response = await api.get('/dashboard/events');
-            setEvents(response.data.events || []);
+            const response = await apiClient.get('/dashboard/events');
+            const fetchedEvents = response?.data?.events || [];
+            setEvents(fetchedEvents);
         } catch (err) {
             console.error('Error loading dashboard data:', err);
-            setError('Could not load events. Please pull to retry.');
+            setError('Could not load dashboard events. Pull down to retry.');
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
-    }, [isOnline]);
+    }, [isOnline, refreshing]);
 
     useEffect(() => {
         loadDashboardData();
     }, [loadDashboardData]);
 
-    const onRefresh = useCallback(async () => {
+    const onRefresh = useCallback(() => {
         setRefreshing(true);
-        await loadDashboardData();
-        setRefreshing(false);
-    }, [loadDashboardData]);
+    }, []);
+
+    useEffect(() => {
+        if (refreshing) {
+            loadDashboardData();
+        }
+    }, [refreshing, loadDashboardData]);
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={styles.container}>
                 <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
-    // This defines the entire scrollable list content.
-    const listSections = [
-        { type: 'header', key: 'header' },
-        { type: 'events_title', key: 'events_title' },
-        ...events.map(event => ({ type: 'event', key: `event-${event.id}`, data: event })),
-        { type: 'footer', key: 'footer' }
-    ];
+    if (error && events.length === 0) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.errorText}>{error}</Text>
+            </View>
+        );
+    }
 
     return (
-        <FlatList
-            data={events}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.container}
-            renderItem={({ item }) => <EventItem item={item} />}
-            // Header contains greeting and pinned modules
-            ListHeaderComponent={
-                <>
-                    <DashboardHeader user={user} isOnline={isOnline} navigation={navigation} />
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Upcoming Events</Text>
+        <View style={styles.container}>
+            <FlatList
+                data={events}
+                keyExtractor={(item) => item.id.toString()}
+                style={{ width: '100%' }}
+                contentContainerStyle={styles.listContentContainer}
+                renderItem={({ item }) => (
+                    <View style={styles.eventItem}>
+                        <Text style={styles.eventTitle}>{item.title}</Text>
+                        <Text style={styles.eventDetails}>{item.details}</Text>
                     </View>
-                </>
-            }
-            // Footer contains quick actions
-            ListFooterComponent={<DashboardFooter navigation={navigation} />}
-            // Handle case where there are no events to show
-            ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                    {error ? (
-                        <Text style={styles.emptyText}>{error}</Text>
-                    ) : (
-                        <Text style={styles.emptyText}>No upcoming events found.</Text>
-                    )}
-                </View>
-            }
-            // Add pull-to-refresh functionality
-            refreshControl={
-                <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    tintColor={colors.primary}
-                />
-            }
-        />
+                )}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]}/>
+                }
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No dashboard events found.</Text>
+                    </View>
+                }
+            />
+        </View>
     );
 };
 
-export default React.memo(DashboardScreen);
+// --- STYLES USING THE CORRECT PROPERTY NAMES FROM YOUR theme.js ---
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    listContentContainer: {
+        flexGrow: 1,
+        padding: spacing.md,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorText: {
+        color: colors.error, // FIX: Was 'danger'
+        fontSize: fonts.sizes.md, // FIX: Was 'fonts.size.medium'
+        fontFamily: fonts.families.regular,
+        textAlign: 'center',
+        padding: spacing.lg, // FIX: Was 'large'
+    },
+    emptyText: {
+        color: colors.textSecondary,
+        fontSize: fonts.sizes.md, // FIX: Was 'fonts.size.medium'
+        fontFamily: fonts.families.regular,
+    },
+    eventItem: {
+        backgroundColor: colors.cardBackground, // FIX: Was 'card'
+        padding: spacing.md, // FIX: Was 'medium'
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.md, // Using borderRadius from your theme
+        borderWidth: 1,
+        borderColor: colors.border,
+        ...shadows.md, // Using shadows from your theme
+    },
+    eventTitle: {
+        fontSize: fonts.sizes.lg, // FIX: Was 'fonts.size.medium'
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+    },
+    eventDetails: {
+        fontSize: fonts.sizes.sm, // FIX: Was 'fonts.size.small'
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        marginTop: spacing.sm, // FIX: Was 'xsmall'
+    },
+});
+
+export default DashboardScreen;

@@ -1,5 +1,6 @@
-// src/services/api/client.js
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// CORRECTED PATH:
 import { API_BASE_URL } from '../../constants/config';
 import { setupInterceptors } from './interceptors';
 
@@ -13,24 +14,20 @@ const apiClient = axios.create({
     },
 });
 
-// Setup interceptors
-setupInterceptors(apiClient);
-
-// Helper methods
-export const setAuthToken = (token) => {
-    if (token) {
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-        delete apiClient.defaults.headers.common['Authorization'];
+// Request Interceptor to add the token to every request
+apiClient.interceptors.request.use(
+    async (config) => {
+        const token = await AsyncStorage.getItem('userToken');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-};
+);
 
-export const setBaseURL = (url) => {
-    apiClient.defaults.baseURL = url;
-};
-
-export const setTimeout = (timeout) => {
-    apiClient.defaults.timeout = timeout;
-};
+setupInterceptors(apiClient);
 
 export default apiClient;

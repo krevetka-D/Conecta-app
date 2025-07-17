@@ -1,11 +1,13 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from './AppContext';
 import { resetRoot } from '../../navigation/NavigationService';
 import authService from '../../services/authService';
+import apiClient from '../../services/api/client';
 
+// 1. Create the context
 const AuthContext = createContext(null);
 
+// 2. Create a custom hook for easy access to the context
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -14,44 +16,16 @@ export const useAuth = () => {
     return context;
 };
 
+// 3. Create the Provider component
 export const AuthProvider = ({ children }) => {
+    // State for user, token, and loading status
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Effect to configure API interceptors based on the token
+    // Effect to load user token from storage on app start
     useEffect(() => {
-        const requestInterceptor = api.interceptors.request.use(
-            (config) => {
-                // Attach the token from state to every request
-                if (token) {
-                    config.headers.Authorization = `Bearer ${token}`;
-                }
-                return config;
-            },
-            (error) => Promise.reject(error)
-        );
-
-        const responseInterceptor = api.interceptors.response.use(
-            (response) => response,
-            async (error) => {
-                if (error.response && error.response.status === 401) {
-                    // If unauthorized, log the user out
-                    await logout();
-                }
-                return Promise.reject(error);
-            }
-        );
-
-        return () => {
-            api.interceptors.request.eject(requestInterceptor);
-            api.interceptors.response.eject(responseInterceptor);
-        };
-    }, [token]); // This effect re-runs only when the token changes
-
-    // Effect to load user session on app start
-    useEffect(() => {
-        const bootstrapAsync = async () => {
+        const loadUserFromStorage = async () => {
             try {
                 const storedToken = await AsyncStorage.getItem('userToken');
                 const storedUser = await AsyncStorage.getItem('user');
@@ -60,65 +34,98 @@ export const AuthProvider = ({ children }) => {
                     setUser(JSON.parse(storedUser));
                 }
             } catch (e) {
-                console.error('Failed to load user session', e);
+                console.error('Failed to load user data from storage', e);
             } finally {
                 setLoading(false);
             }
         };
 
-        bootstrapAsync();
+        loadUserFromStorage();
+    }, []);
+
+    // Effect to set up a response interceptor for handling 401 Unauthorized errors
+    useEffect(() => {
+        const responseInterceptor = apiClient.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                if (error.response && error.response.status === 401) {
+                    console.log('Intercepted 401 Unauthorized, logging out...');
+                    await logout();
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        // Cleanup function to remove the interceptor when the component unmounts
+        return () => {
+            apiClient.interceptors.response.eject(responseInterceptor);
+        };
     }, []);
 
     // --- Core Authentication Functions ---
-    const login = async (email, password) => {
+
+    const login = useCallback(async (email, password) => {
         try {
-            // Assume the response is { user: { ... }, token: '...' }
-            const { user, token } = await authService.login(email, password);
+            const data = await authService.login(email, password);
 
-            // Set state correctly
-            setUser(user);
-            setToken(token);
+            // ** THE FIX IS HERE **
+            // The 'data' object itself is the user profile.
+            setUser(data);
+            setToken(data.token);
 
-            // Store data correctly
-            await AsyncStorage.setItem('user', JSON.stringify(user));
-            await AsyncStorage.setItem('userToken', token);
+            // Also save the user object to storage so it can be restored on app reload
+            await AsyncStorage.setItem('userToken', data.token);
+            await AsyncStorage.setItem('user', JSON.stringify(data));
 
-            return { user, token };
+            return data;
         } catch (error) {
-            console.error('Login failed in AuthContext:', error);
+            console.error('Login failed:', error);
+            throw error; // Re-throw to be handled by the UI
+        }
+    }, []);
+
+    const signup = useCallback(async (name, email, password) => {
+        try {
+            const data = await authService.signup(name, email, password);
+            setUser(data);
+            setToken(data.token);
+            await AsyncStorage.setItem('userToken', data.token);
+            await AsyncStorage.setItem('user', JSON.stringify(data));
+            return data;
+        } catch (error) {
+            console.error('Signup failed:', error);
             throw error;
         }
-    };
+    }, []);
 
-    const register = async (name, email, password) => {
+    const logout = useCallback(async () => {
         try {
-            const { user, token } = await authService.register(name, email, password);
-            setUser(user);
-            setToken(token);
-            await AsyncStorage.setItem('user', JSON.stringify(user));
-            await AsyncStorage.setItem('userToken', token);
-            return { user, token };
+            // Clear state
+            setUser(null);
+            setToken(null);
+            // Remove data from storage
+            await AsyncStorage.removeItem('userToken');
+            await AsyncStorage.removeItem('user');
+            // Reset navigation to the login screen
+            resetRoot();
         } catch (error) {
-            console.error('Registration failed in AuthContext:', error);
-            throw error;
+            console.error('Logout failed:', error);
         }
-    };
+    }, []);
 
-    const logout = async () => {
-        setUser(null);
-        setToken(null);
-        await AsyncStorage.multiRemove(['user', 'userToken']);
-        resetRoot('Login');
-    };
-
+    // The value provided to consuming components
     const value = {
         user,
         token,
         loading,
         login,
-        register,
+        signup,
         logout,
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
 };

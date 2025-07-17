@@ -1,13 +1,30 @@
-
 import mongoose from 'mongoose';
 
-const checklistItemSchema = mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    itemKey: { type: String, required: true },
-    isCompleted: { type: Boolean, default: false },
-}, { timestamps: true });
+const { Schema } = mongoose;
 
-checklistItemSchema.index({ userId: 1, itemKey: 1 }, { unique: true });
+const checklistItemSchema = new Schema(
+    {
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: 'User',
+        },
+        itemKey: {
+            type: String,
+            required: true,
+            // Example keys: 'OBTAIN_NIE', 'REGISTER_AUTONOMO', etc.
+        },
+        isCompleted: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
+    },
+    {
+        timestamps: true,
+    }
+);
 
-const ChecklistItem = mongoose.model('ChecklistItem', checklistItemSchema);
-export default ChecklistItem;
+// This is the important change:
+// It checks if the model is already compiled and uses it; otherwise, it compiles a new one.
+export default mongoose.models.ChecklistItem || mongoose.model('ChecklistItem', checklistItemSchema);
