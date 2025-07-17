@@ -3,7 +3,7 @@ export const API_ENDPOINTS = {
     // Auth endpoints
     AUTH: {
         LOGIN: '/users/login',
-        REGISTER: '/users',
+        REGISTER: '/users/register',  // ← CHANGED TO MATCH BACKEND ROUTE
         ME: '/users/me',
         UPDATE_ONBOARDING: '/users/onboarding',
         UPDATE_PROFILE: '/users/profile',

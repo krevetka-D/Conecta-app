@@ -1,6 +1,6 @@
 import asyncHandler from 'express-async-handler';
-import Budget from '../models/BudgetEntry.js';
-import Checklist from '../models/checklistItem.js';
+import BudgetEntry from '../models/BudgetEntry.js';
+import ChecklistItem from '../models/ChecklistItem.js';
 
 /**
  * @desc    Get aggregated data for the dashboard
@@ -8,42 +8,52 @@ import Checklist from '../models/checklistItem.js';
  * @access  Private
  */
 const getDashboardEvents = asyncHandler(async (req, res) => {
-    // Fetch the user's budget
-    const budget = await Budget.findOne({ user: req.user._id });
-
-    // Fetch the user's checklist items
-    const checklistItems = await Checklist.find({ user: req.user._id });
-
     const events = [];
 
-    // Create a budget event if a budget exists
-    if (budget) {
-        events.push({
-            id: `budget_${budget._id}`,
-            type: 'BUDGET_OVERVIEW',
-            title: 'Your Monthly Budget',
-            isCompleted: budget.isCompleted, // Assuming a schema field
-            date: budget.updatedAt,
-            details: `Total Income: ${budget.totalIncome}, Total Expenses: ${budget.totalExpenses}`,
+    try {
+        // Fetch the user's budget entries
+        const budgetEntries = await BudgetEntry.find({ user: req.user._id })
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        // Fetch the user's checklist items
+        const checklistItems = await ChecklistItem.find({ user: req.user._id });
+
+        // Transform budget entries into events
+        budgetEntries.forEach(entry => {
+            events.push({
+                id: `budget_${entry._id}`,
+                type: 'BUDGET_ENTRY',
+                title: `${entry.type}: ${entry.category}`,
+                details: `Amount: €${entry.amount} ${entry.description ? `- ${entry.description}` : ''}`,
+                date: entry.entryDate || entry.createdAt,
+                isCompleted: true,
+            });
+        });
+
+        // Transform checklist items into event objects
+        checklistItems.forEach(item => {
+            events.push({
+                id: `checklist_${item._id}`,
+                type: 'CHECKLIST_ITEM',
+                title: item.itemKey.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
+                details: `Status: ${item.isCompleted ? 'Completed' : 'Pending'}`,
+                date: item.updatedAt,
+                isCompleted: item.isCompleted,
+            });
+        });
+
+        // Sort events by date, most recent first
+        events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        res.status(200).json({ events });
+    } catch (error) {
+        console.error('Dashboard events error:', error);
+        res.status(500).json({
+            events: [],
+            error: 'Failed to load dashboard events'
         });
     }
-
-    // Transform checklist items into event objects
-    checklistItems.forEach(item => {
-        events.push({
-            id: item._id,
-            type: 'CHECKLIST_ITEM',
-            title: item.task, // Assuming a 'task' field on your checklist model
-            isCompleted: item.isCompleted,
-            date: item.updatedAt,
-            details: `Due: ${item.dueDate || 'Not set'}`, // Assuming an optional dueDate
-        });
-    });
-
-    // Sort events by date, most recent first
-    events.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    res.status(200).json({ events });
 });
 
 export { getDashboardEvents };
