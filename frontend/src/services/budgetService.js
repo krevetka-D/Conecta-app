@@ -32,6 +32,11 @@ const budgetService = {
         return response;
     },
 
+    getCategories: async () => {
+        const response = await apiClient.get('/api/config/categories');
+        return response;
+    },
+
     exportBudgetData: async (format = 'csv', dateRange) => {
         const response = await apiClient.get(API_ENDPOINTS.BUDGET.EXPORT, {
             params: { format, ...dateRange },

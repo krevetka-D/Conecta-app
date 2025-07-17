@@ -4,10 +4,8 @@ import { resetRoot } from '../../navigation/NavigationService';
 import authService from '../../services/authService';
 import apiClient from '../../services/api/client';
 
-// 1. Create the context
 const AuthContext = createContext(null);
 
-// 2. Create a custom hook for easy access to the context
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -16,14 +14,11 @@ export const useAuth = () => {
     return context;
 };
 
-// 3. Create the Provider component
 export const AuthProvider = ({ children }) => {
-    // State for user, token, and loading status
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Effect to load user token from storage on app start
     useEffect(() => {
         const loadUserFromStorage = async () => {
             try {
@@ -43,7 +38,6 @@ export const AuthProvider = ({ children }) => {
         loadUserFromStorage();
     }, []);
 
-    // Effect to set up a response interceptor for handling 401 Unauthorized errors
     useEffect(() => {
         const responseInterceptor = apiClient.interceptors.response.use(
             (response) => response,
@@ -56,71 +50,95 @@ export const AuthProvider = ({ children }) => {
             }
         );
 
-        // Cleanup function to remove the interceptor when the component unmounts
         return () => {
             apiClient.interceptors.response.eject(responseInterceptor);
         };
     }, []);
 
-    // --- Core Authentication Functions ---
-
     const login = useCallback(async (email, password) => {
         try {
             const data = await authService.login(email, password);
 
-            // ** THE FIX IS HERE **
-            // The 'data' object itself is the user profile.
             setUser(data);
             setToken(data.token);
 
-            // Also save the user object to storage so it can be restored on app reload
             await AsyncStorage.setItem('userToken', data.token);
             await AsyncStorage.setItem('user', JSON.stringify(data));
 
             return data;
         } catch (error) {
             console.error('Login failed:', error);
-            throw error; // Re-throw to be handled by the UI
+            throw error;
         }
     }, []);
 
-    const signup = useCallback(async (name, email, password) => {
+    const register = useCallback(async (name, email, password) => {
         try {
-            const data = await authService.signup(name, email, password);
+            const data = await authService.register(name, email, password);
+
             setUser(data);
             setToken(data.token);
+
             await AsyncStorage.setItem('userToken', data.token);
             await AsyncStorage.setItem('user', JSON.stringify(data));
+
             return data;
         } catch (error) {
-            console.error('Signup failed:', error);
+            console.error('Registration failed:', error);
             throw error;
         }
     }, []);
 
     const logout = useCallback(async () => {
         try {
-            // Clear state
             setUser(null);
             setToken(null);
-            // Remove data from storage
             await AsyncStorage.removeItem('userToken');
             await AsyncStorage.removeItem('user');
-            // Reset navigation to the login screen
             resetRoot();
         } catch (error) {
             console.error('Logout failed:', error);
         }
     }, []);
 
-    // The value provided to consuming components
+    const updateOnboardingPath = useCallback(async (professionalPath) => {
+        try {
+            // Just update the local user state temporarily
+            setUser(prev => ({ ...prev, professionalPath }));
+        } catch (error) {
+            console.error('Failed to update onboarding path:', error);
+            throw error;
+        }
+    }, []);
+
+    const completeOnboarding = useCallback(async (pinnedModules) => {
+        try {
+            const professionalPath = user?.professionalPath;
+            if (!professionalPath) {
+                throw new Error('Professional path not selected');
+            }
+
+            const data = await authService.updateOnboarding(professionalPath, pinnedModules);
+
+            setUser(data);
+            await AsyncStorage.setItem('user', JSON.stringify(data));
+
+            return data;
+        } catch (error) {
+            console.error('Failed to complete onboarding:', error);
+            throw error;
+        }
+    }, [user]);
+
     const value = {
         user,
         token,
         loading,
         login,
-        signup,
+        register,
         logout,
+        updateOnboardingPath,
+        completeOnboarding,
     };
 
     return (

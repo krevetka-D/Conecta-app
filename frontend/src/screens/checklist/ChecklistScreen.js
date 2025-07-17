@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -6,43 +6,140 @@ import {
     ScrollView,
     TouchableOpacity,
     Alert,
+    RefreshControl,
+    SafeAreaView,
 } from 'react-native';
 import { Card, Checkbox, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../store/contexts/AuthContext';
-import { colors } from '../../constants/theme';
-import { CHECKLIST_ITEMS } from '../../constants/config';
+import { colors, fonts, spacing, borderRadius, shadows } from '../../constants/theme';
 import checklistService from '../../services/checklistService';
+import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const ChecklistScreen = ({ navigation }) => {
     const { user } = useAuth();
     const [checklistData, setChecklistData] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [updating, setUpdating] = useState({});
 
-    useEffect(() => {
-        loadChecklist();
-    }, []);
+    // Define checklist items based on professional path
+    const CHECKLIST_ITEMS = {
+        FREELANCER: [
+            {
+                key: 'OBTAIN_NIE',
+                title: 'Obtain your NIE',
+                description: 'Get your foreigner identification number',
+                icon: 'card-account-details',
+                infoLink: 'nie-guide'
+            },
+            {
+                key: 'REGISTER_AUTONOMO',
+                title: 'Register as Autónomo',
+                description: 'Complete your self-employment registration',
+                icon: 'briefcase-account',
+                infoLink: 'autonomo-guide'
+            },
+            {
+                key: 'UNDERSTAND_TAXES',
+                title: 'Understand Tax Obligations',
+                description: 'Learn about IVA and IRPF requirements',
+                icon: 'calculator',
+                infoLink: 'taxes-guide'
+            },
+            {
+                key: 'OPEN_BANK_ACCOUNT',
+                title: 'Open Spanish Bank Account',
+                description: 'Set up your business banking',
+                icon: 'bank',
+                infoLink: 'banking-guide'
+            },
+        ],
+        ENTREPRENEUR: [
+            {
+                key: 'OBTAIN_NIE',
+                title: 'Obtain your NIE',
+                description: 'Get your foreigner identification number',
+                icon: 'card-account-details',
+                infoLink: 'nie-guide'
+            },
+            {
+                key: 'FORM_SL_COMPANY',
+                title: 'Form an S.L. Company',
+                description: 'Establish your limited liability company',
+                icon: 'domain',
+                infoLink: 'company-formation-guide'
+            },
+            {
+                key: 'GET_COMPANY_NIF',
+                title: 'Get Company NIF',
+                description: 'Obtain your company tax ID',
+                icon: 'identifier',
+                infoLink: 'company-nif-guide'
+            },
+            {
+                key: 'RESEARCH_FUNDING',
+                title: 'Research Funding Options',
+                description: 'Explore grants and investment opportunities',
+                icon: 'cash-multiple',
+                infoLink: 'funding-guide'
+            },
+        ],
+    };
 
-    const loadChecklist = async () => {
-        setLoading(true);
+    const loadChecklist = useCallback(async () => {
         try {
             const data = await checklistService.getChecklist();
-            setChecklistData(data);
+            setChecklistData(data || []);
         } catch (error) {
-            Alert.alert('Error', 'Failed to load checklist');
+            console.error('Failed to load checklist:', error);
+            showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_LOAD_FAILED);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const handleToggle = async (itemKey, currentStatus) => {
+    useEffect(() => {
+        loadChecklist();
+    }, [loadChecklist]);
+
+    const handleRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await loadChecklist();
+        setRefreshing(false);
+    }, [loadChecklist]);
+
+    const handleToggle = useCallback(async (itemKey, currentStatus) => {
+        setUpdating(prev => ({ ...prev, [itemKey]: true }));
+
         try {
             await checklistService.updateChecklistItem(itemKey, !currentStatus);
             await loadChecklist();
+
+            if (!currentStatus) {
+                showSuccessAlert('Great job!', SUCCESS_MESSAGES.TASK_COMPLETED);
+            }
         } catch (error) {
-            Alert.alert('Error', 'Failed to update checklist item');
+            console.error('Failed to update checklist item:', error);
+            showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_UPDATE_FAILED);
+        } finally {
+            setUpdating(prev => ({ ...prev, [itemKey]: false }));
         }
-    };
+    }, [loadChecklist]);
+
+    const handleInfoPress = useCallback((infoLink) => {
+        Alert.alert(
+            'Guide Coming Soon',
+            'Detailed guides are being prepared. Check back soon!',
+            [
+                { text: 'OK' }
+            ]
+        );
+        // In future, navigate to guide:
+        // navigation.navigate('GuideDetail', { slug: infoLink });
+    }, []);
 
     const getChecklistInfo = () => {
         const items = user?.professionalPath === 'FREELANCER'
@@ -55,177 +152,350 @@ const ChecklistScreen = ({ navigation }) => {
         return { items, completedCount, progress };
     };
 
+    if (loading) {
+        return <LoadingSpinner fullScreen text="Loading your checklist..." />;
+    }
+
     const { items, completedCount, progress } = getChecklistInfo();
 
+    const getMotivationalMessage = () => {
+        if (progress === 0) return "Let's get started! 🚀";
+        if (progress < 0.5) return "Great progress! Keep going! 💪";
+        if (progress < 1) return "Almost there! You're doing amazing! 🌟";
+        return "All done! You're ready to rock! 🎉";
+    };
+
     return (
-        <ScrollView style={styles.container}>
-            {/* Progress Section */}
-            <View style={styles.progressSection}>
-                <Text style={styles.progressTitle}>Your Progress</Text>
-                <Text style={styles.progressText}>
-                    {completedCount} of {items.length} steps completed
-                </Text>
-                <ProgressBar
-                    progress={progress}
-                    color={colors.primary}
-                    style={styles.progressBar}
-                />
-            </View>
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={colors.primary}
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Progress Section */}
+                <View style={styles.progressSection}>
+                    <View style={styles.progressHeader}>
+                        <Text style={styles.progressTitle}>Your Progress</Text>
+                        <Text style={styles.progressPercentage}>
+                            {Math.round(progress * 100)}%
+                        </Text>
+                    </View>
+                    <Text style={styles.progressText}>
+                        {completedCount} of {items.length} steps completed
+                    </Text>
+                    <ProgressBar
+                        progress={progress}
+                        color={colors.primary}
+                        style={styles.progressBar}
+                    />
+                    <Text style={styles.motivationalText}>
+                        {getMotivationalMessage()}
+                    </Text>
+                </View>
 
-            {/* Checklist Items */}
-            <View style={styles.checklistSection}>
-                {items.map((item) => {
-                    const checklistItem = checklistData.find(d => d.itemKey === item.key);
-                    const isCompleted = checklistItem?.isCompleted || false;
+                {/* Checklist Items */}
+                <View style={styles.checklistSection}>
+                    {items.map((item, index) => {
+                        const checklistItem = checklistData.find(d => d.itemKey === item.key);
+                        const isCompleted = checklistItem?.isCompleted || false;
+                        const isUpdating = updating[item.key] || false;
 
-                    return (
-                        <Card key={item.key} style={[
-                            styles.checklistCard,
-                            isCompleted && styles.completedCard
-                        ]}>
-                            <TouchableOpacity
-                                onPress={() => handleToggle(item.key, isCompleted)}
-                                style={styles.cardContent}
+                        return (
+                            <Card
+                                key={item.key}
+                                style={[
+                                    styles.checklistCard,
+                                    isCompleted && styles.completedCard,
+                                    index === 0 && styles.firstCard,
+                                    index === items.length - 1 && styles.lastCard,
+                                ]}
                             >
-                                <Checkbox
-                                    status={isCompleted ? 'checked' : 'unchecked'}
-                                    color={colors.primary}
-                                />
-                                <View style={styles.cardTextContainer}>
-                                    <Text style={[
-                                        styles.cardTitle,
-                                        isCompleted && styles.completedText
-                                    ]}>
-                                        {item.title}
-                                    </Text>
-                                    <Text style={styles.cardDescription}>
-                                        {item.description}
+                                <TouchableOpacity
+                                    onPress={() => handleToggle(item.key, isCompleted)}
+                                    disabled={isUpdating}
+                                    style={styles.cardTouchable}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.cardContent}>
+                                        <View style={styles.checkboxContainer}>
+                                            {isUpdating ? (
+                                                <View style={styles.loadingCheckbox}>
+                                                    <LoadingSpinner size="small" />
+                                                </View>
+                                            ) : (
+                                                <Checkbox
+                                                    status={isCompleted ? 'checked' : 'unchecked'}
+                                                    color={colors.primary}
+                                                    disabled={isUpdating}
+                                                />
+                                            )}
+                                        </View>
+
+                                        <View style={styles.cardTextContainer}>
+                                            <View style={styles.titleRow}>
+                                                <Icon
+                                                    name={item.icon}
+                                                    size={20}
+                                                    color={isCompleted ? colors.textSecondary : colors.primary}
+                                                    style={styles.itemIcon}
+                                                />
+                                                <Text style={[
+                                                    styles.cardTitle,
+                                                    isCompleted && styles.completedText
+                                                ]}>
+                                                    {item.title}
+                                                </Text>
+                                            </View>
+                                            <Text style={[
+                                                styles.cardDescription,
+                                                isCompleted && styles.completedDescription
+                                            ]}>
+                                                {item.description}
+                                            </Text>
+                                        </View>
+
+                                        <TouchableOpacity
+                                            onPress={() => handleInfoPress(item.infoLink)}
+                                            style={styles.infoButton}
+                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                        >
+                                            <Icon
+                                                name="information-outline"
+                                                size={24}
+                                                color={colors.primary}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            </Card>
+                        );
+                    })}
+                </View>
+
+                {/* Tips Section */}
+                <View style={styles.tipsSection}>
+                    <Card style={styles.tipCard}>
+                        <Card.Content>
+                            <View style={styles.tipHeader}>
+                                <Icon name="lightbulb-outline" size={24} color={colors.warning} />
+                                <Text style={styles.tipTitle}>Pro Tip</Text>
+                            </View>
+                            <Text style={styles.tipText}>
+                                {user?.professionalPath === 'FREELANCER'
+                                    ? "Start with obtaining your NIE - it's required for all other steps! The process usually takes 2-4 weeks, so plan ahead."
+                                    : "Consider consulting with a gestor for company formation - they can handle most of the paperwork and save you time."}
+                            </Text>
+                        </Card.Content>
+                    </Card>
+
+                    {/* Additional Resources Card */}
+                    <Card style={styles.resourceCard}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Resources')}
+                            style={styles.resourceTouchable}
+                        >
+                            <Card.Content style={styles.resourceContent}>
+                                <Icon name="book-open-variant" size={24} color={colors.primary} />
+                                <View style={styles.resourceTextContainer}>
+                                    <Text style={styles.resourceTitle}>Need more help?</Text>
+                                    <Text style={styles.resourceDescription}>
+                                        Explore our guides and service directory
                                     </Text>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        // Navigate to relevant guide
-                                        navigation.navigate('Resources');
-                                    }}
-                                    style={styles.infoButton}
-                                >
-                                    <Icon name="information-outline" size={24} color={colors.primary} />
-                                </TouchableOpacity>
-                            </TouchableOpacity>
-                        </Card>
-                    );
-                })}
-            </View>
-
-            {/* Tips Section */}
-            <View style={styles.tipsSection}>
-                <Card style={styles.tipCard}>
-                    <Card.Content>
-                        <View style={styles.tipHeader}>
-                            <Icon name="lightbulb-outline" size={24} color={colors.warning} />
-                            <Text style={styles.tipTitle}>Pro Tip</Text>
-                        </View>
-                        <Text style={styles.tipText}>
-                            {user?.professionalPath === 'FREELANCER'
-                                ? "Start with obtaining your NIE - it's required for all other steps!"
-                                : "Consider consulting with a gestor for company formation - they can handle most of the paperwork."}
-                        </Text>
-                    </Card.Content>
-                </Card>
-            </View>
-        </ScrollView>
+                                <Icon name="chevron-right" size={24} color={colors.textSecondary} />
+                            </Card.Content>
+                        </TouchableOpacity>
+                    </Card>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,
     },
+    scrollContent: {
+        paddingBottom: spacing.xxl,
+    },
     progressSection: {
-        padding: 20,
-        backgroundColor: 'white',
+        padding: spacing.lg,
+        backgroundColor: colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+        ...shadows.sm,
+    },
+    progressHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
     },
     progressTitle: {
-        fontSize: 24,
-        fontFamily: 'Poppins-Bold',
+        fontSize: fonts.sizes.xxl,
+        fontFamily: fonts.families.bold,
         color: colors.text,
-        marginBottom: 8,
+    },
+    progressPercentage: {
+        fontSize: fonts.sizes.xl,
+        fontFamily: fonts.families.bold,
+        color: colors.primary,
     },
     progressText: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.regular,
         color: colors.textSecondary,
-        marginBottom: 16,
+        marginBottom: spacing.md,
     },
     progressBar: {
         height: 8,
-        borderRadius: 4,
+        borderRadius: borderRadius.sm,
+        backgroundColor: colors.background,
+    },
+    motivationalText: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.semiBold,
+        color: colors.primary,
+        marginTop: spacing.sm,
+        textAlign: 'center',
     },
     checklistSection: {
-        padding: 20,
+        padding: spacing.lg,
     },
     checklistCard: {
-        marginBottom: 12,
-        borderRadius: 12,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.lg,
+        overflow: 'hidden',
+        ...shadows.sm,
+    },
+    firstCard: {
+        marginTop: 0,
+    },
+    lastCard: {
+        marginBottom: 0,
     },
     completedCard: {
         opacity: 0.8,
+        backgroundColor: colors.surfaceVariant,
+    },
+    cardTouchable: {
+        width: '100%',
     },
     cardContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
+        padding: spacing.md,
+    },
+    checkboxContainer: {
+        marginRight: spacing.sm,
+    },
+    loadingCheckbox: {
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     cardTextContainer: {
         flex: 1,
-        marginLeft: 12,
+        marginRight: spacing.sm,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.xs / 2,
+    },
+    itemIcon: {
+        marginRight: spacing.xs,
     },
     cardTitle: {
-        fontSize: 16,
-        fontFamily: 'Poppins-SemiBold',
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
         color: colors.text,
-        marginBottom: 4,
+        flex: 1,
     },
     completedText: {
         textDecorationLine: 'line-through',
         color: colors.textSecondary,
     },
     cardDescription: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
         color: colors.textSecondary,
+        lineHeight: fonts.sizes.sm * fonts.lineHeights.normal,
+    },
+    completedDescription: {
+        color: colors.textTertiary,
     },
     infoButton: {
-        padding: 8,
+        padding: spacing.xs,
     },
     tipsSection: {
-        padding: 20,
+        padding: spacing.lg,
         paddingTop: 0,
     },
     tipCard: {
-        borderRadius: 12,
+        borderRadius: borderRadius.lg,
         backgroundColor: '#FEF3C7',
+        marginBottom: spacing.md,
+        ...shadows.sm,
     },
     tipHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: spacing.sm,
     },
     tipTitle: {
-        fontSize: 16,
-        fontFamily: 'Poppins-SemiBold',
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
         color: colors.text,
-        marginLeft: 8,
+        marginLeft: spacing.sm,
     },
     tipText: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
         color: colors.text,
-        lineHeight: 20,
+        lineHeight: fonts.sizes.sm * fonts.lineHeights.relaxed,
+    },
+    resourceCard: {
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surface,
+        ...shadows.sm,
+    },
+    resourceTouchable: {
+        width: '100%',
+    },
+    resourceContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    resourceTextContainer: {
+        flex: 1,
+        marginLeft: spacing.md,
+    },
+    resourceTitle: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+    },
+    resourceDescription: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        marginTop: spacing.xs / 2,
     },
 });
 
-export default ChecklistScreen;
+export default React.memo(ChecklistScreen);

@@ -5,6 +5,6 @@ export { default as checklistService } from './checklistService';
 export { default as contentService } from './contentService';
 
 // Export API utilities
-export { default as apiClient, setAuthToken, setBaseURL, setTimeout } from './api/client';
+export { default as apiClient } from './api/client';
 export { API_ENDPOINTS } from './api/endpoints';
 export { setupInterceptors } from './api/interceptors';

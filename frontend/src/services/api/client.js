@@ -1,6 +1,5 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// CORRECTED PATH:
 import { API_BASE_URL } from '../../constants/config';
 import { setupInterceptors } from './interceptors';
 

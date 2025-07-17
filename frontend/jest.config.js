@@ -1,4 +1,4 @@
-// jest.config.js
+// jest.constants.js
 module.exports = {
     preset: 'react-native',
 

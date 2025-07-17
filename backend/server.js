@@ -9,7 +9,8 @@ import budgetRoutes from './routes/budgetRoutes.js';
 import checklistRoutes from './routes/checklistRoutes.js';
 
 // Import the new dashboard routes
-import dashboardRoutes from './routes/dashboardRoutes.js'; // <-- ADD THIS LINE
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import configRoutes from './routes/configRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -26,6 +27,9 @@ app.use('/api/dashboard', dashboardRoutes); // <-- ADD THIS LINE
 // --- Error Handling Middleware ---
 app.use(notFound);
 app.use(errorHandler);
+app.use('/api/config', configRoutes);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+});

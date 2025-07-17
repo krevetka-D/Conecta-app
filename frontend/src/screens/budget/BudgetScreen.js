@@ -1,203 +1,501 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
-    FlatList,
+    StyleSheet,
+    ScrollView,
     TouchableOpacity,
-    Platform,
+    Alert,
     RefreshControl,
-    ActivityIndicator,
-    ScrollView, // Add ScrollView back to the imports
+    SafeAreaView,
 } from 'react-native';
-import { FAB, Portal, Modal, TextInput, RadioButton, Provider } from 'react-native-paper';
+import { Card, Checkbox, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
-
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../store/contexts/AuthContext';
-import { useApi } from '../../hooks/useApi';
-import { useForm } from '../../hooks/useForm';
+import { colors, fonts, spacing, borderRadius, shadows } from '../../constants/theme';
+import checklistService from '../../services/checklistService';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
-import { formatCurrency } from '../../utils/formatting';
-import { styles } from '../../styles/screens/budget/BudgetScreenStyles';
-import { colors } from '../../constants/theme';
-import { BUDGET_CATEGORIES, PROFESSIONAL_PATHS } from '../../constants/config';
-import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants/messages';
-import budgetService from '../../services/budgetService';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
-// --- Header Component for the FlatList ---
-const BudgetListHeader = ({ totals }) => (
-    <>
-        {/* Summary Cards */}
-        <View style={styles.summaryContainer}>
-            <Card style={[styles.summaryCard, styles.incomeCard]}>
-                <Text style={styles.summaryLabel}>Income</Text>
-                <Text style={styles.summaryAmount}>{formatCurrency(totals.income)}</Text>
-            </Card>
-            <Card style={[styles.summaryCard, styles.expenseCard]}>
-                <Text style={styles.summaryLabel}>Expenses</Text>
-                <Text style={styles.summaryAmount}>{formatCurrency(totals.expenses)}</Text>
-            </Card>
-            <Card style={[styles.summaryCard, styles.balanceCard]}>
-                <Text style={styles.summaryLabel}>Balance</Text>
-                <Text style={[styles.summaryAmount, totals.balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>
-                    {formatCurrency(totals.balance)}
-                </Text>
-            </Card>
-        </View>
-        {/* Entries List Title */}
-        <View style={styles.entriesSection}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-        </View>
-    </>
-);
-
-// --- List Item Component ---
-const EntryItem = ({ item }) => (
-    <Card style={[styles.entryCard, { marginHorizontal: 16 }]}>
-        <View style={styles.entryHeader}>
-            <View style={styles.entryInfo}>
-                <Text style={styles.entryCategory}>{item.category}</Text>
-                {item.description ? <Text style={styles.entryDescription}>{item.description}</Text> : null}
-                <Text style={styles.entryDate}>{format(new Date(item.entryDate), 'MMM d, yyyy')}</Text>
-            </View>
-            <Text style={[styles.entryAmount, item.type === 'INCOME' ? styles.incomeAmount : styles.expenseAmount]}>
-                {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
-            </Text>
-        </View>
-    </Card>
-);
-
-const BudgetScreen = () => {
+const ChecklistScreen = ({ navigation }) => {
     const { user } = useAuth();
-    const [entries, setEntries] = useState([]);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [checklistData, setChecklistData] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [updating, setUpdating] = useState({});
 
-    const { execute: loadEntries, loading } = useApi(budgetService.getBudgetEntries);
-    const { execute: createEntry, loading: creating } = useApi(budgetService.createBudgetEntry);
-    const { execute: deleteEntry } = useApi(budgetService.deleteBudgetEntry);
-
-    const { values, errors, handleChange, validateForm, resetForm, setValues } = useForm({
-        initialValues: { type: 'INCOME', category: '', amount: '', description: '', entryDate: new Date() },
-        validationRules: {
-            category: (value) => !value ? 'Category is required' : null,
-            amount: (value) => {
-                if (!value) return 'Amount is required';
-                if (isNaN(value) || parseFloat(value) <= 0) return 'Invalid amount';
-                return null;
+    // Define checklist items based on professional path
+    const CHECKLIST_ITEMS = {
+        FREELANCER: [
+            {
+                key: 'OBTAIN_NIE',
+                title: 'Obtain your NIE',
+                description: 'Get your foreigner identification number',
+                icon: 'card-account-details',
+                infoLink: 'nie-guide'
             },
-        },
-    });
+            {
+                key: 'REGISTER_AUTONOMO',
+                title: 'Register as Autónomo',
+                description: 'Complete your self-employment registration',
+                icon: 'briefcase-account',
+                infoLink: 'autonomo-guide'
+            },
+            {
+                key: 'UNDERSTAND_TAXES',
+                title: 'Understand Tax Obligations',
+                description: 'Learn about IVA and IRPF requirements',
+                icon: 'calculator',
+                infoLink: 'taxes-guide'
+            },
+            {
+                key: 'OPEN_BANK_ACCOUNT',
+                title: 'Open Spanish Bank Account',
+                description: 'Set up your business banking',
+                icon: 'bank',
+                infoLink: 'banking-guide'
+            },
+        ],
+        ENTREPRENEUR: [
+            {
+                key: 'OBTAIN_NIE',
+                title: 'Obtain your NIE',
+                description: 'Get your foreigner identification number',
+                icon: 'card-account-details',
+                infoLink: 'nie-guide'
+            },
+            {
+                key: 'FORM_SL_COMPANY',
+                title: 'Form an S.L. Company',
+                description: 'Establish your limited liability company',
+                icon: 'domain',
+                infoLink: 'company-formation-guide'
+            },
+            {
+                key: 'GET_COMPANY_NIF',
+                title: 'Get Company NIF',
+                description: 'Obtain your company tax ID',
+                icon: 'identifier',
+                infoLink: 'company-nif-guide'
+            },
+            {
+                key: 'RESEARCH_FUNDING',
+                title: 'Research Funding Options',
+                description: 'Explore grants and investment opportunities',
+                icon: 'cash-multiple',
+                infoLink: 'funding-guide'
+            },
+        ],
+    };
 
-    const loadBudgetEntries = useCallback(async () => {
+    const loadChecklist = useCallback(async () => {
         try {
-            const data = await loadEntries();
-            setEntries(data);
+            const data = await checklistService.getChecklist();
+            setChecklistData(data || []);
         } catch (error) {
-            showErrorAlert('Error', ERROR_MESSAGES.GENERIC_ERROR);
+            console.error('Failed to load checklist:', error);
+            showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_LOAD_FAILED);
+        } finally {
+            setLoading(false);
         }
-    }, [loadEntries]);
+    }, []);
 
     useEffect(() => {
-        loadBudgetEntries();
-    }, [loadBudgetEntries]);
+        loadChecklist();
+    }, [loadChecklist]);
 
     const handleRefresh = useCallback(async () => {
         setRefreshing(true);
-        await loadBudgetEntries();
+        await loadChecklist();
         setRefreshing(false);
-    }, [loadBudgetEntries]);
+    }, [loadChecklist]);
 
-    const handleAddEntry = useCallback(async () => {
-        if (!validateForm()) return;
+    const handleToggle = useCallback(async (itemKey, currentStatus) => {
+        setUpdating(prev => ({ ...prev, [itemKey]: true }));
+
         try {
-            const entry = { ...values, amount: parseFloat(values.amount), entryDate: values.entryDate.toISOString() };
-            await createEntry(entry);
-            await loadBudgetEntries();
-            showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_ADDED);
-            setModalVisible(false);
-            resetForm();
+            await checklistService.updateChecklistItem(itemKey, !currentStatus);
+            await loadChecklist();
+
+            if (!currentStatus) {
+                showSuccessAlert('Great job!', SUCCESS_MESSAGES.TASK_COMPLETED);
+            }
         } catch (error) {
-            showErrorAlert('Error', ERROR_MESSAGES.BUDGET_ENTRY_FAILED);
+            console.error('Failed to update checklist item:', error);
+            showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_UPDATE_FAILED);
+        } finally {
+            setUpdating(prev => ({ ...prev, [itemKey]: false }));
         }
-    }, [values, validateForm, createEntry, loadBudgetEntries, resetForm]);
+    }, [loadChecklist]);
 
-    const handleDateChange = useCallback((event, selectedDate) => {
-        setShowDatePicker(Platform.OS === 'ios');
-        if (selectedDate) {
-            setValues(prev => ({ ...prev, entryDate: selectedDate }));
-        }
-    }, [setValues]);
+    const handleInfoPress = useCallback((infoLink) => {
+        Alert.alert(
+            'Guide Coming Soon',
+            'Detailed guides are being prepared. Check back soon!',
+            [
+                { text: 'OK' }
+            ]
+        );
+        // In future, navigate to guide:
+        // navigation.navigate('GuideDetail', { slug: infoLink });
+    }, []);
 
-    const totals = useMemo(() => {
-        const income = entries.filter(e => e.type === 'INCOME').reduce((sum, e) => sum + e.amount, 0);
-        const expenses = entries.filter(e => e.type === 'EXPENSE').reduce((sum, e) => sum + e.amount, 0);
-        return { income, expenses, balance: income - expenses };
-    }, [entries]);
+    const getChecklistInfo = () => {
+        const items = user?.professionalPath === 'FREELANCER'
+            ? CHECKLIST_ITEMS.FREELANCER
+            : CHECKLIST_ITEMS.ENTREPRENEUR;
+
+        const completedCount = checklistData.filter(item => item.isCompleted).length;
+        const progress = items.length > 0 ? completedCount / items.length : 0;
+
+        return { items, completedCount, progress };
+    };
+
+    if (loading) {
+        return <LoadingSpinner fullScreen text="Loading your checklist..." />;
+    }
+
+    const { items, completedCount, progress } = getChecklistInfo();
+
+    const getMotivationalMessage = () => {
+        if (progress === 0) return "Let's get started! 🚀";
+        if (progress < 0.5) return "Great progress! Keep going! 💪";
+        if (progress < 1) return "Almost there! You're doing amazing! 🌟";
+        return "All done! You're ready to rock! 🎉";
+    };
 
     return (
-        <Provider>
-            <View style={styles.container}>
-                <FlatList
-                    data={entries}
-                    renderItem={({ item }) => <EntryItem item={item} />}
-                    keyExtractor={(item) => item._id}
-                    ListHeaderComponent={<BudgetListHeader totals={totals} />}
-                    ListEmptyComponent={
-                        <View style={{padding: 20, alignItems: 'center'}}>
-                            <Icon name="cash-remove" size={48} color={colors.textSecondary} />
-                            <Text style={[styles.sectionTitle, {marginTop: 16}]}>No transactions yet</Text>
-                            <Text style={{color: colors.textSecondary}}>Add your first income or expense!</Text>
-                        </View>
-                    }
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-                    }
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                />
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={colors.primary}
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Progress Section */}
+                <View style={styles.progressSection}>
+                    <View style={styles.progressHeader}>
+                        <Text style={styles.progressTitle}>Your Progress</Text>
+                        <Text style={styles.progressPercentage}>
+                            {Math.round(progress * 100)}%
+                        </Text>
+                    </View>
+                    <Text style={styles.progressText}>
+                        {completedCount} of {items.length} steps completed
+                    </Text>
+                    <ProgressBar
+                        progress={progress}
+                        color={colors.primary}
+                        style={styles.progressBar}
+                    />
+                    <Text style={styles.motivationalText}>
+                        {getMotivationalMessage()}
+                    </Text>
+                </View>
 
-                <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} />
+                {/* Checklist Items */}
+                <View style={styles.checklistSection}>
+                    {items.map((item, index) => {
+                        const checklistItem = checklistData.find(d => d.itemKey === item.key);
+                        const isCompleted = checklistItem?.isCompleted || false;
+                        const isUpdating = updating[item.key] || false;
 
-                <Portal>
-                    <Modal visible={modalVisible} onDismiss={() => { setModalVisible(false); resetForm(); }} contentContainerStyle={styles.modal}>
-                        <ScrollView>
-                            <Text style={styles.modalTitle}>Add Transaction</Text>
-                            <RadioButton.Group onValueChange={handleChange('type')} value={values.type}>
-                                <View style={styles.radioGroup}>
-                                    <RadioButton.Item label="Income" value="INCOME" />
-                                    <RadioButton.Item label="Expense" value="EXPENSE" />
-                                </View>
-                            </RadioButton.Group>
-                            <TextInput label="Amount" value={values.amount} onChangeText={handleChange('amount')} keyboardType="decimal-pad" mode="outlined" style={styles.input} left={<TextInput.Affix text="€" />} error={!!errors.amount} />
-                            {errors.amount && <Text style={styles.errorText}>{errors.amount}</Text>}
-                            <TouchableOpacity style={styles.categorySelector}>
-                                <Text style={[styles.categorySelectorText, !values.category && styles.placeholderText]}>
-                                    {values.category || 'Select Category *'}
-                                </Text>
-                                <Icon name="chevron-down" size={24} color={colors.textSecondary} />
-                            </TouchableOpacity>
-                            {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
-                            <TextInput label="Description (optional)" value={values.description} onChangeText={handleChange('description')} mode="outlined" style={styles.input} multiline numberOfLines={3} />
-                            <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
-                                <Icon name="calendar" size={24} color={colors.primary} />
-                                <Text style={styles.dateSelectorText}>{format(values.entryDate, 'MMMM d, yyyy')}</Text>
-                            </TouchableOpacity>
-                            {showDatePicker && <DateTimePicker value={values.entryDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} maximumDate={new Date()} />}
-                            <View style={styles.modalButtons}>
-                                <Button title="Cancel" onPress={() => { resetForm(); setModalVisible(false); }} variant="outline" style={styles.modalButton} />
-                                <Button title="Add Entry" onPress={handleAddEntry} loading={creating} disabled={creating} style={styles.modalButton} />
+                        return (
+                            <Card
+                                key={item.key}
+                                style={[
+                                    styles.checklistCard,
+                                    isCompleted && styles.completedCard,
+                                    index === 0 && styles.firstCard,
+                                    index === items.length - 1 && styles.lastCard,
+                                ]}
+                            >
+                                <TouchableOpacity
+                                    onPress={() => handleToggle(item.key, isCompleted)}
+                                    disabled={isUpdating}
+                                    style={styles.cardTouchable}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.cardContent}>
+                                        <View style={styles.checkboxContainer}>
+                                            {isUpdating ? (
+                                                <View style={styles.loadingCheckbox}>
+                                                    <LoadingSpinner size="small" />
+                                                </View>
+                                            ) : (
+                                                <Checkbox
+                                                    status={isCompleted ? 'checked' : 'unchecked'}
+                                                    color={colors.primary}
+                                                    disabled={isUpdating}
+                                                />
+                                            )}
+                                        </View>
+
+                                        <View style={styles.cardTextContainer}>
+                                            <View style={styles.titleRow}>
+                                                <Icon
+                                                    name={item.icon}
+                                                    size={20}
+                                                    color={isCompleted ? colors.textSecondary : colors.primary}
+                                                    style={styles.itemIcon}
+                                                />
+                                                <Text style={[
+                                                    styles.cardTitle,
+                                                    isCompleted && styles.completedText
+                                                ]}>
+                                                    {item.title}
+                                                </Text>
+                                            </View>
+                                            <Text style={[
+                                                styles.cardDescription,
+                                                isCompleted && styles.completedDescription
+                                            ]}>
+                                                {item.description}
+                                            </Text>
+                                        </View>
+
+                                        <TouchableOpacity
+                                            onPress={() => handleInfoPress(item.infoLink)}
+                                            style={styles.infoButton}
+                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                        >
+                                            <Icon
+                                                name="information-outline"
+                                                size={24}
+                                                color={colors.primary}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            </Card>
+                        );
+                    })}
+                </View>
+
+                {/* Tips Section */}
+                <View style={styles.tipsSection}>
+                    <Card style={styles.tipCard}>
+                        <Card.Content>
+                            <View style={styles.tipHeader}>
+                                <Icon name="lightbulb-outline" size={24} color={colors.warning} />
+                                <Text style={styles.tipTitle}>Pro Tip</Text>
                             </View>
-                        </ScrollView>
-                    </Modal>
-                </Portal>
-            </View>
-        </Provider>
+                            <Text style={styles.tipText}>
+                                {user?.professionalPath === 'FREELANCER'
+                                    ? "Start with obtaining your NIE - it's required for all other steps! The process usually takes 2-4 weeks, so plan ahead."
+                                    : "Consider consulting with a gestor for company formation - they can handle most of the paperwork and save you time."}
+                            </Text>
+                        </Card.Content>
+                    </Card>
+
+                    {/* Additional Resources Card */}
+                    <Card style={styles.resourceCard}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Resources')}
+                            style={styles.resourceTouchable}
+                        >
+                            <Card.Content style={styles.resourceContent}>
+                                <Icon name="book-open-variant" size={24} color={colors.primary} />
+                                <View style={styles.resourceTextContainer}>
+                                    <Text style={styles.resourceTitle}>Need more help?</Text>
+                                    <Text style={styles.resourceDescription}>
+                                        Explore our guides and service directory
+                                    </Text>
+                                </View>
+                                <Icon name="chevron-right" size={24} color={colors.textSecondary} />
+                            </Card.Content>
+                        </TouchableOpacity>
+                    </Card>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
-export default React.memo(BudgetScreen);
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    scrollContent: {
+        paddingBottom: spacing.xxl,
+    },
+    progressSection: {
+        padding: spacing.lg,
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        ...shadows.sm,
+    },
+    progressHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+    },
+    progressTitle: {
+        fontSize: fonts.sizes.xxl,
+        fontFamily: fonts.families.bold,
+        color: colors.text,
+    },
+    progressPercentage: {
+        fontSize: fonts.sizes.xl,
+        fontFamily: fonts.families.bold,
+        color: colors.primary,
+    },
+    progressText: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        marginBottom: spacing.md,
+    },
+    progressBar: {
+        height: 8,
+        borderRadius: borderRadius.sm,
+        backgroundColor: colors.background,
+    },
+    motivationalText: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.semiBold,
+        color: colors.primary,
+        marginTop: spacing.sm,
+        textAlign: 'center',
+    },
+    checklistSection: {
+        padding: spacing.lg,
+    },
+    checklistCard: {
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.lg,
+        overflow: 'hidden',
+        ...shadows.sm,
+    },
+    firstCard: {
+        marginTop: 0,
+    },
+    lastCard: {
+        marginBottom: 0,
+    },
+    completedCard: {
+        opacity: 0.8,
+        backgroundColor: colors.surfaceVariant,
+    },
+    cardTouchable: {
+        width: '100%',
+    },
+    cardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
+    },
+    checkboxContainer: {
+        marginRight: spacing.sm,
+    },
+    loadingCheckbox: {
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cardTextContainer: {
+        flex: 1,
+        marginRight: spacing.sm,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.xs / 2,
+    },
+    itemIcon: {
+        marginRight: spacing.xs,
+    },
+    cardTitle: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+        flex: 1,
+    },
+    completedText: {
+        textDecorationLine: 'line-through',
+        color: colors.textSecondary,
+    },
+    cardDescription: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        lineHeight: fonts.sizes.sm * fonts.lineHeights.normal,
+    },
+    completedDescription: {
+        color: colors.textTertiary,
+    },
+    infoButton: {
+        padding: spacing.xs,
+    },
+    tipsSection: {
+        padding: spacing.lg,
+        paddingTop: 0,
+    },
+    tipCard: {
+        borderRadius: borderRadius.lg,
+        backgroundColor: '#FEF3C7',
+        marginBottom: spacing.md,
+        ...shadows.sm,
+    },
+    tipHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    tipTitle: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+        marginLeft: spacing.sm,
+    },
+    tipText: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
+        color: colors.text,
+        lineHeight: fonts.sizes.sm * fonts.lineHeights.relaxed,
+    },
+    resourceCard: {
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surface,
+        ...shadows.sm,
+    },
+    resourceTouchable: {
+        width: '100%',
+    },
+    resourceContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    resourceTextContainer: {
+        flex: 1,
+        marginLeft: spacing.md,
+    },
+    resourceTitle: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+    },
+    resourceDescription: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        marginTop: spacing.xs / 2,
+    },
+});
+
+export default React.memo(ChecklistScreen);

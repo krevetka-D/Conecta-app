@@ -1,5 +1,5 @@
 // src/services/api/interceptors.js
-import NavigationService from '../../navigation/NavigationService';
+import { resetRoot } from '../../navigation/NavigationService';
 import { showErrorAlert } from '../../utils/alerts';
 import { ERROR_MESSAGES } from '../../constants/messages';
 import { SCREEN_NAMES } from '../../constants/routes';
@@ -66,7 +66,7 @@ export const setupInterceptors = (apiClient) => {
             switch (status) {
                 case 401:
                     // Unauthorized - redirect to login
-                    NavigationService.reset([{ name: SCREEN_NAMES.LOGIN }]);
+                    resetRoot();
                     throw new Error(ERROR_MESSAGES.SESSION_EXPIRED);
 
                 case 403:

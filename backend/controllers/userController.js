@@ -4,7 +4,7 @@ import generateToken from '../utils/generateToken.js';
 
 /**
  * @desc    Register a new user
- * @route   POST /api/users
+ * @route   POST /api/users/register
  * @access  Public
  */
 export const registerUser = asyncHandler(async (req, res) => {
@@ -29,11 +29,15 @@ export const registerUser = asyncHandler(async (req, res) => {
     });
 
     if (user) {
+        const token = generateToken(user._id);
+
         res.status(201).json({
             _id: user._id,
             name: user.name,
             email: user.email,
-            token: generateToken(user._id),
+            professionalPath: user.professionalPath,
+            onboardingCompleted: user.onboardingCompleted,
+            token: token,
         });
     } else {
         res.status(400);
@@ -49,21 +53,21 @@ export const registerUser = asyncHandler(async (req, res) => {
 export const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    // Find user by email
     const user = await User.findOne({ email });
 
-    // Check if user exists and password is correct
     if (user && (await user.matchPassword(password))) {
-        // Respond with user data and a new token
+        const token = generateToken(user._id);
+
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
-            // ** CRITICAL FIX **: Generate and include the token in the login response
-            token: generateToken(user._id),
+            professionalPath: user.professionalPath,
+            onboardingCompleted: user.onboardingCompleted,
+            token: token,
         });
     } else {
-        res.status(401); // Unauthorized
+        res.status(401);
         throw new Error('Invalid email or password');
     }
 });
@@ -71,11 +75,9 @@ export const loginUser = asyncHandler(async (req, res) => {
 /**
  * @desc    Get current user's profile
  * @route   GET /api/users/me
- * @access  Private (requires token)
+ * @access  Private
  */
 export const getMe = asyncHandler(async (req, res) => {
-    // The `protect` middleware already fetched the user and attached it to the request.
-    // We just need to find the fresh data from the database.
     const user = await User.findById(req.user._id).select('-password');
 
     if (user) {
@@ -86,19 +88,18 @@ export const getMe = asyncHandler(async (req, res) => {
     }
 });
 
-
 /**
  * @desc    Update user onboarding information
  * @route   PUT /api/users/onboarding
- * @access  Private (requires token)
+ * @access  Private
  */
 export const updateOnboarding = asyncHandler(async (req, res) => {
     const { professionalPath, pinnedModules } = req.body;
     const user = await User.findById(req.user._id);
 
     if (user) {
-        user.professionalPath = professionalPath ?? user.professionalPath;
-        user.pinnedModules = pinnedModules ?? user.pinnedModules;
+        user.professionalPath = professionalPath || user.professionalPath;
+        user.pinnedModules = pinnedModules || user.pinnedModules;
         user.onboardingCompleted = true;
 
         const updatedUser = await user.save();

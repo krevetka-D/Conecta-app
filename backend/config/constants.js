@@ -1,21 +1,9 @@
-// frontend/src/constants/config.js
-
-// For React Native, use your machine's IP address instead of localhost
-// Update this to match your development machine's IP
-const DEV_API_URL = 'http://192.168.1.129:5001/api'; // Your MacBook's IP
-const PROD_API_URL = 'https://api.conectaalicante.com/api'; // Your production API
-
-// API Configuration
-export const API_BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
-
-
-// Professional Paths
+// backend/config/constants.js
 export const PROFESSIONAL_PATHS = {
     FREELANCER: 'FREELANCER',
     ENTREPRENEUR: 'ENTREPRENEUR',
 };
 
-// Checklist Items Configuration
 export const CHECKLIST_ITEMS = {
     FREELANCER: [
         { key: 'OBTAIN_NIE', title: 'Obtain your NIE', description: 'Get your foreigner identification number' },
@@ -31,7 +19,6 @@ export const CHECKLIST_ITEMS = {
     ],
 };
 
-// Budget Categories Configuration
 export const BUDGET_CATEGORIES = {
     FREELANCER: {
         INCOME: [
@@ -68,34 +55,4 @@ export const BUDGET_CATEGORIES = {
             'Other Expenses',
         ],
     },
-};
-
-// App Configuration
-export const APP_CONFIG = {
-    APP_NAME: 'Conecta Alicante',
-    APP_VERSION: '1.0.0',
-    DEFAULT_LANGUAGE: 'en',
-    SUPPORTED_LANGUAGES: ['en', 'es'],
-};
-
-// Feature Flags
-export const FEATURES = {
-    ENABLE_FORUMS: false,
-    ENABLE_EVENTS: false,
-    ENABLE_NOTIFICATIONS: false,
-    ENABLE_OFFLINE_MODE: true,
-};
-
-// Pagination
-export const PAGINATION = {
-    DEFAULT_PAGE_SIZE: 20,
-    MAX_PAGE_SIZE: 100,
-};
-
-// File Upload Limits
-export const FILE_LIMITS = {
-    MAX_IMAGE_SIZE: 5 * 1024 * 1024, // 5MB
-    MAX_DOCUMENT_SIZE: 10 * 1024 * 1024, // 10MB
-    ALLOWED_IMAGE_TYPES: ['jpg', 'jpeg', 'png', 'gif'],
-    ALLOWED_DOCUMENT_TYPES: ['pdf', 'doc', 'docx'],
 };

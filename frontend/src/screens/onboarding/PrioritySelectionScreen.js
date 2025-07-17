@@ -11,7 +11,7 @@ import {
 import { Button, Checkbox } from 'react-native-paper';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
-import { PROFESSIONAL_PATHS } from '../../constants/config';
+import { PROFESSIONAL_PATHS } from '../../../../backend/config/constants';
 import { styles } from '../../styles/screens/onboarding/PrioritySelectionScreenStyles';
 
 const PrioritySelectionScreen = ({ route }) => {
