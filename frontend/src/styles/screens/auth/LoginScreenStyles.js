@@ -1,6 +1,8 @@
-// src/styles/screens/auth/LoginScreen.js
+// frontend/src/styles/screens/auth/LoginScreenStyles.js
+
 import { StyleSheet } from 'react-native';
-import { colors, fonts, spacing, borderRadius } from '../../../constants/theme';
+import { colors, fonts } from '../../../constants/theme';
+
 export const loginStyles = StyleSheet.create({
     container: {
         flex: 1,
@@ -9,19 +11,21 @@ export const loginStyles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         justifyContent: 'center',
-        paddingHorizontal: spacing.xl,
+        paddingHorizontal: 30,
+        paddingVertical: 40,
     },
     header: {
-        marginBottom: spacing.xxl,
+        marginBottom: 40,
+        alignItems: 'center',
     },
     title: {
-        fontSize: fonts.sizes.xxl,
+        fontSize: fonts.sizes.h2,
         fontFamily: fonts.families.bold,
         color: colors.text,
-        marginBottom: spacing.xs,
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: fonts.sizes.md,
+        fontSize: fonts.sizes.regular,
         fontFamily: fonts.families.regular,
         color: colors.textSecondary,
     },
@@ -29,27 +33,30 @@ export const loginStyles = StyleSheet.create({
         width: '100%',
     },
     input: {
-        marginBottom: spacing.md,
-        backgroundColor: colors.surface,
+        marginBottom: 16,
+        backgroundColor: 'white',
     },
     button: {
-        marginTop: spacing.xs,
-        marginBottom: spacing.lg,
-        borderRadius: borderRadius.full,
-    },
-    buttonContent: {
-        paddingVertical: spacing.xs,
+        marginTop: 8,
+        marginBottom: 20,
     },
     linkContainer: {
         alignItems: 'center',
     },
     linkText: {
-        fontSize: fonts.sizes.sm,
+        fontSize: fonts.sizes.small,
         fontFamily: fonts.families.regular,
         color: colors.textSecondary,
     },
     linkBold: {
         fontFamily: fonts.families.semiBold,
         color: colors.primary,
+    },
+    errorText: {
+        color: colors.danger,
+        fontSize: fonts.sizes.small,
+        fontFamily: fonts.families.regular,
+        marginBottom: 10,
+        marginLeft: 5,
     },
 });

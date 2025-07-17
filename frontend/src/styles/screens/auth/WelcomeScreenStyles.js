@@ -1,43 +1,56 @@
-// src/styles/screens/auth/WelcomeScreenStyles.js
+// frontend/src/styles/screens/auth/WelcomeScreenStyles.js
+
 import { StyleSheet } from 'react-native';
 import { colors, fonts } from '../../../constants/theme';
 
-export const styles = StyleSheet.create({
+export const welcomeStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
-        justifyContent: 'space-between',
-        padding: 20,
     },
     content: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 30,
     },
     title: {
         fontSize: fonts.sizes.h1,
         fontFamily: fonts.families.bold,
-        color: colors.text,
+        color: 'white',
+        marginBottom: 10,
         textAlign: 'center',
-        marginBottom: 16,
     },
     subtitle: {
-        fontSize: fonts.sizes.lg,
+        fontSize: fonts.sizes.large,
         fontFamily: fonts.families.regular,
-        color: colors.textSecondary,
+        color: 'white',
         textAlign: 'center',
-        paddingHorizontal: 20,
+        marginBottom: 60,
+        opacity: 0.9,
     },
-    actions: {
-        paddingBottom: 20,
+    buttonContainer: {
+        width: '100%',
     },
-    button: {
-        marginTop: 12,
-        paddingVertical: 8,
+    primaryButton: {
+        backgroundColor: 'white',
+        paddingVertical: 16,
         borderRadius: 30,
+        marginBottom: 16,
     },
-    buttonLabel: {
-        fontSize: fonts.sizes.md,
-        fontFamily: fonts.families.bold,
+    primaryButtonText: {
+        color: colors.primary,
+        fontSize: fonts.sizes.medium,
+        fontFamily: fonts.families.semiBold,
+        textAlign: 'center',
+    },
+    secondaryButton: {
+        paddingVertical: 16,
+    },
+    secondaryButtonText: {
+        color: 'white',
+        fontSize: fonts.sizes.small,
+        fontFamily: fonts.families.regular,
+        textAlign: 'center',
+        textDecorationLine: 'underline',
     },
 });

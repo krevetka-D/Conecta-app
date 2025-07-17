@@ -1,26 +1,63 @@
-// src/styles/screens/auth/RegisterScreenStyles.js
+// frontend/src/styles/screens/auth/RegisterScreenStyles.js
+
 import { StyleSheet } from 'react-native';
 import { colors, fonts } from '../../../constants/theme';
 
-export const styles = StyleSheet.create({
+export const registerStyles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 20,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        paddingHorizontal: 30,
+        paddingVertical: 40,
+    },
+    header: {
+        marginBottom: 40,
+        alignItems: 'center',
     },
     title: {
         fontSize: fonts.sizes.h2,
         fontFamily: fonts.families.bold,
         color: colors.text,
-        marginBottom: 24,
-        marginTop: 60,
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: fonts.sizes.regular,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        textAlign: 'center',
+    },
+    form: {
+        width: '100%',
     },
     input: {
         marginBottom: 16,
+        backgroundColor: 'white',
     },
     button: {
-        marginTop: 24,
-        paddingVertical: 8,
-        borderRadius: 30,
+        marginTop: 8,
+        marginBottom: 20,
+    },
+    linkContainer: {
+        alignItems: 'center',
+    },
+    linkText: {
+        fontSize: fonts.sizes.small,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+    },
+    linkBold: {
+        fontFamily: fonts.families.semiBold,
+        color: colors.primary,
+    },
+    errorText: {
+        color: colors.danger,
+        fontSize: fonts.sizes.small,
+        fontFamily: fonts.families.regular,
+        marginBottom: 10,
+        marginLeft: 5,
     },
 });

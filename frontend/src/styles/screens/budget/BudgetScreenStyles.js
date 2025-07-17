@@ -1,47 +1,51 @@
-// src/styles/screens/budget/BudgetScreenStyles.js
-import { StyleSheet } from 'react-native';
-import { colors, fonts } from '../../../constants/theme';
+// frontend/src/styles/screens/budget/BudgetScreenStyles.js
 
-export const styles = StyleSheet.create({
+import { StyleSheet } from 'react-native';
+import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
+
+export const budgetStyles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,
     },
     scrollContent: {
-        flexGrow: 1,
-        paddingBottom: 20,
+        paddingBottom: 80, // For FAB visibility
     },
     summaryContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding: 16,
-        gap: 8,
+        padding: spacing.md,
+        gap: spacing.sm,
     },
     summaryCard: {
         flex: 1,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
+        borderRadius: borderRadius.lg,
+        elevation: 2,
     },
     incomeCard: {
-        backgroundColor: colors.successLight + '20',
+        backgroundColor: `${colors.successLight}20`,
     },
     expenseCard: {
-        backgroundColor: colors.errorLight + '20',
+        backgroundColor: `${colors.errorLight}20`,
     },
     balanceCard: {
-        backgroundColor: colors.primaryLight + '20',
+        backgroundColor: `${colors.primaryLight}20`,
     },
     summaryLabel: {
         fontSize: fonts.sizes.sm,
         fontFamily: fonts.families.regular,
         color: colors.textSecondary,
-        marginBottom: 4,
+        marginBottom: spacing.xs,
+        textAlign: 'center',
     },
     summaryAmount: {
         fontSize: fonts.sizes.lg,
         fontFamily: fonts.families.bold,
-        color: colors.text,
+        textAlign: 'center',
     },
     positiveBalance: {
         color: colors.success,
@@ -50,41 +54,46 @@ export const styles = StyleSheet.create({
         color: colors.error,
     },
     entriesSection: {
-        padding: 16,
+        paddingHorizontal: spacing.md,
+        paddingBottom: spacing.md,
     },
     sectionTitle: {
         fontSize: fonts.sizes.lg,
         fontFamily: fonts.families.semiBold,
         color: colors.text,
-        marginBottom: 16,
+        marginBottom: spacing.md,
     },
     entryCard: {
-        marginBottom: 12,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surface,
+        ...shadows.sm,
     },
     entryHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     entryInfo: {
         flex: 1,
+        marginRight: spacing.md,
     },
     entryCategory: {
         fontSize: fonts.sizes.md,
         fontFamily: fonts.families.semiBold,
         color: colors.text,
+        marginBottom: spacing.xs / 2,
     },
     entryDescription: {
         fontSize: fonts.sizes.sm,
         fontFamily: fonts.families.regular,
         color: colors.textSecondary,
-        marginTop: 2,
+        marginBottom: spacing.xs,
     },
     entryDate: {
         fontSize: fonts.sizes.xs,
         fontFamily: fonts.families.regular,
-        color: colors.textSecondary,
-        marginTop: 4,
+        color: colors.textTertiary,
     },
     entryAmount: {
         fontSize: fonts.sizes.lg,
@@ -98,48 +107,49 @@ export const styles = StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        margin: 16,
+        margin: spacing.md,
         right: 0,
         bottom: 0,
         backgroundColor: colors.primary,
     },
     modal: {
-        backgroundColor: 'white',
-        padding: 20,
-        margin: 20,
-        borderRadius: 12,
-        maxHeight: '80%',
+        backgroundColor: colors.surface,
+        padding: spacing.lg,
+        margin: spacing.lg,
+        borderRadius: borderRadius.lg,
+        maxHeight: '85%',
     },
     modalTitle: {
         fontSize: fonts.sizes.xl,
         fontFamily: fonts.families.bold,
         color: colors.text,
-        marginBottom: 20,
+        marginBottom: spacing.lg,
     },
     radioGroup: {
         flexDirection: 'row',
-        marginBottom: 16,
+        marginBottom: spacing.md,
+        justifyContent: 'center',
     },
     input: {
-        marginBottom: 16,
+        marginBottom: spacing.md,
+        backgroundColor: colors.surface,
     },
     errorText: {
         color: colors.error,
         fontSize: fonts.sizes.sm,
-        marginTop: -12,
-        marginBottom: 8,
-        marginLeft: 4,
+        marginTop: -spacing.sm,
+        marginBottom: spacing.sm,
+        marginLeft: spacing.xs,
     },
     categorySelector: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 16,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginBottom: spacing.md,
     },
     categorySelectorText: {
         fontSize: fonts.sizes.md,
@@ -152,25 +162,39 @@ export const styles = StyleSheet.create({
     dateSelector: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 20,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginBottom: spacing.lg,
     },
     dateSelectorText: {
         fontSize: fonts.sizes.md,
         fontFamily: fonts.families.regular,
         color: colors.text,
-        marginLeft: 12,
+        marginLeft: spacing.sm,
     },
     modalButtons: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 12,
+        justifyContent: 'space-evenly',
+        gap: spacing.sm,
+        paddingTop: spacing.sm,
     },
     modalButton: {
         flex: 1,
+    },
+    categoryOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    categoryOptionText: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.regular,
+        color: colors.text,
     },
 });

@@ -1,8 +1,9 @@
+// frontend/src/screens/main/ProfileScreen.js
+
 import React from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     ScrollView,
     TouchableOpacity,
     Alert,
@@ -11,6 +12,7 @@ import { Card, Avatar, List, Divider } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
+import { profileStyles as styles } from '../../styles/screens/main/ProfileScreenStyles';
 
 const ProfileScreen = ({ navigation }) => {
     const { user, logout } = useAuth();
@@ -105,76 +107,5 @@ const ProfileScreen = ({ navigation }) => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    header: {
-        alignItems: 'center',
-        paddingVertical: 30,
-        backgroundColor: 'white',
-    },
-    avatar: {
-        backgroundColor: colors.primary,
-        marginBottom: 16,
-    },
-    name: {
-        fontSize: 24,
-        fontFamily: 'Poppins-Bold',
-        color: colors.text,
-        marginBottom: 4,
-    },
-    email: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-        marginBottom: 12,
-    },
-    pathBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.background,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    pathText: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
-        color: colors.primary,
-        marginLeft: 6,
-    },
-    menuCard: {
-        margin: 16,
-        borderRadius: 12,
-    },
-    menuItemTitle: {
-        fontFamily: 'Poppins-Regular',
-        fontSize: 16,
-    },
-    logoutButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 20,
-        marginBottom: 10,
-        paddingVertical: 12,
-    },
-    logoutText: {
-        fontSize: 16,
-        fontFamily: 'Poppins-SemiBold',
-        color: colors.error,
-        marginLeft: 8,
-    },
-    versionText: {
-        fontSize: 12,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-});
 
 export default ProfileScreen;

@@ -1,128 +1,207 @@
-import React, { useState } from 'react';
+// frontend/src/screens/auth/RegisterScreen.js
+
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Alert,
 } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
+import { TextInput } from 'react-native-paper';
+
+import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../store/contexts/AuthContext';
+import { useForm } from '../../hooks/useForm';
+import {
+    validateEmail,
+    validatePassword,
+    validateName,
+} from '../../utils/validation';
+import { showErrorAlert } from '../../utils/alerts';
+import { registerStyles as styles } from '../../styles/screens/auth/RegisterScreenStyles';
 import { colors } from '../../constants/theme';
+import { SCREEN_NAMES } from '../../constants/routes';
 
 const RegisterScreen = ({ navigation }) => {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
     const { register } = useAuth();
 
-    const handleRegister = async () => {
-        if (!name || !email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
+    const { values, errors, handleChange, handleBlur, validateForm } = useForm({
+        initialValues: {
+            name: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+        },
+        validationRules: {
+            name: (value) => {
+                if (!value) return 'Name is required';
+                if (!validateName(value))
+                    return 'Name must be at least 2 characters';
+                return null;
+            },
+            email: (value) => {
+                if (!value) return 'Email is required';
+                if (!validateEmail(value)) return 'Invalid email format';
+                return null;
+            },
+            password: (value) => {
+                if (!value) return 'Password is required';
+                if (!validatePassword(value))
+                    return 'Password must be at least 6 characters';
+                return null;
+            },
+            confirmPassword: (value) => {
+                if (!value) return 'Please confirm your password';
+                if (value !== values.password) return 'Passwords do not match';
+                return null;
+            },
+        },
+    });
 
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return;
-        }
+    const togglePasswordVisibility = useCallback(() => {
+        setShowPassword((prev) => !prev);
+    }, []);
 
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters');
-            return;
-        }
+    const handleRegister = useCallback(async () => {
+        const isValid = validateForm();
+        if (!isValid) return;
 
         setLoading(true);
         try {
-            await register(name, email, password);
+            await register(values.name, values.email, values.password);
         } catch (error) {
-            Alert.alert('Registration Failed', error.message);
+            showErrorAlert('Registration Failed', error.message);
         } finally {
             setLoading(false);
         }
-    };
+    }, [values, validateForm, register]);
+
+    const navigateToLogin = useCallback(() => {
+        navigation.navigate(SCREEN_NAMES.LOGIN);
+    }, [navigation]);
+
+    const inputTheme = useMemo(() => ({
+        colors: { primary: colors.primary },
+    }), []);
 
     return (
         <KeyboardAvoidingView
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.header}>
                     <Text style={styles.title}>Create Account</Text>
-                    <Text style={styles.subtitle}>Join the Alicante professional community</Text>
+                    <Text style={styles.subtitle}>
+                        Join the Alicante professional community
+                    </Text>
                 </View>
 
                 <View style={styles.form}>
                     <TextInput
                         label="Full Name"
-                        value={name}
-                        onChangeText={setName}
+                        value={values.name}
+                        onChangeText={handleChange('name')}
+                        onBlur={handleBlur('name')}
                         mode="outlined"
                         style={styles.input}
-                        theme={{ colors: { primary: colors.primary } }}
+                        theme={inputTheme}
+                        error={!!errors.name}
+                        disabled={loading}
                     />
+                    {errors.name && (
+                        <Text style={styles.errorText}>{errors.name}</Text>
+                    )}
 
                     <TextInput
                         label="Email"
-                        value={email}
-                        onChangeText={setEmail}
+                        value={values.email}
+                        onChangeText={handleChange('email')}
+                        onBlur={handleBlur('email')}
                         mode="outlined"
                         keyboardType="email-address"
                         autoCapitalize="none"
+                        autoComplete="email"
+                        textContentType="emailAddress"
                         style={styles.input}
-                        theme={{ colors: { primary: colors.primary } }}
+                        theme={inputTheme}
+                        error={!!errors.email}
+                        disabled={loading}
                     />
+                    {errors.email && (
+                        <Text style={styles.errorText}>{errors.email}</Text>
+                    )}
 
                     <TextInput
                         label="Password"
-                        value={password}
-                        onChangeText={setPassword}
+                        value={values.password}
+                        onChangeText={handleChange('password')}
+                        onBlur={handleBlur('password')}
                         mode="outlined"
                         secureTextEntry={!showPassword}
+                        autoComplete="new-password"
+                        textContentType="password"
                         style={styles.input}
-                        theme={{ colors: { primary: colors.primary } }}
+                        theme={inputTheme}
+                        error={!!errors.password}
+                        disabled={loading}
                         right={
                             <TextInput.Icon
                                 icon={showPassword ? 'eye-off' : 'eye'}
-                                onPress={() => setShowPassword(!showPassword)}
+                                onPress={togglePasswordVisibility}
+                                disabled={loading}
                             />
                         }
                     />
+                    {errors.password && (
+                        <Text style={styles.errorText}>{errors.password}</Text>
+                    )}
 
                     <TextInput
                         label="Confirm Password"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
+                        value={values.confirmPassword}
+                        onChangeText={handleChange('confirmPassword')}
+                        onBlur={handleBlur('confirmPassword')}
                         mode="outlined"
                         secureTextEntry={!showPassword}
+                        autoComplete="new-password"
+                        textContentType="password"
                         style={styles.input}
-                        theme={{ colors: { primary: colors.primary } }}
+                        theme={inputTheme}
+                        error={!!errors.confirmPassword}
+                        disabled={loading}
                     />
+                    {errors.confirmPassword && (
+                        <Text style={styles.errorText}>
+                            {errors.confirmPassword}
+                        </Text>
+                    )}
 
                     <Button
-                        mode="contained"
+                        title="Create Account"
                         onPress={handleRegister}
                         loading={loading}
                         disabled={loading}
                         style={styles.button}
-                        contentStyle={styles.buttonContent}
-                    >
-                        Create Account
-                    </Button>
+                        fullWidth
+                    />
 
                     <TouchableOpacity
-                        onPress={() => navigation.navigate('Login')}
+                        onPress={navigateToLogin}
                         style={styles.linkContainer}
+                        disabled={loading}
                     >
                         <Text style={styles.linkText}>
-                            Already have an account? <Text style={styles.linkBold}>Sign In</Text>
+                            Already have an account?{' '}
+                            <Text style={styles.linkBold}>Sign In</Text>
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -131,58 +210,4 @@ const RegisterScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 30,
-        paddingVertical: 40,
-    },
-    header: {
-        marginBottom: 40,
-    },
-    title: {
-        fontSize: 28,
-        fontFamily: 'Poppins-Bold',
-        color: colors.text,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-    },
-    form: {
-        width: '100%',
-    },
-    input: {
-        marginBottom: 16,
-        backgroundColor: 'white',
-    },
-    button: {
-        marginTop: 8,
-        marginBottom: 20,
-        borderRadius: 25,
-    },
-    buttonContent: {
-        paddingVertical: 8,
-    },
-    linkContainer: {
-        alignItems: 'center',
-    },
-    linkText: {
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
-        color: colors.textSecondary,
-    },
-    linkBold: {
-        fontFamily: 'Poppins-SemiBold',
-        color: colors.primary,
-    },
-});
-
-export default RegisterScreen;
+export default React.memo(RegisterScreen);

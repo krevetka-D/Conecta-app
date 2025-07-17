@@ -10,14 +10,31 @@
       <change afterPath="$PROJECT_DIR$/backend/controllers/dashboardController.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/routes/configRoutes.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/routes/dashboardRoutes.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/styles/screens/content/ResourcesScreenStyles.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/checklistController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/checklistController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/userController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/userController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/models/ChecklistItem.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/ChecklistItem.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/userRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/userRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/constants/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/constants/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/auth/LoginScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/auth/LoginScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/auth/RegisterScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/auth/RegisterScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/auth/WelcomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/auth/WelcomeScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/screens/budget/BudgetScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/budget/BudgetScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/services/budgetService.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/budgetService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/checklist/ChecklistScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/checklist/ChecklistScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/content/ResourcesScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/content/ResourcesScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/main/DashboardScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/main/DashboardScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/main/ProfileScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/main/ProfileScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/contexts/AppContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/store/contexts/AppContext.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/auth/LoginScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/auth/LoginScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/auth/RegisterScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/auth/RegisterScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/auth/WelcomeScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/auth/WelcomeScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/budget/BudgetScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/budget/BudgetScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/checklist/ChecklistScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/checklist/ChecklistScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/main/DashboardScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/main/DashboardScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/main/ProfileScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/main/ProfileScreenStyles.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -93,7 +110,7 @@
       <updated>1752478350390</updated>
       <workItem from="1752478351465" duration="686000" />
       <workItem from="1752479132614" duration="45022000" />
-      <workItem from="1752610897414" duration="64519000" />
+      <workItem from="1752610897414" duration="67414000" />
     </task>
     <servers />
   </component>

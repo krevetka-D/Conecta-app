@@ -1,4 +1,5 @@
-// src/screens/auth/LoginScreen.js
+// frontend/src/screens/auth/LoginScreen.js
+
 import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,

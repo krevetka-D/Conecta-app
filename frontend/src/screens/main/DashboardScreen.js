@@ -1,16 +1,17 @@
+// frontend/src/screens/main/DashboardScreen.js
+
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     View,
     Text,
     FlatList,
-    StyleSheet,
     RefreshControl,
     ActivityIndicator,
 } from 'react-native';
 import apiClient from '../../services/api/client';
 import { useApp } from '../../store/contexts/AppContext';
-// Import your theme constants directly
-import { colors, spacing, fonts, borderRadius, shadows } from '../../constants/theme';
+import { dashboardStyles as styles } from '../../styles/screens/main/DashboardScreenStyles';
+import { colors } from '../../constants/theme';
 
 const DashboardScreen = () => {
     const { isOnline } = useApp();
@@ -91,54 +92,5 @@ const DashboardScreen = () => {
         </View>
     );
 };
-
-// --- STYLES USING THE CORRECT PROPERTY NAMES FROM YOUR theme.js ---
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    listContentContainer: {
-        flexGrow: 1,
-        padding: spacing.md,
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    errorText: {
-        color: colors.error, // FIX: Was 'danger'
-        fontSize: fonts.sizes.md, // FIX: Was 'fonts.size.medium'
-        fontFamily: fonts.families.regular,
-        textAlign: 'center',
-        padding: spacing.lg, // FIX: Was 'large'
-    },
-    emptyText: {
-        color: colors.textSecondary,
-        fontSize: fonts.sizes.md, // FIX: Was 'fonts.size.medium'
-        fontFamily: fonts.families.regular,
-    },
-    eventItem: {
-        backgroundColor: colors.cardBackground, // FIX: Was 'card'
-        padding: spacing.md, // FIX: Was 'medium'
-        marginBottom: spacing.md,
-        borderRadius: borderRadius.md, // Using borderRadius from your theme
-        borderWidth: 1,
-        borderColor: colors.border,
-        ...shadows.md, // Using shadows from your theme
-    },
-    eventTitle: {
-        fontSize: fonts.sizes.lg, // FIX: Was 'fonts.size.medium'
-        fontFamily: fonts.families.semiBold,
-        color: colors.text,
-    },
-    eventDetails: {
-        fontSize: fonts.sizes.sm, // FIX: Was 'fonts.size.small'
-        fontFamily: fonts.families.regular,
-        color: colors.textSecondary,
-        marginTop: spacing.sm, // FIX: Was 'xsmall'
-    },
-});
 
 export default DashboardScreen;

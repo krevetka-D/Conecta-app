@@ -1,7 +1,11 @@
+// frontend/src/screens/auth/WelcomeScreen.js
+
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { welcomeStyles as styles } from '../../styles/screens/auth/WelcomeScreenStyles';
 import { colors } from '../../constants/theme';
+import { SCREEN_NAMES } from '../../constants/routes';
 
 const WelcomeScreen = ({ navigation }) => {
     return (
@@ -10,12 +14,6 @@ const WelcomeScreen = ({ navigation }) => {
             style={styles.container}
         >
             <View style={styles.content}>
-                {/*<Image*/}
-                {/*    source={require('../../../assets/images/logo-white.png')}*/}
-                {/*    style={styles.logo}*/}
-                {/*    resizeMode="contain"*/}
-                {/*/>*/}
-
                 <Text style={styles.title}>Conecta Alicante</Text>
                 <Text style={styles.subtitle}>
                     Your professional companion in Alicante
@@ -24,14 +22,14 @@ const WelcomeScreen = ({ navigation }) => {
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
                         style={styles.primaryButton}
-                        onPress={() => navigation.navigate('Register')}
+                        onPress={() => navigation.navigate(SCREEN_NAMES.REGISTER)}
                     >
                         <Text style={styles.primaryButtonText}>Get Started</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.secondaryButton}
-                        onPress={() => navigation.navigate('Login')}
+                        onPress={() => navigation.navigate(SCREEN_NAMES.LOGIN)}
                     >
                         <Text style={styles.secondaryButtonText}>
                             Already have an account? Sign In
@@ -42,61 +40,5 @@ const WelcomeScreen = ({ navigation }) => {
         </LinearGradient>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 30,
-    },
-    logo: {
-        width: 120,
-        height: 120,
-        marginBottom: 30,
-    },
-    title: {
-        fontSize: 32,
-        fontFamily: 'Poppins-Bold',
-        color: 'white',
-        marginBottom: 10,
-    },
-    subtitle: {
-        fontSize: 18,
-        fontFamily: 'Poppins-Regular',
-        color: 'white',
-        textAlign: 'center',
-        marginBottom: 60,
-        opacity: 0.9,
-    },
-    buttonContainer: {
-        width: '100%',
-    },
-    primaryButton: {
-        backgroundColor: 'white',
-        paddingVertical: 16,
-        borderRadius: 30,
-        marginBottom: 16,
-    },
-    primaryButtonText: {
-        color: colors.primary,
-        fontSize: 16,
-        fontFamily: 'Poppins-SemiBold',
-        textAlign: 'center',
-    },
-    secondaryButton: {
-        paddingVertical: 16,
-    },
-    secondaryButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontFamily: 'Poppins-Regular',
-        textAlign: 'center',
-        textDecorationLine: 'underline',
-    },
-});
 
 export default WelcomeScreen;

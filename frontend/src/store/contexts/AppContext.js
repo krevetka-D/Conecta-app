@@ -1,17 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-//import axios from 'axios';
-
-// Create the API client here. It will be configured by AuthContext.
-//removing ENTIRE API CLIENT CREATION BLOCK
-// export const api = axios.create({
-//     baseURL: 'http://your-api-url.com/api', // Replace with your actual API URL
-//     headers: {
-//         'Content-Type': 'application/json',
-//         Accept: 'application/json',
-//     },
-// });
 
 const AppContext = createContext({});
 
