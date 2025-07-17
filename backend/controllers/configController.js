@@ -9,11 +9,13 @@ import { BUDGET_CATEGORIES, CHECKLIST_ITEMS, PROFESSIONAL_PATHS } from '../confi
  */
 export const getBudgetCategories = asyncHandler(async (req, res) => {
     // Check for professionalPath in the query first, then fall back to the user object.
-    const path = req.query.professionalPath || req.user?.professionalPath;
+    let path = req.query.professionalPath || req.user?.professionalPath;
 
+    // If no path is provided and user doesn't have one, provide a default
     if (!path) {
-        res.status(400);
-        throw new Error('A professional path must be provided to get categories.');
+        // Default to FREELANCER if no path is specified
+        path = 'FREELANCER';
+        console.log('No professional path provided, defaulting to FREELANCER');
     }
 
     // Convert to uppercase to ensure consistent matching with keys
@@ -22,13 +24,22 @@ export const getBudgetCategories = asyncHandler(async (req, res) => {
     const categories = BUDGET_CATEGORIES[professionalPath];
 
     if (!categories) {
-        res.status(404);
-        throw new Error(`Categories not found for the professional path: ${professionalPath}`);
+        // If invalid path, return default FREELANCER categories
+        console.log(`Invalid professional path: ${professionalPath}, returning FREELANCER categories`);
+        const defaultCategories = BUDGET_CATEGORIES.FREELANCER;
+
+        res.status(200).json({
+            income: defaultCategories.INCOME || [],
+            expense: defaultCategories.EXPENSE || [],
+            professionalPath: 'FREELANCER' // Include the path used
+        });
+        return;
     }
 
     res.status(200).json({
         income: categories.INCOME || [],
-        expense: categories.EXPENSE || []
+        expense: categories.EXPENSE || [],
+        professionalPath: professionalPath // Include the path used
     });
 });
 
@@ -38,18 +49,22 @@ export const getBudgetCategories = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getChecklistItemsConfig = asyncHandler(async (req, res) => {
-    const { professionalPath } = req.user;
+    const { professionalPath } = req.user || {};
 
     if (!professionalPath) {
-        res.status(400);
-        throw new Error('User professional path not set');
+        // Return default FREELANCER items if no path is set
+        const defaultItems = CHECKLIST_ITEMS.FREELANCER;
+        res.status(200).json(defaultItems);
+        return;
     }
 
     const items = CHECKLIST_ITEMS[professionalPath];
 
     if (!items) {
-        res.status(404);
-        throw new Error('Checklist items not found for professional path');
+        // Return default FREELANCER items if invalid path
+        const defaultItems = CHECKLIST_ITEMS.FREELANCER;
+        res.status(200).json(defaultItems);
+        return;
     }
 
     res.status(200).json(items);

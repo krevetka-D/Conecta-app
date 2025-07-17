@@ -25,7 +25,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/backend" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/conecta-alicante-frontend/src/screens/main/DashboardScreen.js" root0="SKIP_INSPECTION" />
@@ -93,7 +93,7 @@
       <updated>1752478350390</updated>
       <workItem from="1752478351465" duration="686000" />
       <workItem from="1752479132614" duration="45022000" />
-      <workItem from="1752610897414" duration="63685000" />
+      <workItem from="1752610897414" duration="64519000" />
     </task>
     <servers />
   </component>

@@ -44,31 +44,40 @@ const BudgetScreen = ({ navigation }) => {
 
     // Load budget categories only when the user's professional path is available.
     useEffect(() => {
-        if (user?.professionalPath) {
-            loadCategories(user.professionalPath);
-        }
-    }, [user?.professionalPath]); // Dependency ensures this runs when professionalPath is loaded
-
+        loadCategories(user?.professionalPath || 'FREELANCER');
+    }, [user?.professionalPath]);
     // Load budget entries on initial component mount
     useEffect(() => {
         loadBudgetEntries();
     }, []);
 
-    const loadCategories = async (professionalPath) => {
+    const loadCategories = async (professionalPath = 'FREELANCER') => {
         try {
+            console.log('Loading categories for path:', professionalPath);
             const response = await budgetService.getCategories(professionalPath);
-            setCategories(response);
+            console.log('Categories loaded:', response);
+
+            // Ensure we have valid categories
+            if (response && (response.income || response.expense)) {
+                setCategories({
+                    income: response.income || [],
+                    expense: response.expense || []
+                });
+            } else {
+                // Use default categories if response is invalid
+                throw new Error('Invalid categories response');
+            }
         } catch (error) {
             console.error('Failed to load categories:', error);
             // Fallback to default categories as a safety measure
-            const defaultCategories = professionalPath === 'FREELANCER'
+            const defaultCategories = professionalPath === 'ENTREPRENEUR'
                 ? {
-                    income: ['Project-Based Income', 'Recurring Clients', 'Passive Income', 'Other Income'],
-                    expense: ['Cuota de Autónomo', 'Office/Coworking', 'Software & Tools', 'Professional Services', 'Marketing', 'Travel & Transport', 'Other Expenses']
-                }
-                : {
                     income: ['Product Sales', 'Service Revenue', 'Investor Funding', 'Grants', 'Other Income'],
                     expense: ['Salaries & Payroll', 'Office Rent', 'Legal & Accounting', 'Marketing & Sales', 'R&D', 'Operations', 'Other Expenses']
+                }
+                : {
+                    income: ['Project-Based Income', 'Recurring Clients', 'Passive Income', 'Other Income'],
+                    expense: ['Cuota de Autónomo', 'Office/Coworking', 'Software & Tools', 'Professional Services', 'Marketing', 'Travel & Transport', 'Other Expenses']
                 };
             setCategories(defaultCategories);
         }
