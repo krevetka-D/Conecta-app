@@ -1,3 +1,5 @@
+// backend/server.js
+
 import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
@@ -10,24 +12,24 @@ import checklistRoutes from './routes/checklistRoutes.js';
 
 // Import the new dashboard routes
 import dashboardRoutes from './routes/dashboardRoutes.js';
-import configRoutes from './routes/configRoutes.js';
+import configRoutes from './routes/configRoutes.js'; // Make sure this is imported
 
 dotenv.config();
 connectDB();
 
 const app = express();
-app.use(express.json()); // for parsing application/json
+app.use(express.json());
 
-// Mount the new dashboard routes
+// --- Mount your API routes here ---
 app.use('/api/users', userRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/checklist', checklistRoutes);
-app.use('/api/dashboard', dashboardRoutes); // <-- ADD THIS LINE
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/config', configRoutes); // FIX: Moved this line up
 
-// --- Error Handling Middleware ---
+// --- Error Handling Middleware should be last ---
 app.use(notFound);
 app.use(errorHandler);
-app.use('/api/config', configRoutes);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {

@@ -1,5 +1,5 @@
-// backend/controllers/configController.js
 import asyncHandler from 'express-async-handler';
+// The path has been corrected from ../../ to ../
 import { BUDGET_CATEGORIES, CHECKLIST_ITEMS, PROFESSIONAL_PATHS } from '../config/constants.js';
 
 /**
@@ -8,23 +8,27 @@ import { BUDGET_CATEGORIES, CHECKLIST_ITEMS, PROFESSIONAL_PATHS } from '../confi
  * @access  Private
  */
 export const getBudgetCategories = asyncHandler(async (req, res) => {
-    const { professionalPath } = req.user;
+    // Check for professionalPath in the query first, then fall back to the user object.
+    const path = req.query.professionalPath || req.user?.professionalPath;
 
-    if (!professionalPath) {
+    if (!path) {
         res.status(400);
-        throw new Error('User professional path not set');
+        throw new Error('A professional path must be provided to get categories.');
     }
+
+    // Convert to uppercase to ensure consistent matching with keys
+    const professionalPath = path.toUpperCase();
 
     const categories = BUDGET_CATEGORIES[professionalPath];
 
     if (!categories) {
         res.status(404);
-        throw new Error('Categories not found for professional path');
+        throw new Error(`Categories not found for the professional path: ${professionalPath}`);
     }
 
     res.status(200).json({
-        income: categories.INCOME,
-        expense: categories.EXPENSE
+        income: categories.INCOME || [],
+        expense: categories.EXPENSE || []
     });
 });
 
