@@ -1,9 +1,8 @@
-// src/services/api/endpoints.js
 export const API_ENDPOINTS = {
     // Auth endpoints
     AUTH: {
         LOGIN: '/users/login',
-        REGISTER: '/users/register',  // ← CHANGED TO MATCH BACKEND ROUTE
+        REGISTER: '/users/register',
         ME: '/users/me',
         UPDATE_ONBOARDING: '/users/onboarding',
         UPDATE_PROFILE: '/users/profile',
@@ -19,6 +18,7 @@ export const API_ENDPOINTS = {
         DELETE: (id) => `/budget/${id}`,
         SUMMARY: '/budget/summary',
         EXPORT: '/budget/export',
+        CATEGORIES: '/budget/categories',
     },
 
     // Checklist endpoints
@@ -41,7 +41,10 @@ export const API_ENDPOINTS = {
         LIST: '/forums',
         CREATE: '/forums',
         DETAIL: (id) => `/forums/${id}`,
+        UPDATE: (id) => `/forums/${id}`,
+        DELETE: (id) => `/forums/${id}`,
         CREATE_THREAD: (forumId) => `/forums/${forumId}/threads`,
+        DELETE_THREAD: (threadId) => `/forums/threads/${threadId}`,
         CREATE_POST: (threadId) => `/forums/threads/${threadId}/posts`,
         LIKE_POST: (postId) => `/forums/posts/${postId}/like`,
     },
@@ -49,11 +52,13 @@ export const API_ENDPOINTS = {
     // Events endpoints
     EVENTS: {
         LIST: '/events',
+        CREATE: '/events',
         DETAIL: (id) => `/events/${id}`,
-        REGISTER: (id) => `/events/${id}/register`,
-        UNREGISTER: (id) => `/events/${id}/unregister`,
+        UPDATE: (id) => `/events/${id}`,
+        DELETE: (id) => `/events/${id}`,
+        JOIN: (id) => `/events/${id}/join`,
+        LEAVE: (id) => `/events/${id}/leave`,
         UPCOMING: '/events/upcoming',
-        DELETE: '/events'
     },
 
     // Notifications endpoints
@@ -69,14 +74,23 @@ export const API_ENDPOINTS = {
         IMAGE: '/upload/image',
         DOCUMENT: '/upload/document',
     },
+
+    // Messages
     MESSAGES: {
-    CONVERSATIONS: '/messages/conversations',
-    GET: '/messages',
-    SEND: '/messages',
-    MARK_READ: '/messages/read'
-},
+        CONVERSATIONS: '/messages/conversations',
+        GET: '/messages',
+        SEND: '/messages',
+        MARK_READ: '/messages/read'
+    },
+
+    // Stats
     STATS: {
-    USER: '/stats/user',
-    DASHBOARD: '/stats/dashboard'
-},
+        USER: '/stats/user',
+        DASHBOARD: '/stats/dashboard'
+    },
+
+    // Config
+    CONFIG: {
+        CATEGORIES: '/config/categories',
+    },
 };

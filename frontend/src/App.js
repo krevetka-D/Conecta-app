@@ -1,23 +1,21 @@
-// frontend/src/App.js
-// This file is now correctly located in the 'src' directory.
-// All import paths have been updated relative to this new location.
-
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Contexts (Corrected paths to include 'store')
+// Import contexts in correct order
+import { AppProvider } from './store/contexts/AppContext';
 import { AuthProvider, useAuth } from './store/contexts/AuthContext';
 import { ThemeProvider, useTheme } from './store/contexts/ThemeContext';
 
-// Navigation (Corrected paths to be relative to 'src')
+// Import navigation
 import MainNavigator from './navigation/MainNavigator';
 import AuthNavigator from './navigation/AuthNavigator';
 import OnboardingNavigator from './navigation/OnboardingNavigator';
 
-// Services (Corrected path to be relative to 'src')
+// Import services
 import authService from './services/authService';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
 const AppContent = () => {
     const { user, setUser } = useAuth();
@@ -47,7 +45,7 @@ const AppContent = () => {
     };
 
     if (loading) {
-        return null; // Or a loading screen
+        return <LoadingSpinner fullScreen text="Loading..." />;
     }
 
     if (!user) {
@@ -61,18 +59,22 @@ const AppContent = () => {
     return <MainNavigator />;
 };
 
-export default function App() {
+const App = () => {
     return (
         <SafeAreaProvider>
-            <AuthProvider>
+            <AppProvider>
                 <ThemeProvider>
-                    <PaperProvider>
-                        <NavigationContainer>
-                            <AppContent />
-                        </NavigationContainer>
-                    </PaperProvider>
+                    <AuthProvider>
+                        <PaperProvider>
+                            <NavigationContainer>
+                                <AppContent />
+                            </NavigationContainer>
+                        </PaperProvider>
+                    </AuthProvider>
                 </ThemeProvider>
-            </AuthProvider>
+            </AppProvider>
         </SafeAreaProvider>
     );
 };
+
+export default App;

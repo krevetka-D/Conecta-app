@@ -1,6 +1,6 @@
-// src/services/authService.js
 import apiClient, { setAuthToken } from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const authService = {
     login: async (email, password) => {
@@ -18,12 +18,27 @@ const authService = {
             password
         };
         
-        // Only include professionalPath if it's provided
         if (professionalPath) {
             payload.professionalPath = professionalPath;
         }
         
         const response = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, payload);
+        return response;
+    },
+
+    // ADD this missing method
+    getToken: async () => {
+        try {
+            return await AsyncStorage.getItem('userToken');
+        } catch (error) {
+            console.error('Error getting token:', error);
+            return null;
+        }
+    },
+
+    // ADD this missing method
+    getCurrentUser: async () => {
+        const response = await apiClient.get(API_ENDPOINTS.AUTH.ME);
         return response;
     },
 
@@ -57,7 +72,6 @@ const authService = {
         try {
             await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
         } catch (error) {
-            // Continue with logout even if API call fails
             console.error('Logout API error:', error);
         }
     },

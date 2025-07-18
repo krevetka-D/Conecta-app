@@ -1,6 +1,5 @@
-// src/constants/index.js
 export * from './animations';
-export * from './config'; // Change this line - remove the backend path
+export * from './config';
 export * from './dimensions';
 export * from './messages';
 export * from './routes';
