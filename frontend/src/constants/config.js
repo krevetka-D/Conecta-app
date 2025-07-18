@@ -79,8 +79,8 @@ export const APP_CONFIG = {
 
 // Feature Flags
 export const FEATURES = {
-    ENABLE_FORUMS: false,
-    ENABLE_EVENTS: false,
+    ENABLE_FORUMS: true,
+    ENABLE_EVENTS: true,
     ENABLE_NOTIFICATIONS: false,
     ENABLE_OFFLINE_MODE: true,
 };

@@ -19,7 +19,7 @@ import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatDate } from '../../utils/formatting';
-import { forumsStyles as styles } from '../../styles/screens/forums/ForumsScreenStyles';
+import { forumsStyles as styles } from '../..ForumScreenStyl../../styles/screens/forums/ForumsScreenStyless';
 
 const ForumsScreen = ({ navigation }) => {
     const { user } = useAuth();
