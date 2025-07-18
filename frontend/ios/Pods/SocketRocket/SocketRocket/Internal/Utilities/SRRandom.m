@@ -19,11 +19,12 @@ NSData *SRRandomData(NSUInteger length)
     if (data == nil) {
         [NSException raise:NSInternalInconsistencyException format:@"Failed to allocate random data"];
     }
-    int result = SecRandomCopyBytes(kSecRandomDefault, data.length, ((NSMutableData *_Nonnull)data).mutableBytes);
+    
+    int result = SecRandomCopyBytes(kSecRandomDefault, data.length, data.mutableBytes);
     if (result != errSecSuccess) {
         [NSException raise:NSInternalInconsistencyException format:@"Failed to generate random bytes with OSStatus: %d", result];
     }
-    return (NSMutableData *_Nonnull)data;
+    return data;
 }
 
 NS_ASSUME_NONNULL_END

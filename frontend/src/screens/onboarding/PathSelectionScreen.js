@@ -8,7 +8,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { SCREEN_NAMES } from '../../constants/routes';
 import { PROFESSIONAL_PATHS } from '../../constants/config';

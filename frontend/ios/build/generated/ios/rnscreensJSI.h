@@ -27,12 +27,8 @@ public:
 template <typename T>
 class JSI_EXPORT NativeScreensModuleCxxSpec : public TurboModule {
 public:
-  jsi::Value create(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
-    return delegate_.create(rt, propName);
-  }
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& runtime) override {
-    return delegate_.getPropertyNames(runtime);
+  jsi::Value get(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
+    return delegate_.get(rt, propName);
   }
 
   static constexpr std::string_view kModuleName = "RNSModule";
@@ -42,19 +38,15 @@ protected:
     : TurboModule(std::string{NativeScreensModuleCxxSpec::kModuleName}, jsInvoker),
       delegate_(reinterpret_cast<T*>(this), jsInvoker) {}
 
-
 private:
   class Delegate : public NativeScreensModuleCxxSpecJSI {
   public:
     Delegate(T *instance, std::shared_ptr<CallInvoker> jsInvoker) :
-      NativeScreensModuleCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {
-
-    }
+      NativeScreensModuleCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {}
 
     
 
   private:
-    friend class NativeScreensModuleCxxSpec;
     T *instance_;
   };
 

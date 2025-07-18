@@ -8,7 +8,7 @@ import {
     SafeAreaView,
 } from 'react-native';
 import { Card, Button, Chip, Avatar } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 import { format } from 'date-fns';
 
 import { useAuth } from '../../store/contexts/AuthContext';

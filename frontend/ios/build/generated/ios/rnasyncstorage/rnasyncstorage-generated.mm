@@ -14,16 +14,6 @@
 #import "rnasyncstorage.h"
 
 
-@implementation NativeAsyncStorageModuleSpecBase
-
-
-- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper
-{
-  _eventEmitterCallback = std::move(eventEmitterCallbackWrapper->_eventEmitterCallback);
-}
-@end
-
-
 namespace facebook::react {
   
     static facebook::jsi::Value __hostFunction_NativeAsyncStorageModuleSpecJSI_multiGet(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {

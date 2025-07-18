@@ -10,7 +10,7 @@ import {
     ScrollView,
 } from 'react-native';
 import { TextInput, RadioButton, Card } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../store/contexts/AuthContext';

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { TextInput, Button, RadioButton, Chip } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';

@@ -11,7 +11,7 @@ import {
     SafeAreaView,
 } from 'react-native';
 import { Card, Checkbox, ProgressBar } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
 import checklistService from '../../services/checklistService';

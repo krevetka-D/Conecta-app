@@ -10,7 +10,7 @@ import {
     TextInput,
 } from 'react-native';
 import { Card, FAB, Portal, Modal, Button, Chip, Avatar, Menu, Divider } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import forumService from '../../services/forumService';

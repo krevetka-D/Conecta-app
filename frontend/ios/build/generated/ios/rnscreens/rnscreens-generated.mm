@@ -14,16 +14,6 @@
 #import "rnscreens.h"
 
 
-@implementation NativeScreensModuleSpecBase
-
-
-- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper
-{
-  _eventEmitterCallback = std::move(eventEmitterCallbackWrapper->_eventEmitterCallback);
-}
-@end
-
-
 namespace facebook::react {
   
 

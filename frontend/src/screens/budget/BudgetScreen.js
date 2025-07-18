@@ -11,7 +11,7 @@ import {
     Platform,
 } from 'react-native';
 import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useAuth } from '../../store/contexts/AuthContext';

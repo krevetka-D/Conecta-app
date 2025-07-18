@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useTheme } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 
 import { useAuth } from '../../store/contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';

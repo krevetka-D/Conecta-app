@@ -106,18 +106,6 @@ void RNSModalScreenEventEmitter::onHeaderBackButtonClicked(OnHeaderBackButtonCli
 }
 
 
-void RNSModalScreenEventEmitter::onSheetDetentChanged(OnSheetDetentChanged $event) const {
-  dispatchEvent("sheetDetentChanged", [$event=std::move($event)](jsi::Runtime &runtime) {
-    auto $payload = jsi::Object(runtime);
-    $payload.setProperty(runtime, "index", $event.index);
-$payload.setProperty(runtime, "isStable", $event.isStable);
-    return $payload;
-  });
-}
-
-
-
-
 
 void RNSScreenEventEmitter::onAppear(OnAppear $event) const {
   dispatchEvent("appear", [](jsi::Runtime &runtime) {
@@ -211,16 +199,6 @@ void RNSScreenEventEmitter::onHeaderBackButtonClicked(OnHeaderBackButtonClicked 
 }
 
 
-void RNSScreenEventEmitter::onSheetDetentChanged(OnSheetDetentChanged $event) const {
-  dispatchEvent("sheetDetentChanged", [$event=std::move($event)](jsi::Runtime &runtime) {
-    auto $payload = jsi::Object(runtime);
-    $payload.setProperty(runtime, "index", $event.index);
-$payload.setProperty(runtime, "isStable", $event.isStable);
-    return $payload;
-  });
-}
-
-
 
 void RNSScreenStackHeaderConfigEventEmitter::onAttached(OnAttached $event) const {
   dispatchEvent("attached", [](jsi::Runtime &runtime) {
@@ -250,8 +228,8 @@ void RNSScreenStackEventEmitter::onFinishTransitioning(OnFinishTransitioning $ev
 }
 
 
-void RNSSearchBarEventEmitter::onSearchFocus(OnSearchFocus $event) const {
-  dispatchEvent("searchFocus", [](jsi::Runtime &runtime) {
+void RNSSearchBarEventEmitter::onFocus(OnFocus $event) const {
+  dispatchEvent("focus", [](jsi::Runtime &runtime) {
     auto $payload = jsi::Object(runtime);
     
     return $payload;
@@ -259,8 +237,8 @@ void RNSSearchBarEventEmitter::onSearchFocus(OnSearchFocus $event) const {
 }
 
 
-void RNSSearchBarEventEmitter::onSearchBlur(OnSearchBlur $event) const {
-  dispatchEvent("searchBlur", [](jsi::Runtime &runtime) {
+void RNSSearchBarEventEmitter::onBlur(OnBlur $event) const {
+  dispatchEvent("blur", [](jsi::Runtime &runtime) {
     auto $payload = jsi::Object(runtime);
     
     return $payload;

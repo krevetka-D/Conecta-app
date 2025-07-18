@@ -32,12 +32,8 @@ public:
 template <typename T>
 class JSI_EXPORT NativeAsyncStorageModuleCxxSpec : public TurboModule {
 public:
-  jsi::Value create(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
-    return delegate_.create(rt, propName);
-  }
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& runtime) override {
-    return delegate_.getPropertyNames(runtime);
+  jsi::Value get(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
+    return delegate_.get(rt, propName);
   }
 
   static constexpr std::string_view kModuleName = "RNCAsyncStorage";
@@ -47,14 +43,11 @@ protected:
     : TurboModule(std::string{NativeAsyncStorageModuleCxxSpec::kModuleName}, jsInvoker),
       delegate_(reinterpret_cast<T*>(this), jsInvoker) {}
 
-
 private:
   class Delegate : public NativeAsyncStorageModuleCxxSpecJSI {
   public:
     Delegate(T *instance, std::shared_ptr<CallInvoker> jsInvoker) :
-      NativeAsyncStorageModuleCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {
-
-    }
+      NativeAsyncStorageModuleCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {}
 
     void multiGet(jsi::Runtime &rt, jsi::Array keys, jsi::Function callback) override {
       static_assert(
@@ -106,7 +99,6 @@ private:
     }
 
   private:
-    friend class NativeAsyncStorageModuleCxxSpec;
     T *instance_;
   };
 

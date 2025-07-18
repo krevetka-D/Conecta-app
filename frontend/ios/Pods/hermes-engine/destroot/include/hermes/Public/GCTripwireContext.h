@@ -32,9 +32,7 @@ class HERMES_EXPORT GCTripwireContext {
   /// \param os stream to save the heap capture to.
   /// \return Empty error code if the heap capture succeeded, else a real error
   ///   code.
-  virtual std::error_code createSnapshot(
-      std::ostream &os,
-      bool captureNumericValue) = 0;
+  virtual std::error_code createSnapshot(std::ostream &os) = 0;
 };
 
 } // namespace vm

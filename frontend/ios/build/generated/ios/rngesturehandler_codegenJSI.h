@@ -34,12 +34,8 @@ public:
 template <typename T>
 class JSI_EXPORT NativeRNGestureHandlerModuleCxxSpec : public TurboModule {
 public:
-  jsi::Value create(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
-    return delegate_.create(rt, propName);
-  }
-
-  std::vector<jsi::PropNameID> getPropertyNames(jsi::Runtime& runtime) override {
-    return delegate_.getPropertyNames(runtime);
+  jsi::Value get(jsi::Runtime &rt, const jsi::PropNameID &propName) override {
+    return delegate_.get(rt, propName);
   }
 
   static constexpr std::string_view kModuleName = "RNGestureHandlerModule";
@@ -49,14 +45,11 @@ protected:
     : TurboModule(std::string{NativeRNGestureHandlerModuleCxxSpec::kModuleName}, jsInvoker),
       delegate_(reinterpret_cast<T*>(this), jsInvoker) {}
 
-
 private:
   class Delegate : public NativeRNGestureHandlerModuleCxxSpecJSI {
   public:
     Delegate(T *instance, std::shared_ptr<CallInvoker> jsInvoker) :
-      NativeRNGestureHandlerModuleCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {
-
-    }
+      NativeRNGestureHandlerModuleCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {}
 
     void handleSetJSResponder(jsi::Runtime &rt, double tag, bool blockNativeResponder) override {
       static_assert(
@@ -124,7 +117,6 @@ private:
     }
 
   private:
-    friend class NativeRNGestureHandlerModuleCxxSpec;
     T *instance_;
   };
 

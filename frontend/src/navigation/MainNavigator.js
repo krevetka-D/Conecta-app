@@ -1,7 +1,7 @@
 // frontend/src/navigation/MainNavigator.js
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../components/common/Icon.js';
 
 import { useTheme } from '../store/contexts/ThemeContext';
 import { SCREEN_NAMES } from '../constants/routes';

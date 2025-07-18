@@ -1,7 +1,7 @@
 // src/components/ui/Header.js
 import React from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../common/Icon.js';
 import { headerStyles as styles } from '../../styles/components/ui/HeaderStyles';
 
 export const Header = React.memo(({

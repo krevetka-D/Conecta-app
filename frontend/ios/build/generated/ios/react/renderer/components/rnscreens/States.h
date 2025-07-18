@@ -10,9 +10,26 @@
 
 #ifdef ANDROID
 #include <folly/dynamic.h>
+#include <react/renderer/mapbuffer/MapBuffer.h>
+#include <react/renderer/mapbuffer/MapBufferBuilder.h>
 #endif
 
 namespace facebook::react {
+
+class RNSFullWindowOverlayState {
+public:
+  RNSFullWindowOverlayState() = default;
+
+#ifdef ANDROID
+  RNSFullWindowOverlayState(RNSFullWindowOverlayState const &previousState, folly::dynamic data){};
+  folly::dynamic getDynamic() const {
+    return {};
+  };
+  MapBuffer getMapBuffer() const {
+    return MapBufferBuilder::EMPTY();
+  };
+#endif
+};
 
 class RNSScreenContainerState {
 public:
@@ -23,29 +40,8 @@ public:
   folly::dynamic getDynamic() const {
     return {};
   };
-#endif
-};
-
-class RNSScreenContentWrapperState {
-public:
-  RNSScreenContentWrapperState() = default;
-
-#ifdef ANDROID
-  RNSScreenContentWrapperState(RNSScreenContentWrapperState const &previousState, folly::dynamic data){};
-  folly::dynamic getDynamic() const {
-    return {};
-  };
-#endif
-};
-
-class RNSScreenFooterState {
-public:
-  RNSScreenFooterState() = default;
-
-#ifdef ANDROID
-  RNSScreenFooterState(RNSScreenFooterState const &previousState, folly::dynamic data){};
-  folly::dynamic getDynamic() const {
-    return {};
+  MapBuffer getMapBuffer() const {
+    return MapBufferBuilder::EMPTY();
   };
 #endif
 };
@@ -59,6 +55,39 @@ public:
   folly::dynamic getDynamic() const {
     return {};
   };
+  MapBuffer getMapBuffer() const {
+    return MapBufferBuilder::EMPTY();
+  };
+#endif
+};
+
+class RNSScreenStackHeaderConfigState {
+public:
+  RNSScreenStackHeaderConfigState() = default;
+
+#ifdef ANDROID
+  RNSScreenStackHeaderConfigState(RNSScreenStackHeaderConfigState const &previousState, folly::dynamic data){};
+  folly::dynamic getDynamic() const {
+    return {};
+  };
+  MapBuffer getMapBuffer() const {
+    return MapBufferBuilder::EMPTY();
+  };
+#endif
+};
+
+class RNSScreenStackHeaderSubviewState {
+public:
+  RNSScreenStackHeaderSubviewState() = default;
+
+#ifdef ANDROID
+  RNSScreenStackHeaderSubviewState(RNSScreenStackHeaderSubviewState const &previousState, folly::dynamic data){};
+  folly::dynamic getDynamic() const {
+    return {};
+  };
+  MapBuffer getMapBuffer() const {
+    return MapBufferBuilder::EMPTY();
+  };
 #endif
 };
 
@@ -71,6 +100,9 @@ public:
   folly::dynamic getDynamic() const {
     return {};
   };
+  MapBuffer getMapBuffer() const {
+    return MapBufferBuilder::EMPTY();
+  };
 #endif
 };
 
@@ -82,6 +114,9 @@ public:
   RNSSearchBarState(RNSSearchBarState const &previousState, folly::dynamic data){};
   folly::dynamic getDynamic() const {
     return {};
+  };
+  MapBuffer getMapBuffer() const {
+    return MapBufferBuilder::EMPTY();
   };
 #endif
 };

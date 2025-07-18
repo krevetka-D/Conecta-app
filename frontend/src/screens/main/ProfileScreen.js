@@ -9,7 +9,7 @@ import {
     Alert,
 } from 'react-native';
 import { Card, Avatar, List, Divider } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
 import { profileStyles as styles } from '../../styles/screens/main/ProfileScreenStyles';

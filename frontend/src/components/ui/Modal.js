@@ -10,7 +10,7 @@ import {
     Pressable,
 } from 'react-native';
 import Modal from 'react-native-modal';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '../common/Icon.js';
 import { styles } from '../../styles/components/ui/ModalStyles';
 import { colors } from '../../constants/theme';
 

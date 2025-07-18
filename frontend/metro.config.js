@@ -9,20 +9,18 @@ const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
  */
 const config = {
     resolver: {
-        // Add fallbacks for node modules
-        alias: {
-            crypto: require.resolve('react-native-crypto'),
-            stream: require.resolve('readable-stream'),
-            buffer: require.resolve('buffer'),
-        },
-        // Ensure these extensions are resolved
+        // Ensure these extensions are resolved (including font files)
         sourceExts: ['js', 'json', 'ts', 'tsx', 'jsx'],
-        assetExts: ['glb', 'gltf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'],
+        assetExts: ['glb', 'gltf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ttf', 'otf', 'woff', 'woff2'],
     },
     transformer: {
-        // Ensure Hermes transforms work correctly
-        hermesParser: true,
-        unstable_allowRequireContext: true,
+        // Use default transformer settings
+        getTransformOptions: async () => ({
+            transform: {
+                experimentalImportSupport: false,
+                inlineRequires: true,
+            },
+        }),
     },
 };
 

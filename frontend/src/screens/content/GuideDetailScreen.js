@@ -14,7 +14,7 @@ import {
     ActivityIndicator,
     TouchableOpacity,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Add this
+import Icon from '../../components/common/Icon.js'; // Add this
 import { Button } from '../../components/ui/Button'; // Add this
 import { colors } from '../../constants/theme'; // Add this
 import { SCREEN_NAMES } from '../../constants/routes';
