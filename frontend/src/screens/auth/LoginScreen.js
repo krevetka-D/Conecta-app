@@ -8,6 +8,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { TextInput } from 'react-native-paper';
 
@@ -54,9 +55,28 @@ const LoginScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            await login(values.email, values.password);
+            await login(values.email.trim().toLowerCase(), values.password);
+            // Navigation will be handled by AuthContext after successful login
         } catch (error) {
-            showErrorAlert('Login Failed', error.message);
+            console.error('Login error:', error);
+            
+            // Handle specific error messages
+            if (error.message.includes('Invalid email or password')) {
+                showErrorAlert(
+                    'Login Failed', 
+                    'The email or password you entered is incorrect. Please try again.'
+                );
+            } else if (error.message.includes('Network')) {
+                showErrorAlert(
+                    'Network Error', 
+                    'Please check your internet connection and try again.'
+                );
+            } else {
+                showErrorAlert(
+                    'Login Failed', 
+                    error.message || 'An error occurred. Please try again.'
+                );
+            }
         } finally {
             setLoading(false);
         }
@@ -65,6 +85,14 @@ const LoginScreen = ({ navigation }) => {
     const navigateToRegister = useCallback(() => {
         navigation.navigate(SCREEN_NAMES.REGISTER);
     }, [navigation]);
+
+    const showTestCredentials = useCallback(() => {
+        Alert.alert(
+            'Test Credentials',
+            'Email: test@example.com\nPassword: test123\n\nNote: You need to run the createTestUser script in the backend first.',
+            [{ text: 'OK' }]
+        );
+    }, []);
 
     const inputTheme = useMemo(() => ({
         colors: { primary: colors.primary }
@@ -148,6 +176,18 @@ const LoginScreen = ({ navigation }) => {
                             Don't have an account? <Text style={styles.linkBold}>Sign Up</Text>
                         </Text>
                     </TouchableOpacity>
+
+                    {__DEV__ && (
+                        <TouchableOpacity
+                            onPress={showTestCredentials}
+                            style={[styles.linkContainer, { marginTop: 20 }]}
+                            disabled={loading}
+                        >
+                            <Text style={[styles.linkText, { color: colors.info }]}>
+                                Show Test Credentials
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>

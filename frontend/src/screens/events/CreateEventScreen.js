@@ -8,7 +8,7 @@ import {
     Platform,
     SafeAreaView,
 } from 'react-native';
-import { TextInput, Button, RadioButton, Chip } from 'react-native-paper';
+import { TextInput, Button, Chip, Portal, Modal } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from '../../components/common/Icon.js';
 
@@ -27,6 +27,8 @@ const CreateEventScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [showAudienceModal, setShowAudienceModal] = useState(false);
     
     const [formData, setFormData] = useState({
         title: '',
@@ -48,12 +50,12 @@ const CreateEventScreen = ({ navigation }) => {
     const [tagInput, setTagInput] = useState('');
 
     const categories = [
-        { value: 'networking', label: 'Networking' },
-        { value: 'workshop', label: 'Workshop' },
-        { value: 'social', label: 'Social' },
-        { value: 'meetup', label: 'Meetup' },
-        { value: 'conference', label: 'Conference' },
-        { value: 'other', label: 'Other' },
+        { value: 'networking', label: 'Networking', icon: 'account-group' },
+        { value: 'workshop', label: 'Workshop', icon: 'school' },
+        { value: 'social', label: 'Social', icon: 'party-popper' },
+        { value: 'meetup', label: 'Meetup', icon: 'coffee' },
+        { value: 'conference', label: 'Conference', icon: 'presentation' },
+        { value: 'other', label: 'Other', icon: 'dots-horizontal' },
     ];
 
     const audiences = [
@@ -127,6 +129,9 @@ const CreateEventScreen = ({ navigation }) => {
             tags: formData.tags.filter(t => t !== tag),
         });
     };
+
+    const selectedCategory = categories.find(cat => cat.value === formData.category);
+    const selectedAudience = audiences.find(aud => aud.value === formData.targetAudience);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -230,39 +235,35 @@ const CreateEventScreen = ({ navigation }) => {
                     theme={{ colors: { primary: theme.colors.primary } }}
                 />
 
-                <View style={styles.radioSection}>
-                    <Text style={styles.radioLabel}>Category</Text>
-                    <RadioButton.Group
-                        onValueChange={value => setFormData({ ...formData, category: value })}
-                        value={formData.category}
-                    >
-                        <View style={styles.radioOptions}>
-                            {categories.map(cat => (
-                                <View key={cat.value} style={styles.radioItem}>
-                                    <RadioButton value={cat.value} color={theme.colors.primary} />
-                                    <Text style={styles.radioText}>{cat.label}</Text>
-                                </View>
-                            ))}
+                {/* Category Selection */}
+                <TouchableOpacity
+                    style={styles.selectorButton}
+                    onPress={() => setShowCategoryModal(true)}
+                >
+                    <View style={styles.selectorContent}>
+                        <Icon name={selectedCategory.icon} size={24} color={theme.colors.primary} />
+                        <View style={styles.selectorTextContainer}>
+                            <Text style={styles.selectorLabel}>Category</Text>
+                            <Text style={styles.selectorValue}>{selectedCategory.label}</Text>
                         </View>
-                    </RadioButton.Group>
-                </View>
+                        <Icon name="chevron-down" size={24} color={theme.colors.textSecondary} />
+                    </View>
+                </TouchableOpacity>
 
-                <View style={styles.radioSection}>
-                    <Text style={styles.radioLabel}>Target Audience</Text>
-                    <RadioButton.Group
-                        onValueChange={value => setFormData({ ...formData, targetAudience: value })}
-                        value={formData.targetAudience}
-                    >
-                        <View style={styles.radioOptions}>
-                            {audiences.map(aud => (
-                                <View key={aud.value} style={styles.radioItem}>
-                                    <RadioButton value={aud.value} color={theme.colors.primary} />
-                                    <Text style={styles.radioText}>{aud.label}</Text>
-                                </View>
-                            ))}
+                {/* Target Audience Selection */}
+                <TouchableOpacity
+                    style={styles.selectorButton}
+                    onPress={() => setShowAudienceModal(true)}
+                >
+                    <View style={styles.selectorContent}>
+                        <Icon name="account-group" size={24} color={theme.colors.primary} />
+                        <View style={styles.selectorTextContainer}>
+                            <Text style={styles.selectorLabel}>Target Audience</Text>
+                            <Text style={styles.selectorValue}>{selectedAudience.label}</Text>
                         </View>
-                    </RadioButton.Group>
-                </View>
+                        <Icon name="chevron-down" size={24} color={theme.colors.textSecondary} />
+                    </View>
+                </TouchableOpacity>
 
                 <View style={styles.tagSection}>
                     <Text style={styles.radioLabel}>Tags</Text>
@@ -328,6 +329,79 @@ const CreateEventScreen = ({ navigation }) => {
                     minimumDate={new Date()}
                 />
             )}
+
+            {/* Category Selection Modal */}
+            <Portal>
+                <Modal
+                    visible={showCategoryModal}
+                    onDismiss={() => setShowCategoryModal(false)}
+                    contentContainerStyle={styles.modal}
+                >
+                    <Text style={styles.modalTitle}>Select Category</Text>
+                    {categories.map((category) => (
+                        <TouchableOpacity
+                            key={category.value}
+                            style={[
+                                styles.modalOption,
+                                formData.category === category.value && styles.modalOptionSelected
+                            ]}
+                            onPress={() => {
+                                setFormData({ ...formData, category: category.value });
+                                setShowCategoryModal(false);
+                            }}
+                        >
+                            <Icon name={category.icon} size={24} color={
+                                formData.category === category.value 
+                                    ? theme.colors.primary 
+                                    : theme.colors.textSecondary
+                            } />
+                            <Text style={[
+                                styles.modalOptionText,
+                                formData.category === category.value && styles.modalOptionTextSelected
+                            ]}>
+                                {category.label}
+                            </Text>
+                            {formData.category === category.value && (
+                                <Icon name="check" size={24} color={theme.colors.primary} />
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </Modal>
+            </Portal>
+
+            {/* Audience Selection Modal */}
+            <Portal>
+                <Modal
+                    visible={showAudienceModal}
+                    onDismiss={() => setShowAudienceModal(false)}
+                    contentContainerStyle={styles.modal}
+                >
+                    <Text style={styles.modalTitle}>Select Target Audience</Text>
+                    {audiences.map((audience) => (
+                        <TouchableOpacity
+                            key={audience.value}
+                            style={[
+                                styles.modalOption,
+                                formData.targetAudience === audience.value && styles.modalOptionSelected
+                            ]}
+                            onPress={() => {
+                                setFormData({ ...formData, targetAudience: audience.value });
+                                setShowAudienceModal(false);
+                            }}
+                        >
+                            <Text style={[
+                                styles.modalOptionText,
+                                formData.targetAudience === audience.value && styles.modalOptionTextSelected
+                            ]}>
+                                {audience.label}
+                            </Text>
+                            {formData.targetAudience === audience.value && (
+                                <Icon name="check" size={24} color={theme.colors.primary} />
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </Modal>
+            </Portal>
         </SafeAreaView>
     );
 };

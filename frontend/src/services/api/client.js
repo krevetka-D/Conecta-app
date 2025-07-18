@@ -12,23 +12,26 @@ const apiClient = axios.create({
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     },
-    // Enable automatic retries for network errors
-    retry: 3,
-    retryDelay: 1000,
 });
 
 // Track request/response for debugging
 if (__DEV__) {
+    // Request logger
     apiClient.interceptors.request.use(request => {
         console.log('🚀 API Request:', {
             method: request.method?.toUpperCase(),
             url: request.url,
             baseURL: request.baseURL,
             data: request.data,
+            headers: request.headers,
         });
         return request;
+    }, error => {
+        console.error('🚀 Request Error:', error);
+        return Promise.reject(error);
     });
 
+    // Response logger
     apiClient.interceptors.response.use(
         response => {
             console.log('✅ API Response:', {
@@ -59,73 +62,24 @@ export const setAuthToken = (token) => {
     }
 };
 
-// Enhanced request interceptor
-apiClient.interceptors.request.use(
-    async (config) => {
-        try {
-            const token = await AsyncStorage.getItem('userToken');
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-
-            // Add request timestamp for caching
-            config.metadata = { startTime: new Date() };
-
-            return config;
-        } catch (error) {
-            console.error('Request interceptor error:', error);
-            return config;
-        }
-    },
-    (error) => {
-        console.error('Request interceptor error:', error);
-        return Promise.reject(error);
-    }
-);
-
-// Enhanced response interceptor for timing
-apiClient.interceptors.response.use(
-    (response) => {
-        if (response.config.metadata) {
-            response.config.metadata.endTime = new Date();
-            response.duration = response.config.metadata.endTime - response.config.metadata.startTime;
-        }
-        return response;
-    },
-    (error) => {
-        if (error.config?.metadata) {
-            error.config.metadata.endTime = new Date();
-            error.duration = error.config.metadata.endTime - error.config.metadata.startTime;
-        }
-        return Promise.reject(error);
-    }
-);
-
-// Setup additional interceptors
+// Setup additional interceptors (must be after debug interceptors)
 setupInterceptors(apiClient);
 
-// Add retry logic for failed requests
-apiClient.interceptors.response.use(undefined, async (error) => {
-    const { config } = error;
+// Function to reset the API client (useful after logout)
+export const resetApiClient = () => {
+    delete apiClient.defaults.headers.common['Authorization'];
+};
 
-    if (!config || !config.retry) {
-        return Promise.reject(error);
+// Function to initialize API client with stored token
+export const initializeApiClient = async () => {
+    try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (token) {
+            setAuthToken(token);
+        }
+    } catch (error) {
+        console.error('Failed to initialize API client with token:', error);
     }
-
-    config.__retryCount = config.__retryCount || 0;
-
-    if (config.__retryCount >= config.retry) {
-        return Promise.reject(error);
-    }
-
-    config.__retryCount += 1;
-
-    // Exponential backoff
-    const delay = config.retryDelay * Math.pow(2, config.__retryCount - 1);
-
-    await new Promise(resolve => setTimeout(resolve, delay));
-
-    return apiClient(config);
-});
+};
 
 export default apiClient;

@@ -1,16 +1,44 @@
 // src/services/api/interceptors.js
-import { resetRoot } from '../../navigation/NavigationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showErrorAlert } from '../../utils/alerts';
 import { ERROR_MESSAGES } from '../../constants/messages';
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    
+    failedQueue = [];
+};
 
 export const setupInterceptors = (apiClient) => {
     // Request interceptor
     apiClient.interceptors.request.use(
-        (config) => {
+        async (config) => {
+            // Don't add auth header for login/register endpoints
+            const isAuthEndpoint = config.url.includes('/login') || config.url.includes('/register');
+            
+            if (!isAuthEndpoint) {
+                // Get fresh token for each request
+                try {
+                    const token = await AsyncStorage.getItem('userToken');
+                    if (token) {
+                        config.headers.Authorization = `Bearer ${token}`;
+                    }
+                } catch (error) {
+                    console.error('Error getting token for request:', error);
+                }
+            }
+
             // Add timestamp to prevent caching
             const timestamp = Date.now();
-            
-            // Simple query parameter addition without URL constructor
             const separator = config.url.includes('?') ? '&' : '?';
             config.url = `${config.url}${separator}_t=${timestamp}`;
 
@@ -49,47 +77,104 @@ export const setupInterceptors = (apiClient) => {
             // Return only the data
             return response.data;
         },
-        (error) => {
+        async (error) => {
+            const originalRequest = error.config;
+
             if (__DEV__) {
                 console.error('API Response Error:', error);
             }
 
-            // Handle different error scenarios
+            // Handle network errors
             if (!error.response) {
-                // Network error
                 showErrorAlert('Network Error', ERROR_MESSAGES.NETWORK_ERROR);
-                throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
+                return Promise.reject(new Error(ERROR_MESSAGES.NETWORK_ERROR));
             }
 
             const { status, data } = error.response;
+            
+            // Check if this is a login/register request
+            const isAuthRequest = originalRequest.url.includes('/login') || 
+                                 originalRequest.url.includes('/register');
 
+            // Handle 401 Unauthorized
+            if (status === 401) {
+                // For login/register requests, don't treat as session expiration
+                if (isAuthRequest) {
+                    // Return the actual error message from backend
+                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.LOGIN_FAILED));
+                }
+                
+                // For other requests, treat as session expiration
+                if (!originalRequest._retry) {
+                    if (isRefreshing) {
+                        return new Promise((resolve, reject) => {
+                            failedQueue.push({ resolve, reject });
+                        }).then(token => {
+                            originalRequest.headers.Authorization = `Bearer ${token}`;
+                            return apiClient(originalRequest);
+                        }).catch(err => {
+                            return Promise.reject(err);
+                        });
+                    }
+
+                    originalRequest._retry = true;
+                    isRefreshing = true;
+
+                    try {
+                        // Clear auth data and redirect to login
+                        await AsyncStorage.multiRemove(['userToken', 'user']);
+                        
+                        // Reset the default auth header
+                        delete apiClient.defaults.headers.common['Authorization'];
+                        
+                        // Process the queue with error
+                        processQueue(new Error('Session expired'), null);
+                        
+                        // Use setTimeout to ensure navigation is ready
+                        setTimeout(() => {
+                            // Import navigation service dynamically to avoid circular dependency
+                            const { resetRoot } = require('../../navigation/NavigationService');
+                            resetRoot();
+                        }, 100);
+
+                        return Promise.reject(new Error(ERROR_MESSAGES.SESSION_EXPIRED));
+                    } catch (refreshError) {
+                        processQueue(refreshError, null);
+                        return Promise.reject(refreshError);
+                    } finally {
+                        isRefreshing = false;
+                    }
+                }
+            }
+
+            // Handle other error statuses
             switch (status) {
-                case 401:
-                    // Unauthorized - redirect to login
-                    resetRoot();
-                    throw new Error(ERROR_MESSAGES.SESSION_EXPIRED);
-
+                case 400:
+                    // Bad request - often validation errors
+                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.VALIDATION_ERROR));
+                    
                 case 403:
                     // Forbidden
-                    throw new Error(data?.message || 'Access denied');
+                    return Promise.reject(new Error(data?.message || 'Access denied'));
 
                 case 404:
                     // Not found
-                    throw new Error(data?.message || 'Resource not found');
+                    return Promise.reject(new Error(data?.message || 'Resource not found'));
 
                 case 422:
                     // Validation error
-                    throw new Error(data?.message || ERROR_MESSAGES.VALIDATION_ERROR);
+                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.VALIDATION_ERROR));
 
                 case 500:
                 case 502:
                 case 503:
                     // Server error
-                    throw new Error(data?.message || 'Server error. Please try again later.');
+                    showErrorAlert('Server Error', 'The server is currently unavailable. Please try again later.');
+                    return Promise.reject(new Error(data?.message || 'Server error. Please try again later.'));
 
                 default:
-                    // Generic error
-                    throw new Error(data?.message || ERROR_MESSAGES.GENERIC_ERROR);
+                    // Generic error - use backend message if available
+                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.GENERIC_ERROR));
             }
         }
     );

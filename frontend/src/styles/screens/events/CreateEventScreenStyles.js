@@ -47,6 +47,31 @@ export const createEventStyles = (theme) => StyleSheet.create({
         color: theme.colors.text,
         marginLeft: theme.spacing.m,
     },
+    selectorButton: {
+        marginBottom: theme.spacing.m,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.backdrop,
+        borderRadius: theme.roundness,
+        padding: theme.spacing.m,
+    },
+    selectorContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    selectorTextContainer: {
+        flex: 1,
+        marginLeft: theme.spacing.m,
+    },
+    selectorLabel: {
+        fontSize: 12,
+        color: theme.colors.textSecondary,
+    },
+    selectorValue: {
+        fontSize: 16,
+        color: theme.colors.text,
+        fontWeight: '500',
+    },
     radioSection: {
         marginBottom: theme.spacing.l,
     },
@@ -105,5 +130,39 @@ export const createEventStyles = (theme) => StyleSheet.create({
     },
     submitButton: {
         flex: 1,
+    },
+    modal: {
+        backgroundColor: theme.colors.surface,
+        padding: theme.spacing.l,
+        margin: theme.spacing.l,
+        borderRadius: theme.roundness * 2,
+        maxHeight: '80%',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: theme.colors.text,
+        marginBottom: theme.spacing.l,
+        textAlign: 'center',
+    },
+    modalOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: theme.spacing.m,
+        borderRadius: theme.roundness,
+        marginBottom: theme.spacing.s,
+    },
+    modalOptionSelected: {
+        backgroundColor: theme.colors.primary + '10',
+    },
+    modalOptionText: {
+        flex: 1,
+        fontSize: 16,
+        color: theme.colors.text,
+        marginLeft: theme.spacing.m,
+    },
+    modalOptionTextSelected: {
+        color: theme.colors.primary,
+        fontWeight: '600',
     },
 });

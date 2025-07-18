@@ -8,8 +8,9 @@ import {
     RefreshControl,
     SafeAreaView,
     StyleSheet,
+    ScrollView,
 } from 'react-native';
-import { Card, FAB, Portal, Modal, Button, Chip } from 'react-native-paper';
+import { Card, FAB, Portal, Modal, Button, Chip, TextInput } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
@@ -32,6 +33,7 @@ const ForumScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [sortBy, setSortBy] = useState('recent');
     const [menuVisible, setMenuVisible] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -48,35 +50,80 @@ const ForumScreen = ({ navigation }) => {
 
     const loadForums = useCallback(async () => {
         try {
-            // Mock data for now since service might not be implemented
-            const mockForums = [
-                {
-                    _id: '1',
-                    title: 'General Discussion',
-                    description: 'General discussions about living in Alicante',
-                    category: 'general',
-                    threads: [],
-                    user: { _id: 'user1', name: 'Admin' },
-                    updatedAt: new Date().toISOString(),
-                    tags: ['general', 'discussion']
-                }
-            ];
-            setForums(mockForums);
+            const data = await forumService.getForums();
+            setForums(data || []);
         } catch (error) {
             console.error('Failed to load forums:', error);
-            if (!refreshing) {
-                showErrorAlert('Error', 'Failed to load forums');
-            }
+            // If API fails, show empty state instead of mock data
+            setForums([]);
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [refreshing]);
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
         loadForums();
     }, [loadForums]);
+
+    const validateForm = () => {
+        const errors = {};
+        if (!formData.title.trim()) {
+            errors.title = 'Forum title is required';
+        }
+        if (!formData.description.trim()) {
+            errors.description = 'Forum description is required';
+        }
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleCreateForum = async () => {
+        if (!validateForm()) return;
+
+        setSubmitting(true);
+        try {
+            await forumService.createForum(formData.title, formData.description);
+            showSuccessAlert('Success', 'Forum created successfully!');
+            setModalVisible(false);
+            resetForm();
+            loadForums();
+        } catch (error) {
+            console.error('Failed to create forum:', error);
+            showErrorAlert('Error', error.message || 'Failed to create forum');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            title: '',
+            description: '',
+            category: 'general',
+            tags: [],
+        });
+        setFormErrors({});
+        setTagInput('');
+    };
+
+    const handleAddTag = () => {
+        if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+            setFormData({
+                ...formData,
+                tags: [...formData.tags, tagInput.trim().toLowerCase()],
+            });
+            setTagInput('');
+        }
+    };
+
+    const handleRemoveTag = (tag) => {
+        setFormData({
+            ...formData,
+            tags: formData.tags.filter(t => t !== tag),
+        });
+    };
 
     const renderForumItem = ({ item }) => (
         <TouchableOpacity
@@ -88,8 +135,31 @@ const ForumScreen = ({ navigation }) => {
         >
             <Card style={styles.forumCard}>
                 <Card.Content>
-                    <Text style={styles.forumTitle}>{item.title}</Text>
-                    <Text style={styles.forumDescription}>{item.description}</Text>
+                    <View style={styles.forumHeader}>
+                        <View style={styles.forumInfo}>
+                            <Text style={styles.forumTitle}>{item.title}</Text>
+                            <Text style={styles.forumDescription}>{item.description}</Text>
+                            {item.user && (
+                                <View style={styles.forumMeta}>
+                                    <View style={styles.metaItem}>
+                                        <Icon name="account" size={14} color={colors.textSecondary} />
+                                        <Text style={styles.metaText}>
+                                            Created by {item.user.name || 'Unknown'}
+                                        </Text>
+                                    </View>
+                                    {item.threads && (
+                                        <View style={styles.metaItem}>
+                                            <Icon name="forum" size={14} color={colors.textSecondary} />
+                                            <Text style={styles.metaText}>
+                                                {item.threads.length} threads
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                        <Icon name="chevron-right" size={24} color={colors.textSecondary} />
+                    </View>
                 </Card.Content>
             </Card>
         </TouchableOpacity>
@@ -145,6 +215,114 @@ const ForumScreen = ({ navigation }) => {
                     style={styles.fab}
                     onPress={() => setModalVisible(true)}
                 />
+
+                {/* Create Forum Modal */}
+                <Portal>
+                    <Modal
+                        visible={modalVisible}
+                        onDismiss={() => {
+                            if (!submitting) {
+                                setModalVisible(false);
+                                resetForm();
+                            }
+                        }}
+                        contentContainerStyle={styles.modal}
+                    >
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={styles.modalTitle}>Create New Forum</Text>
+                            
+                            <TextInput
+                                label="Forum Title"
+                                value={formData.title}
+                                onChangeText={(text) => setFormData({ ...formData, title: text })}
+                                mode="outlined"
+                                style={styles.input}
+                                error={!!formErrors.title}
+                                disabled={submitting}
+                                theme={{ colors: { primary: colors.primary } }}
+                            />
+                            {formErrors.title && (
+                                <Text style={styles.errorText}>{formErrors.title}</Text>
+                            )}
+                            
+                            <TextInput
+                                label="Description"
+                                value={formData.description}
+                                onChangeText={(text) => setFormData({ ...formData, description: text })}
+                                mode="outlined"
+                                multiline
+                                numberOfLines={4}
+                                style={styles.input}
+                                error={!!formErrors.description}
+                                disabled={submitting}
+                                theme={{ colors: { primary: colors.primary } }}
+                            />
+                            {formErrors.description && (
+                                <Text style={styles.errorText}>{formErrors.description}</Text>
+                            )}
+
+                            {/* Tags Section */}
+                            <View style={styles.tagSection}>
+                                <Text style={styles.tagLabel}>Tags (Optional)</Text>
+                                <View style={styles.tagInputContainer}>
+                                    <TextInput
+                                        placeholder="Add tags..."
+                                        value={tagInput}
+                                        onChangeText={setTagInput}
+                                        mode="outlined"
+                                        style={styles.tagInput}
+                                        disabled={submitting}
+                                        theme={{ colors: { primary: colors.primary } }}
+                                        onSubmitEditing={handleAddTag}
+                                    />
+                                    <Button
+                                        mode="contained"
+                                        onPress={handleAddTag}
+                                        style={styles.addTagButton}
+                                        disabled={!tagInput.trim() || submitting}
+                                    >
+                                        Add
+                                    </Button>
+                                </View>
+                                <View style={styles.tagsList}>
+                                    {formData.tags.map((tag, index) => (
+                                        <Chip
+                                            key={index}
+                                            style={styles.tag}
+                                            onClose={() => handleRemoveTag(tag)}
+                                            disabled={submitting}
+                                        >
+                                            {tag}
+                                        </Chip>
+                                    ))}
+                                </View>
+                            </View>
+                            
+                            <View style={styles.modalButtons}>
+                                <Button
+                                    mode="outlined"
+                                    onPress={() => {
+                                        setModalVisible(false);
+                                        resetForm();
+                                    }}
+                                    style={styles.modalButton}
+                                    disabled={submitting}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    mode="contained"
+                                    onPress={handleCreateForum}
+                                    style={styles.modalButton}
+                                    loading={submitting}
+                                    disabled={submitting}
+                                >
+                                    Create Forum
+                                </Button>
+                            </View>
+                        </ScrollView>
+                    </Modal>
+                </Portal>
             </View>
         </SafeAreaView>
     );
@@ -186,6 +364,15 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         elevation: 2,
     },
+    forumHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    forumInfo: {
+        flex: 1,
+        marginRight: spacing.sm,
+    },
     forumTitle: {
         fontSize: 18,
         fontWeight: 'bold',
@@ -197,6 +384,20 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.textSecondary,
         fontFamily: fonts.families.regular,
+        marginBottom: spacing.sm,
+    },
+    forumMeta: {
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    metaItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    metaText: {
+        marginLeft: spacing.xs,
+        fontSize: 12,
+        color: colors.textSecondary,
     },
     fab: {
         position: 'absolute',
@@ -204,6 +405,70 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         backgroundColor: colors.primary,
+    },
+    modal: {
+        backgroundColor: colors.surface,
+        padding: spacing.lg,
+        margin: spacing.lg,
+        borderRadius: 16,
+        maxHeight: '85%',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: spacing.lg,
+        textAlign: 'center',
+        color: colors.text,
+    },
+    input: {
+        marginBottom: spacing.md,
+        backgroundColor: colors.surface,
+    },
+    errorText: {
+        color: colors.error,
+        marginBottom: spacing.md,
+        marginTop: -spacing.sm,
+        fontSize: 12,
+        marginLeft: spacing.xs,
+    },
+    tagSection: {
+        marginBottom: spacing.lg,
+    },
+    tagLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text,
+        marginBottom: spacing.sm,
+    },
+    tagInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    tagInput: {
+        flex: 1,
+        marginRight: spacing.sm,
+        backgroundColor: colors.surface,
+    },
+    addTagButton: {
+        marginTop: 2,
+    },
+    tagsList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    tag: {
+        backgroundColor: colors.primary + '20',
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: spacing.lg,
+        gap: spacing.md,
+    },
+    modalButton: {
+        flex: 1,
     },
 });
 
