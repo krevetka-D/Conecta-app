@@ -7,17 +7,18 @@ import { useTheme } from '../store/contexts/ThemeContext';
 import { SCREEN_NAMES } from '../constants/routes';
 
 // Import all the screens for the tabs
-import DashboardScreen from '../screens/main/DashboardScreen';
-import BudgetScreen from '../screens/budget/BudgetScreen';
-import ResourcesScreen from '../screens/content/ResourcesScreen';
-import ChecklistScreen from '../screens/checklist/ChecklistScreen';
+import EnhancedDashboardScreen from '../screens/main/EnhancedDashboardScreen';
+import EventsScreen from '../screens/events/EventsScreen';
+import ForumsScreen from '../screens/forums/ForumsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 
 // Import nested navigators
 import ForumNavigator from './ForumNavigator';
 import EventNavigator from './EventNavigator';
+import { createStackNavigator } from '@react-navigation/stack';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
 const MainNavigator = () => {
     const theme = useTheme();

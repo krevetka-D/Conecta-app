@@ -280,8 +280,13 @@ export const deleteEvent = asyncHandler(async (req, res) => {
         res.status(403);
         throw new Error('Only the organizer can delete this event');
     }
+    if (event.attendees.length > 1) {
+        res.status(400);
+        throw new Error('Cannot delete event with registered attendees. Cancel the event instead.');
+    }
 
     await Event.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ message: 'Event deleted successfully' });
 });
+

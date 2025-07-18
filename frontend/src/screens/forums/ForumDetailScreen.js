@@ -96,7 +96,29 @@ const ForumDetailScreen = ({ route, navigation }) => {
             threadTitle: thread.title 
         });
     };
+    
+const handleDeleteThread = async (threadId, threadTitle) => {
+        showConfirmAlert(
+            'Delete Thread',
+            `Are you sure you want to delete "${threadTitle}"? This action cannot be undone.`,
+            async () => {
+                try {
+                    await forumService.deleteThread(threadId);
+                    showSuccessAlert('Success', 'Thread deleted successfully');
+                    loadForumDetail();
+                } catch (error) {
+                    showErrorAlert('Error', 'Failed to delete thread');
+                }
+            }
+        );
+    };
 
+    const toggleMenu = (threadId) => {
+        setMenuVisible(prev => ({
+            ...prev,
+            [threadId]: !prev[threadId]
+        }));
+    };
     const renderThreadItem = ({ item }) => {
         const isMyThread = item.author?._id === user?._id;
 

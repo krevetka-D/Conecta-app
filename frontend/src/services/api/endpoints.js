@@ -52,6 +52,8 @@ export const API_ENDPOINTS = {
         DETAIL: (id) => `/events/${id}`,
         REGISTER: (id) => `/events/${id}/register`,
         UNREGISTER: (id) => `/events/${id}/unregister`,
+        UPCOMING: '/events/upcoming',
+        DELETE: '/events'
     },
 
     // Notifications endpoints
@@ -67,4 +69,14 @@ export const API_ENDPOINTS = {
         IMAGE: '/upload/image',
         DOCUMENT: '/upload/document',
     },
+    MESSAGES: {
+    CONVERSATIONS: '/messages/conversations',
+    GET: '/messages',
+    SEND: '/messages',
+    MARK_READ: '/messages/read'
+},
+    STATS: {
+    USER: '/stats/user',
+    DASHBOARD: '/stats/dashboard'
+},
 };

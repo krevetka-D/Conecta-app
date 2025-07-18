@@ -130,4 +130,10 @@ export const eventDetailStyles = (theme) => StyleSheet.create({
     actionButton: {
         paddingVertical: theme.spacing.s,
     },
+    menuButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 8,
+},
 });

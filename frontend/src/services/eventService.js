@@ -72,6 +72,13 @@ const eventService = {
             throw error;
         }
     },
+    
+    getUpcomingEvents: async (limit = 5) => {
+    const response = await api.get(endpoints.EVENTS.UPCOMING, {
+        params: { limit }
+    });
+    return response.data;
+}
 };
 
 export default eventService;

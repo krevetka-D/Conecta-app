@@ -15,7 +15,9 @@ const userSchema = mongoose.Schema({
     professionalPath: { type: String, enum: ['FREELANCER', 'ENTREPRENEUR'] },
     onboardingCompleted: { type: Boolean, default: false },
     pinnedModules: [{ type: String }],
-}, { timestamps: true });
+    isOnline: { type: Boolean, default: false },
+  lastSeen: Date}, 
+  { timestamps: true });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
