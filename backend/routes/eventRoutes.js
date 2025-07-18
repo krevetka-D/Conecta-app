@@ -7,10 +7,13 @@ import {
     updateEvent,
     deleteEvent,
     joinEvent,
-    leaveEvent
+    leaveEvent,
+    cancelEvent
 } from '../controllers/eventController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { validationRules, handleValidationErrors } from '../middleware/validationMiddleware.js';
+import { eventValidationRules, handleValidationErrors } from '../middleware/validationMiddleware.js';
+
+
 
 const router = express.Router();
 
@@ -24,8 +27,16 @@ router.route('/:id')
     .put(protect, updateEvent)
     .delete(protect, deleteEvent);
 
-// Event actions
+// Event actions (protected routes)
 router.post('/:id/join', protect, joinEvent);
 router.post('/:id/leave', protect, leaveEvent);
+router.post('/:id/cancel', protect, cancelEvent);
+
+router.post('/', 
+    protect, 
+    eventValidationRules.createEvent, 
+    handleValidationErrors, 
+    createEvent
+);
 
 export default router;

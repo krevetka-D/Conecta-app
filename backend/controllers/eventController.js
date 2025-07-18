@@ -1,5 +1,4 @@
 // backend/controllers/eventController.js
-
 import asyncHandler from 'express-async-handler';
 import Event from '../models/Event.js';
 
@@ -15,18 +14,21 @@ export const getEvents = asyncHandler(async (req, res) => {
         upcoming, 
         myEvents,
         attending,
-        search 
+        search,
+        limit = 20,
+        skip = 0
     } = req.query;
     
+    // Build query
     let query = { isCancelled: false };
     
     // Filter by category
-    if (category) {
+    if (category && category !== 'all') {
         query.category = category;
     }
     
     // Filter by target audience
-    if (targetAudience) {
+    if (targetAudience && targetAudience !== 'all') {
         query.targetAudience = { $in: [targetAudience, 'all', 'both'] };
     }
     
@@ -45,7 +47,7 @@ export const getEvents = asyncHandler(async (req, res) => {
         query.attendees = req.user._id;
     }
     
-    // Search by title or description
+    // Search by title, description, or tags
     if (search) {
         query.$or = [
             { title: { $regex: search, $options: 'i' } },
@@ -54,12 +56,32 @@ export const getEvents = asyncHandler(async (req, res) => {
         ];
     }
     
-    const events = await Event.find(query)
-        .populate('organizer', 'name email')
-        .populate('attendees', 'name')
-        .sort({ date: 1 });
-    
-    res.status(200).json(events);
+    try {
+        const events = await Event.find(query)
+            .populate('organizer', 'name email professionalPath')
+            .populate('attendees', 'name')
+            .sort({ date: 1 })
+            .limit(Number(limit))
+            .skip(Number(skip))
+            .lean();
+        
+        // Get total count for pagination
+        const total = await Event.countDocuments(query);
+        
+        res.status(200).json({
+            events,
+            pagination: {
+                total,
+                limit: Number(limit),
+                skip: Number(skip),
+                hasMore: skip + events.length < total
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.status(500);
+        throw new Error('Failed to fetch events');
+    }
 });
 
 /**
@@ -68,16 +90,24 @@ export const getEvents = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const getEvent = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id)
-        .populate('organizer', 'name email professionalPath')
-        .populate('attendees', 'name professionalPath');
-    
-    if (!event) {
-        res.status(404);
-        throw new Error('Event not found');
+    try {
+        const event = await Event.findById(req.params.id)
+            .populate('organizer', 'name email professionalPath')
+            .populate('attendees', 'name professionalPath');
+        
+        if (!event) {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        
+        res.status(200).json(event);
+    } catch (error) {
+        if (error.name === 'CastError') {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        throw error;
     }
-    
-    res.status(200).json(event);
 });
 
 /**
@@ -105,27 +135,53 @@ export const createEvent = asyncHandler(async (req, res) => {
         throw new Error('Please provide all required fields');
     }
     
-    // Create event
-    const event = await Event.create({
-        title,
-        description,
-        date,
-        time,
-        location,
-        organizer: req.user._id,
-        attendees: [req.user._id], // Organizer automatically attends
-        maxAttendees,
-        tags: tags || [],
-        category: category || 'meetup',
-        targetAudience: targetAudience || 'all',
-        isPublic: isPublic !== undefined ? isPublic : true,
-    });
+    // Validate date is in the future
+    const eventDate = new Date(date);
+    if (eventDate < new Date()) {
+        res.status(400);
+        throw new Error('Event date must be in the future');
+    }
     
-    const populatedEvent = await Event.findById(event._id)
-        .populate('organizer', 'name email')
-        .populate('attendees', 'name');
+    // Validate time format (HH:MM)
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(time)) {
+        res.status(400);
+        throw new Error('Invalid time format. Use HH:MM format');
+    }
     
-    res.status(201).json(populatedEvent);
+    try {
+        // Create event
+        const eventData = {
+            title: title.trim(),
+            description: description.trim(),
+            date: eventDate,
+            time,
+            location: {
+                name: location.name.trim(),
+                address: location.address?.trim() || '',
+                city: location.city?.trim() || 'Alicante'
+            },
+            organizer: req.user._id,
+            attendees: [req.user._id], // Organizer automatically attends
+            maxAttendees: maxAttendees ? parseInt(maxAttendees) : null,
+            tags: tags?.map(tag => tag.toLowerCase().trim()).filter(Boolean) || [],
+            category: category || 'meetup',
+            targetAudience: targetAudience || 'all',
+            isPublic: isPublic !== undefined ? isPublic : true,
+        };
+        
+        const event = await Event.create(eventData);
+        
+        const populatedEvent = await Event.findById(event._id)
+            .populate('organizer', 'name email')
+            .populate('attendees', 'name');
+        
+        res.status(201).json(populatedEvent);
+    } catch (error) {
+        console.error('Error creating event:', error);
+        res.status(500);
+        throw new Error('Failed to create event');
+    }
 });
 
 /**
@@ -134,34 +190,62 @@ export const createEvent = asyncHandler(async (req, res) => {
  * @access  Private (organizer only)
  */
 export const updateEvent = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id);
-    
-    if (!event) {
-        res.status(404);
-        throw new Error('Event not found');
+    try {
+        const event = await Event.findById(req.params.id);
+        
+        if (!event) {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        
+        // Check if user is the organizer
+        if (event.organizer.toString() !== req.user._id.toString()) {
+            res.status(403);
+            throw new Error('Only the organizer can update this event');
+        }
+        
+        // Don't allow updating past events
+        if (event.isPast) {
+            res.status(400);
+            throw new Error('Cannot update past events');
+        }
+        
+        // Validate new date if provided
+        if (req.body.date) {
+            const newDate = new Date(req.body.date);
+            if (newDate < new Date()) {
+                res.status(400);
+                throw new Error('Event date must be in the future');
+            }
+        }
+        
+        // Update allowed fields
+        const allowedUpdates = [
+            'title', 'description', 'date', 'time', 
+            'location', 'maxAttendees', 'tags', 
+            'category', 'targetAudience', 'isPublic'
+        ];
+        
+        allowedUpdates.forEach(field => {
+            if (req.body[field] !== undefined) {
+                event[field] = req.body[field];
+            }
+        });
+        
+        await event.save();
+        
+        const updatedEvent = await Event.findById(event._id)
+            .populate('organizer', 'name email')
+            .populate('attendees', 'name');
+        
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        if (error.name === 'CastError') {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        throw error;
     }
-    
-    // Check if user is the organizer
-    if (event.organizer.toString() !== req.user._id.toString()) {
-        res.status(403);
-        throw new Error('Only the organizer can update this event');
-    }
-    
-    // Don't allow updating past events
-    if (event.isPast) {
-        res.status(400);
-        throw new Error('Cannot update past events');
-    }
-    
-    const updatedEvent = await Event.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true, runValidators: true }
-    )
-    .populate('organizer', 'name email')
-    .populate('attendees', 'name');
-    
-    res.status(200).json(updatedEvent);
 });
 
 /**
@@ -170,39 +254,30 @@ export const updateEvent = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const joinEvent = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id);
-    
-    if (!event) {
-        res.status(404);
-        throw new Error('Event not found');
-    }
-    
-    // Check if event is full
-    if (event.isFull) {
+    try {
+        const event = await Event.findById(req.params.id);
+        
+        if (!event) {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        
+        // Use the model method to add attendee
+        await event.addAttendee(req.user._id);
+        
+        const updatedEvent = await Event.findById(event._id)
+            .populate('organizer', 'name email')
+            .populate('attendees', 'name');
+        
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        if (error.name === 'CastError') {
+            res.status(404);
+            throw new Error('Event not found');
+        }
         res.status(400);
-        throw new Error('Event is full');
+        throw new Error(error.message);
     }
-    
-    // Check if event has passed
-    if (event.isPast) {
-        res.status(400);
-        throw new Error('Cannot join past events');
-    }
-    
-    // Check if user is already attending
-    if (event.attendees.includes(req.user._id)) {
-        res.status(400);
-        throw new Error('You are already attending this event');
-    }
-    
-    event.attendees.push(req.user._id);
-    await event.save();
-    
-    const updatedEvent = await Event.findById(event._id)
-        .populate('organizer', 'name email')
-        .populate('attendees', 'name');
-    
-    res.status(200).json(updatedEvent);
 });
 
 /**
@@ -211,82 +286,105 @@ export const joinEvent = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const leaveEvent = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id);
-    
-    if (!event) {
-        res.status(404);
-        throw new Error('Event not found');
-    }
-    
-    // Check if user is the organizer
-    if (event.organizer.toString() === req.user._id.toString()) {
+    try {
+        const event = await Event.findById(req.params.id);
+        
+        if (!event) {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        
+        // Use the model method to remove attendee
+        await event.removeAttendee(req.user._id);
+        
+        const updatedEvent = await Event.findById(event._id)
+            .populate('organizer', 'name email')
+            .populate('attendees', 'name');
+        
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        if (error.name === 'CastError') {
+            res.status(404);
+            throw new Error('Event not found');
+        }
         res.status(400);
-        throw new Error('Organizer cannot leave their own event');
+        throw new Error(error.message);
     }
-    
-    // Check if user is attending
-    if (!event.attendees.includes(req.user._id)) {
-        res.status(400);
-        throw new Error('You are not attending this event');
-    }
-    
-    event.attendees = event.attendees.filter(
-        attendee => attendee.toString() !== req.user._id.toString()
-    );
-    await event.save();
-    
-    const updatedEvent = await Event.findById(event._id)
-        .populate('organizer', 'name email')
-        .populate('attendees', 'name');
-    
-    res.status(200).json(updatedEvent);
 });
 
 /**
- * @desc    Cancel event
- * @route   DELETE /api/events/:id
+ * @desc    Cancel event (soft delete)
+ * @route   POST /api/events/:id/cancel
  * @access  Private (organizer only)
  */
 export const cancelEvent = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id);
-    
-    if (!event) {
-        res.status(404);
-        throw new Error('Event not found');
+    try {
+        const event = await Event.findById(req.params.id);
+        
+        if (!event) {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        
+        // Check if user is the organizer
+        if (event.organizer.toString() !== req.user._id.toString()) {
+            res.status(403);
+            throw new Error('Only the organizer can cancel this event');
+        }
+        
+        event.isCancelled = true;
+        await event.save();
+        
+        res.status(200).json({ 
+            message: 'Event cancelled successfully',
+            event: event
+        });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        throw error;
     }
-    
-    // Check if user is the organizer
-    if (event.organizer.toString() !== req.user._id.toString()) {
-        res.status(403);
-        throw new Error('Only the organizer can cancel this event');
-    }
-    
-    event.isCancelled = true;
-    await event.save();
-    
-    res.status(200).json({ message: 'Event cancelled successfully' });
 });
 
+/**
+ * @desc    Delete event (hard delete)
+ * @route   DELETE /api/events/:id
+ * @access  Private (organizer only)
+ */
 export const deleteEvent = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id);
+    try {
+        const event = await Event.findById(req.params.id);
 
-    if (!event) {
-        res.status(404);
-        throw new Error('Event not found');
+        if (!event) {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+
+        // Check if user is the organizer
+        if (event.organizer.toString() !== req.user._id.toString()) {
+            res.status(403);
+            throw new Error('Only the organizer can delete this event');
+        }
+        
+        // Only allow deletion if no other attendees
+        if (event.attendees.length > 1) {
+            res.status(400);
+            throw new Error('Cannot delete event with registered attendees. Cancel the event instead.');
+        }
+
+        await Event.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ 
+            message: 'Event deleted successfully',
+            id: req.params.id
+        });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+        throw error;
     }
-
-    // Check if user is the organizer
-    if (event.organizer.toString() !== req.user._id.toString()) {
-        res.status(403);
-        throw new Error('Only the organizer can delete this event');
-    }
-    if (event.attendees.length > 1) {
-        res.status(400);
-        throw new Error('Cannot delete event with registered attendees. Cancel the event instead.');
-    }
-
-    await Event.findByIdAndDelete(req.params.id);
-
-    res.status(200).json({ message: 'Event deleted successfully' });
 });
-

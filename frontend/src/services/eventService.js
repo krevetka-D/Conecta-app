@@ -5,8 +5,18 @@ import { API_ENDPOINTS } from './api/endpoints';
 const eventService = {
     getEvents: async (params = {}) => {
         try {
+            // Convert the response to handle both array and object responses
             const response = await apiClient.get('/events', { params });
-            return response;
+            
+            // If response has events property, return that, otherwise assume it's an array
+            if (response && response.events) {
+                return response.events;
+            } else if (Array.isArray(response)) {
+                return response;
+            } else {
+                console.error('Unexpected response format:', response);
+                return [];
+            }
         } catch (error) {
             console.error('Error fetching events:', error);
             throw error;
@@ -25,10 +35,27 @@ const eventService = {
 
     createEvent: async (eventData) => {
         try {
-            const response = await apiClient.post('/events', eventData);
+            // Ensure required fields are properly formatted
+            const formattedData = {
+                ...eventData,
+                date: new Date(eventData.date).toISOString(),
+                location: {
+                    name: eventData.location.name,
+                    address: eventData.location.address || '',
+                    city: eventData.location.city || 'Alicante'
+                },
+                tags: eventData.tags || [],
+                maxAttendees: eventData.maxAttendees ? parseInt(eventData.maxAttendees) : null
+            };
+
+            const response = await apiClient.post('/events', formattedData);
             return response;
         } catch (error) {
             console.error('Error creating event:', error);
+            // Provide more specific error messages
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
             throw error;
         }
     },
@@ -39,6 +66,9 @@ const eventService = {
             return response;
         } catch (error) {
             console.error('Error updating event:', error);
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
             throw error;
         }
     },
@@ -49,6 +79,9 @@ const eventService = {
             return response;
         } catch (error) {
             console.error('Error deleting event:', error);
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
             throw error;
         }
     },
@@ -59,6 +92,9 @@ const eventService = {
             return response;
         } catch (error) {
             console.error('Error joining event:', error);
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
             throw error;
         }
     },
@@ -69,16 +105,47 @@ const eventService = {
             return response;
         } catch (error) {
             console.error('Error leaving event:', error);
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
+            throw error;
+        }
+    },
+
+    cancelEvent: async (id) => {
+        try {
+            const response = await apiClient.post(`/events/${id}/cancel`);
+            return response;
+        } catch (error) {
+            console.error('Error cancelling event:', error);
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
             throw error;
         }
     },
     
     getUpcomingEvents: async (limit = 5) => {
-    const response = await api.get(endpoints.EVENTS.UPCOMING, {
-        params: { limit }
-    });
-    return response.data;
-}
+        try {
+            const response = await apiClient.get('/events', {
+                params: { 
+                    upcoming: 'true',
+                    limit 
+                }
+            });
+            
+            if (response && response.events) {
+                return response.events;
+            } else if (Array.isArray(response)) {
+                return response;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error('Error fetching upcoming events:', error);
+            return [];
+        }
+    }
 };
 
 export default eventService;

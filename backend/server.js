@@ -20,6 +20,8 @@ import configRoutes from './routes/configRoutes.js';
 import forumRoutes from './routes/forumRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 
+import { performanceMonitor, payloadSizeLimiter } from './middleware/performanceMiddleware.js';
+
 dotenv.config();
 
 const app = express();
@@ -57,6 +59,9 @@ if (process.env.NODE_ENV !== 'production') {
 // Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use(performanceMonitor);
+app.use(payloadSizeLimiter());
 
 // --- Mount your API routes here ---
 app.use('/api/users', userRoutes);

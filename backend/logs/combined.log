@@ -5,3 +5,17 @@
 {"level":"info","message":"Server running on port 5001","service":"conecta-alicante","timestamp":"2025-07-17 19:46:57"}
 {"level":"info","message":"Server running on port 5001","service":"conecta-alicante","timestamp":"2025-07-17 19:48:03"}
 {"level":"info","message":"Server running on port 5001","service":"conecta-alicante","timestamp":"2025-07-17 19:49:06"}
+{"level":"info","message":"GET /api/users/me?_t=1752882301590 - 115ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:45:01"}
+{"level":"info","message":"GET /api/users/me?_t=1752882301599 - 143ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:45:01"}
+{"level":"info","message":"GET /api/config/categories?_t=1752882308101&professionalPath=ENTREPRENEUR - 62ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:45:08"}
+{"level":"info","message":"GET /api/budget?_t=1752882308105 - 241ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:45:08"}
+{"level":"info","message":"GET /api/events?_t=1752882321703&upcoming=true - 123ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:45:21"}
+{"level":"info","message":"POST /api/events?_t=1752882356191 - 83ms - Status: 400","service":"conecta-alicante","timestamp":"2025-07-19 01:45:56"}
+{"level":"info","message":"POST /api/events?_t=1752882376833 - 264ms - Status: 201","service":"conecta-alicante","timestamp":"2025-07-19 01:46:17"}
+{"level":"info","message":"GET /api/events?_t=1752882388381&myEvents=true - 186ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:46:28"}
+{"level":"info","message":"GET /api/events?_t=1752882390391&upcoming=true - 184ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:46:30"}
+{"level":"info","message":"GET /api/forums?_t=1752882395184 - 61ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:46:35"}
+{"level":"info","message":"GET /api/events?_t=1752882509334&upcoming=true - 188ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:48:29"}
+{"level":"info","message":"GET /api/checklist?_t=1752882513707 - 152ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:48:33"}
+{"level":"info","message":"PUT /api/checklist/OBTAIN_NIE?_t=1752882515802 - 213ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:48:36"}
+{"level":"info","message":"GET /api/checklist?_t=1752882516028 - 124ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 01:48:36"}
