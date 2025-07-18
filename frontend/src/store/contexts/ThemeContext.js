@@ -1,15 +1,15 @@
 // frontend/src/store/contexts/ThemeContext.js
 
 import React, { createContext, useState, useContext } from 'react';
-import { PaperProvider } from 'react-native-paper';
-import { theme as customTheme } from '../../constants/theme'; // Import your defined theme
+import { PaperProvider, useTheme as usePaperTheme } from 'react-native-paper';
+import { theme as customTheme } from '../../constants/theme';
 
 // Create the context for your theme logic
 const ThemeContext = createContext();
 
 /**
- * This is the new, unified ThemeProvider for your app.
- * It is responsible for rendering the PaperProvider and giving it the theme.
+ * This is the unified ThemeProvider for your app.
+ * It provides both Paper theme and custom theme state.
  */
 export const ThemeProvider = ({ children }) => {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
@@ -18,13 +18,12 @@ export const ThemeProvider = ({ children }) => {
     setIsDarkTheme(prev => !prev);
   };
 
-  // This ensures the theme object is always valid.
-  const theme = isDarkTheme ? customTheme : customTheme;
+  // For now, we use the same theme regardless of dark mode
+  // You can extend this to have a dark theme variant
+  const theme = customTheme;
 
   return (
-    <ThemeContext.Provider value={{ isDarkTheme, toggleTheme }}>
-      {/* PaperProvider is now correctly rendered here, at the top of your app,
-          and it receives the theme object directly. */}
+    <ThemeContext.Provider value={{ isDarkTheme, toggleTheme, theme }}>
       <PaperProvider theme={theme}>
         {children}
       </PaperProvider>
@@ -32,5 +31,23 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
-// Custom hook to access your theme's state (e.g., isDarkTheme)
-export const useAppTheme = () => useContext(ThemeContext);
+// Custom hook to access your theme's state
+export const useAppTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useAppTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+// Export a hook that combines both Paper theme and custom theme state
+export const useTheme = () => {
+  const paperTheme = usePaperTheme();
+  const appTheme = useAppTheme();
+  
+  return {
+    ...paperTheme,
+    isDark: appTheme.isDarkTheme,
+    toggleTheme: appTheme.toggleTheme,
+  };
+};

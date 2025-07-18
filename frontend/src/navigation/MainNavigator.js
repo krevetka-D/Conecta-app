@@ -5,7 +5,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../store/contexts/ThemeContext';
 import { SCREEN_NAMES } from '../constants/routes';
-import { colors } from '../constants/theme';
 
 // Import all the screens for the tabs
 import DashboardScreen from '../screens/main/DashboardScreen';
@@ -13,13 +12,13 @@ import BudgetScreen from '../screens/budget/BudgetScreen';
 import ResourcesScreen from '../screens/content/ResourcesScreen';
 import ChecklistScreen from '../screens/checklist/ChecklistScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
-import ForumsScreen from '../screens/forums/ForumScreen'; // Import ForumsScreen
-import EventsScreen from '../screens/events/EventDetailScreen'; // Assuming a main EventsScreen component exists for listing, adjust if needed
+import ForumsScreen from '../screens/forums/ForumScreen';
+import EventsScreen from '../screens/events/EventsScreen';
 
 const Tab = createBottomTabNavigator();
 
 const MainNavigator = () => {
-    const { isDark } = useTheme();
+    const theme = useTheme();
 
     return (
         <Tab.Navigator
@@ -37,18 +36,18 @@ const MainNavigator = () => {
                         iconName = focused ? 'clipboard-check' : 'clipboard-check-outline';
                     } else if (route.name === SCREEN_NAMES.PROFILE) {
                         iconName = focused ? 'account-circle' : 'account-circle-outline';
-                    } else if (route.name === SCREEN_NAMES.FORUMS) { // Add icon logic for Forums
+                    } else if (route.name === SCREEN_NAMES.FORUMS) {
                         iconName = focused ? 'forum' : 'forum-outline';
-                    } else if (route.name === SCREEN_NAMES.EVENTS) { // Add icon logic for Events
+                    } else if (route.name === SCREEN_NAMES.EVENTS) {
                         iconName = focused ? 'calendar-multiple' : 'calendar-multiple-outline';
                     }
                     return <Icon name={iconName} size={size} color={color} />;
                 },
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.textSecondary,
+                tabBarActiveTintColor: theme.colors.primary,
+                tabBarInactiveTintColor: theme.colors.textSecondary,
                 tabBarStyle: {
-                    backgroundColor: isDark ? colors.backgroundDark : colors.white,
-                    borderTopColor: isDark ? colors.backgroundDark : colors.border,
+                    backgroundColor: theme.isDark ? theme.colors.surface : theme.colors.surface,
+                    borderTopColor: theme.colors.border || theme.colors.backdrop,
                 },
             })}
         >
@@ -56,10 +55,8 @@ const MainNavigator = () => {
             <Tab.Screen name={SCREEN_NAMES.BUDGET} component={BudgetScreen} />
             <Tab.Screen name={SCREEN_NAMES.RESOURCES} component={ResourcesScreen} />
             <Tab.Screen name={SCREEN_NAMES.CHECKLIST} component={ChecklistScreen} />
-            {/* Add Forum and Events Screens as new tabs */}
             <Tab.Screen name={SCREEN_NAMES.FORUMS} component={ForumsScreen} />
             <Tab.Screen name={SCREEN_NAMES.EVENTS} component={EventsScreen} />
-            {/* ----------------------------------------- */}
             <Tab.Screen name={SCREEN_NAMES.PROFILE} component={ProfileScreen} />
         </Tab.Navigator>
     );

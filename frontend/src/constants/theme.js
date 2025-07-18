@@ -196,6 +196,10 @@ export const theme = {
         placeholder: colors.placeholder,
         backdrop: colors.backdrop,
         notification: colors.info,
+        card: colors.cardBackground,
+        textSecondary: colors.textSecondary,
+        textTertiary: colors.textTertiary,
+        onPrimary: colors.textInverse,
     },
     fonts: {
         ...DefaultTheme.fonts,
@@ -217,4 +221,13 @@ export const theme = {
         },
     },
     roundness: borderRadius.md,
+    
+spacing: {
+        xs: spacing.xs,
+        s: spacing.sm,
+        m: spacing.md,
+        l: spacing.lg,
+        xl: spacing.xl,
+        xxl: spacing.xxl,
+    },
 };
