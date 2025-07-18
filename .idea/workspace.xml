@@ -13,11 +13,17 @@
       <change afterPath="$PROJECT_DIR$/backend/routes/configRoutes.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/routes/dashboardRoutes.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/utils/logger.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.env" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/config/db.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/db.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/budgetController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/budgetController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/checklistController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/checklistController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/forumController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/forumController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/userController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/userController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/middleware/authMiddleware.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/middleware/authMiddleware.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/middleware/errorMiddleware.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/middleware/errorMiddleware.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/models/ChecklistItem.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/ChecklistItem.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/User.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/User.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/.bin/bcrypt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/.package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/.package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/@types/whatwg-url/LICENSE" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/@types/whatwg-url/LICENSE" afterDir="false" />
@@ -137,12 +143,6 @@
       <change beforePath="$PROJECT_DIR$/backend/node_modules/fresh/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/fresh/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/fresh/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/fresh/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/fresh/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/fresh/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/fsevents/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/fsevents/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/fsevents/fsevents.d.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/fsevents/fsevents.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/fsevents/fsevents.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/fsevents/package.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/http-errors/node_modules/statuses/HISTORY.md" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/http-errors/node_modules/statuses/LICENSE" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/http-errors/node_modules/statuses/README.md" beforeDir="false" />
@@ -789,10 +789,6 @@
       <change beforePath="$PROJECT_DIR$/backend/node_modules/nodemon/lib/rules/add.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/nodemon/lib/rules/add.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/nodemon/lib/utils/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/nodemon/lib/utils/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/nodemon/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/nodemon/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/once/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/once/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/once/once.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/once/package.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/path-to-regexp/Readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/path-to-regexp/Readme.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/path-to-regexp/dist/index.d.ts" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/path-to-regexp/dist/index.js" beforeDir="false" />
@@ -812,12 +808,13 @@
       <change beforePath="$PROJECT_DIR$/backend/node_modules/raw-body/HISTORY.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/raw-body/HISTORY.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/raw-body/index.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/raw-body/index.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/raw-body/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/raw-body/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/semver/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/semver/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/semver/index.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/semver/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/semver/preload.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/semver/range.bnf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/router/HISTORY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/router/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/router/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/router/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/router/lib/layer.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/router/lib/route.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/router/package.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/send/HISTORY.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/send/HISTORY.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/send/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/send/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/send/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/send/index.js" afterDir="false" />
@@ -851,9 +848,6 @@
       <change beforePath="$PROJECT_DIR$/backend/node_modules/statuses/HISTORY.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/statuses/HISTORY.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/statuses/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/statuses/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/statuses/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/statuses/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/touch/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/touch/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/touch/package.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/tr46/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/tr46/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/tr46/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/tr46/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/tr46/lib/mappingTable.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/tr46/lib/mappingTable.json" afterDir="false" />
@@ -873,16 +867,27 @@
       <change beforePath="$PROJECT_DIR$/backend/node_modules/whatwg-url/lib/url-state-machine.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/whatwg-url/lib/url-state-machine.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/whatwg-url/lib/urlencoded.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/whatwg-url/lib/urlencoded.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/node_modules/whatwg-url/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/whatwg-url/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/wrappy/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/wrappy/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/wrappy/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/wrappy/wrappy.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/budgetRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/budgetRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/checklistRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/checklistRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/forumRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/forumRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/userRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/userRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/babel.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/babel.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/metro.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/metro.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/navigation/AuthNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/navigation/AuthNavigator.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/navigation/MainNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/navigation/MainNavigator.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/navigation/OnboardingNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/navigation/OnboardingNavigator.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/auth/WelcomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/auth/WelcomeScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/screens/forums/ForumScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/forums/ForumScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/services/api/client.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/api/client.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/contexts/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/store/contexts/AuthContext.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/contexts/ThemeContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/store/contexts/ThemeContext.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/utils/performance.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/utils/performance.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -890,10 +895,13 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/backend" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/conecta-alicante-frontend/src/screens/main/DashboardScreen.js" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="PackageJsonUpdateNotifier">
+    <dismissed value="$PROJECT_DIR$/frontend/package.json" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
@@ -962,6 +970,8 @@
       <workItem from="1752785578057" duration="194000" />
       <workItem from="1752787992235" duration="502000" />
       <workItem from="1752788499315" duration="954000" />
+      <workItem from="1752799306463" duration="2250000" />
+      <workItem from="1752854879000" duration="1679000" />
     </task>
     <servers />
   </component>

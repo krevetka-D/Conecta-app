@@ -1,23 +1,23 @@
-// src/navigation/OnboardingNavigator.js
+// frontend/src/navigation/OnboardingNavigator.js
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import PathSelectionScreen from '../screens/onboarding/PathSelectionScreen';
 import PrioritySelectionScreen from '../screens/onboarding/PrioritySelectionScreen';
-import { SCREEN_NAMES } from '../constants';
-import { SCREEN_TRANSITION_CONFIG } from '../constants';
-import { colors } from '../constants';
+import { SCREEN_NAMES } from '../constants/routes';
+import { colors } from '../constants/theme';
 
 const Stack = createStackNavigator();
 
-const OnboardingNavigator = () => {
+const OnboardingNavigator = ({ onComplete }) => {
     return (
         <Stack.Navigator
             screenOptions={{
                 headerShown: false,
-                ...SCREEN_TRANSITION_CONFIG,
                 cardStyle: {
                     backgroundColor: colors.background,
                 },
+                animationEnabled: true,
+                gestureEnabled: true,
             }}
             initialRouteName={SCREEN_NAMES.PATH_SELECTION}
         >
@@ -30,11 +30,17 @@ const OnboardingNavigator = () => {
             />
             <Stack.Screen
                 name={SCREEN_NAMES.PRIORITY_SELECTION}
-                component={PrioritySelectionScreen}
                 options={{
                     gestureEnabled: true,
                 }}
-            />
+            >
+                {(props) => (
+                    <PrioritySelectionScreen
+                        {...props}
+                        onComplete={onComplete}
+                    />
+                )}
+            </Stack.Screen>
         </Stack.Navigator>
     );
 };

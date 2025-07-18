@@ -1,3 +1,4 @@
+// frontend/src/navigation/MainNavigator.js
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -54,46 +55,46 @@ const MainNavigator = () => {
                     }
                     return <Icon name={iconName} size={size} color={color} />;
                 },
-                tabBarActiveTintColor: theme.colors.primary,
-                tabBarInactiveTintColor: theme.colors.textSecondary,
+                tabBarActiveTintColor: theme.colors?.primary || '#1E3A8A',
+                tabBarInactiveTintColor: theme.colors?.textSecondary || '#6B7280',
                 tabBarStyle: {
-                    backgroundColor: theme.colors.surface,
-                    borderTopColor: theme.colors.border,
+                    backgroundColor: theme.colors?.surface || '#FFFFFF',
+                    borderTopColor: theme.colors?.border || '#E5E7EB',
                 },
             })}
         >
-            <Tab.Screen 
-                name={SCREEN_NAMES.DASHBOARD} 
+            <Tab.Screen
+                name={SCREEN_NAMES.DASHBOARD}
                 component={DashboardScreen}
                 options={{ title: 'Home' }}
             />
-            <Tab.Screen 
-                name={SCREEN_NAMES.BUDGET} 
+            <Tab.Screen
+                name={SCREEN_NAMES.BUDGET}
                 component={BudgetScreen}
                 options={{ title: 'Budget' }}
             />
-            <Tab.Screen 
-                name={SCREEN_NAMES.RESOURCES} 
+            <Tab.Screen
+                name={SCREEN_NAMES.RESOURCES}
                 component={ResourcesScreen}
                 options={{ title: 'Resources' }}
             />
-            <Tab.Screen 
-                name={SCREEN_NAMES.CHECKLIST} 
+            <Tab.Screen
+                name={SCREEN_NAMES.CHECKLIST}
                 component={ChecklistScreen}
                 options={{ title: 'Checklist' }}
             />
-            <Tab.Screen 
-                name={SCREEN_NAMES.FORUMS} 
+            <Tab.Screen
+                name={SCREEN_NAMES.FORUMS}
                 component={ForumNavigator}
                 options={{ title: 'Forums' }}
             />
-            <Tab.Screen 
-                name={SCREEN_NAMES.EVENTS} 
+            <Tab.Screen
+                name={SCREEN_NAMES.EVENTS}
                 component={EventNavigator}
                 options={{ title: 'Events' }}
             />
-            <Tab.Screen 
-                name={SCREEN_NAMES.PROFILE} 
+            <Tab.Screen
+                name={SCREEN_NAMES.PROFILE}
                 component={ProfileScreen}
                 options={{ title: 'Profile' }}
             />

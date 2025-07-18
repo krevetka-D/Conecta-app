@@ -1,8 +1,9 @@
+// frontend/src/store/contexts/ThemeContext.js
 import React, { createContext, useState, useContext } from 'react';
 import { PaperProvider, useTheme as usePaperTheme } from 'react-native-paper';
 import { theme as customTheme } from '../../constants/theme';
 
-const ThemeContext = createContext();
+const ThemeContext = createContext(null);
 
 export const ThemeProvider = ({ children }) => {
     const [isDarkTheme, setIsDarkTheme] = useState(false);
@@ -11,11 +12,15 @@ export const ThemeProvider = ({ children }) => {
         setIsDarkTheme(prev => !prev);
     };
 
-    const theme = customTheme;
+    const themeValue = {
+        isDarkTheme,
+        toggleTheme,
+        theme: customTheme,
+    };
 
     return (
-        <ThemeContext.Provider value={{ isDarkTheme, toggleTheme, theme }}>
-            <PaperProvider theme={theme}>
+        <ThemeContext.Provider value={themeValue}>
+            <PaperProvider theme={customTheme}>
                 {children}
             </PaperProvider>
         </ThemeContext.Provider>
@@ -23,15 +28,21 @@ export const ThemeProvider = ({ children }) => {
 };
 
 export const useTheme = () => {
-    const paperTheme = usePaperTheme();
     const context = useContext(ThemeContext);
-    
+    const paperTheme = usePaperTheme();
+
     if (!context) {
-        throw new Error('useTheme must be used within a ThemeProvider');
+        // Return a default theme if context is not available
+        return {
+            ...customTheme,
+            isDark: false,
+            toggleTheme: () => {},
+        };
     }
-    
+
     return {
         ...paperTheme,
+        ...context.theme,
         isDark: context.isDarkTheme,
         toggleTheme: context.toggleTheme,
     };
