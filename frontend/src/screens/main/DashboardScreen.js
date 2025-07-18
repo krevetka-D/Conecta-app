@@ -1,95 +1,97 @@
 // frontend/src/screens/main/DashboardScreen.js
 
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    RefreshControl,
-    ActivityIndicator,
-} from 'react-native';
-import apiClient from '../../services/api/client';
-import { useApp } from '../../store/contexts/AppContext';
-import { dashboardStyles as styles } from '../../styles/screens/main/DashboardScreenStyles';
-import { colors } from '../../constants/theme';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { useTheme } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const DashboardScreen = () => {
-    const { isOnline } = useApp();
+import { useAuth } from '../../store/contexts/AuthContext';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+// Import the style FUNCTION
+import { dashboardStyles } from '../../styles/screens/main/DashboardScreenStyles';
+
+const DashboardScreen = ({ navigation }) => {
+    // Get theme and create styles at runtime
+    const theme = useTheme();
+    const styles = dashboardStyles(theme);
+
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [events, setEvents] = useState([]);
-    const [error, setError] = useState(null);
+    const [dashboardData, setDashboardData] = useState(null);
 
-    const loadDashboardData = useCallback(async () => {
-        if (!refreshing) setLoading(true);
-        setError(null);
-
+    const loadData = useCallback(async () => {
         try {
-            const response = await apiClient.get('/dashboard/events');
-            const fetchedEvents = response?.data?.events || [];
-            setEvents(fetchedEvents);
-        } catch (err) {
-            console.error('Error loading dashboard data:', err);
-            setError('Could not load dashboard events. Pull down to retry.');
+            // This is where you would fetch dashboard-specific data in the future.
+            // For example:
+            // const data = await getDashboardData();
+            // setDashboardData(data);
+        } catch (error) {
+            console.error("Failed to load dashboard data", error);
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [isOnline, refreshing]);
-
-    useEffect(() => {
-        loadDashboardData();
-    }, [loadDashboardData]);
-
-    const onRefresh = useCallback(() => {
-        setRefreshing(true);
     }, []);
 
     useEffect(() => {
-        if (refreshing) {
-            loadDashboardData();
-        }
-    }, [refreshing, loadDashboardData]);
+        loadData();
+    }, [loadData]);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        loadData();
+    }, [loadData]);
 
     if (loading) {
-        return (
-            <View style={styles.container}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-        );
-    }
-
-    if (error && events.length === 0) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>{error}</Text>
-            </View>
-        );
+        return <LoadingSpinner fullScreen text="Loading Dashboard..." />;
     }
 
     return (
-        <View style={styles.container}>
-            <FlatList
-                data={events}
-                keyExtractor={(item) => item.id.toString()}
-                style={{ width: '100%' }}
-                contentContainerStyle={styles.listContentContainer}
-                renderItem={({ item }) => (
-                    <View style={styles.eventItem}>
-                        <Text style={styles.eventTitle}>{item.title}</Text>
-                        <Text style={styles.eventDetails}>{item.details}</Text>
+        <ScrollView
+            style={styles.container}
+            contentContainerStyle={styles.scrollView}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+        >
+            <View style={styles.header}>
+                <Text style={styles.welcomeText}>Welcome, {user?.name || 'User'}!</Text>
+                <Text style={styles.welcomeSubtext}>Here's your summary for today.</Text>
+            </View>
+
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.quickActionsContainer}>
+                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Budget')}>
+                    <View style={styles.actionIconContainer}>
+                        <Icon name="wallet" size={30} color={theme.colors.onPrimary} />
                     </View>
-                )}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]}/>
-                }
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No dashboard events found.</Text>
+                    <Text style={styles.actionText}>My Budget</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Checklist')}>
+                     <View style={styles.actionIconContainer}>
+                        <Icon name="check-circle-outline" size={30} color={theme.colors.onPrimary} />
                     </View>
-                }
-            />
-        </View>
+                    <Text style={styles.actionText}>My Checklist</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Forums')}>
+                     <View style={styles.actionIconContainer}>
+                        <Icon name="forum" size={30} color={theme.colors.onPrimary} />
+                    </View>
+                    <Text style={styles.actionText}>Community</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.card}>
+                <Text style={styles.cardTitle}>Upcoming Events</Text>
+                <View style={styles.cardContent}>
+                    {/* Replace with actual event data */}
+                    <View style={styles.emptyStateContainer}>
+                        <Icon name="calendar-blank" size={40} color={theme.colors.textSecondary} />
+                        <Text style={styles.emptyStateText}>No upcoming events.</Text>
+                    </View>
+                </View>
+            </View>
+
+        </ScrollView>
     );
 };
 

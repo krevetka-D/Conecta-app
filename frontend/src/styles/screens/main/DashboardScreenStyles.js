@@ -1,55 +1,80 @@
 // frontend/src/styles/screens/main/DashboardScreenStyles.js
 
 import { StyleSheet } from 'react-native';
-import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
-export const dashboardStyles = StyleSheet.create({
+/**
+ * This file must export a FUNCTION that accepts the theme.
+ * This prevents the theme from being accessed before it's available.
+ */
+export const dashboardStyles = (theme) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
-        justifyContent: 'center',
+        backgroundColor: theme.colors.background,
+    },
+    scrollView: {
+        padding: theme.spacing.m,
+    },
+    header: {
+        marginBottom: theme.spacing.l,
+    },
+    welcomeText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: theme.colors.text,
+    },
+    welcomeSubtext: {
+        fontSize: 16,
+        color: theme.colors.textSecondary,
+        marginTop: theme.spacing.xs,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: theme.colors.text,
+        marginBottom: theme.spacing.m,
+    },
+    quickActionsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: theme.spacing.l,
+    },
+    actionButton: {
         alignItems: 'center',
     },
-    listContentContainer: {
-        flexGrow: 1,
-        padding: spacing.md,
-        width: '100%',
-    },
-    emptyContainer: {
-        flex: 1,
+    actionIconContainer: {
+        backgroundColor: theme.colors.primary,
+        borderRadius: 30,
+        width: 60,
+        height: 60,
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: theme.spacing.s,
     },
-    errorText: {
-        color: colors.error,
-        fontSize: fonts.sizes.md,
-        fontFamily: fonts.families.regular,
+    actionText: {
+        color: theme.colors.text,
         textAlign: 'center',
-        padding: spacing.lg,
     },
-    emptyText: {
-        color: colors.textSecondary,
-        fontSize: fonts.sizes.md,
-        fontFamily: fonts.families.regular,
+    card: {
+        backgroundColor: theme.colors.card,
+        borderRadius: theme.roundness,
+        padding: theme.spacing.m,
+        marginBottom: theme.spacing.l,
     },
-    eventItem: {
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        marginBottom: spacing.md,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        ...shadows.sm,
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: theme.colors.text,
     },
-    eventTitle: {
-        fontSize: fonts.sizes.lg,
-        fontFamily: fonts.families.semiBold,
-        color: colors.text,
+    cardContent: {
+        marginTop: theme.spacing.m,
     },
-    eventDetails: {
-        fontSize: fonts.sizes.sm,
-        fontFamily: fonts.families.regular,
-        color: colors.textSecondary,
-        marginTop: spacing.sm,
+    emptyStateContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: theme.spacing.xl,
+    },
+    emptyStateText: {
+        color: theme.colors.textSecondary,
+        marginTop: theme.spacing.m,
     },
 });

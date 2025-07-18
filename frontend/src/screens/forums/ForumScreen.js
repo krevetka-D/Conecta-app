@@ -1,6 +1,6 @@
 // frontend/src/screens/forums/ForumsScreen.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -9,19 +9,24 @@ import {
     RefreshControl,
     SafeAreaView,
 } from 'react-native';
-import { Card, FAB, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { Card, FAB, Portal, Modal, TextInput, Button, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAuth } from '../../store/contexts/AuthContext';
-import { colors } from '../../constants/theme';
 import forumService from '../../services/forumService';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatDate } from '../../utils/formatting';
-import { forumsStyles as styles } from '../..ForumScreenStyl../../styles/screens/forums/ForumsScreenStyless';
+// Import the style FUNCTION
+import { forumsStyles } from '../../styles/screens/forums/ForumScreenStyles';
 
 const ForumsScreen = ({ navigation }) => {
+    // 1. Get the theme object from the provider. This is now safe.
+    const theme = useTheme();
+    // 2. Create the styles at runtime by calling the function with the theme.
+    const styles = forumsStyles(theme);
+
     const { user } = useAuth();
     const [forums, setForums] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -39,7 +44,6 @@ const ForumsScreen = ({ navigation }) => {
 
     const loadForums = useCallback(async () => {
         try {
-            setLoading(true);
             const data = await forumService.getForums();
             setForums(data || []);
         } catch (error) {
@@ -109,20 +113,20 @@ const ForumsScreen = ({ navigation }) => {
                                 </Text>
                                 <View style={styles.forumMeta}>
                                     <View style={styles.metaItem}>
-                                        <Icon name="forum" size={16} color={colors.textSecondary} />
+                                        <Icon name="forum" size={16} color={theme.colors.textSecondary} />
                                         <Text style={styles.metaText}>
                                             {threadCount} {threadCount === 1 ? 'thread' : 'threads'}
                                         </Text>
                                     </View>
                                     <View style={styles.metaItem}>
-                                        <Icon name="account" size={16} color={colors.textSecondary} />
+                                        <Icon name="account" size={16} color={theme.colors.textSecondary} />
                                         <Text style={styles.metaText}>
                                             {item.user?.name || 'Unknown'}
                                         </Text>
                                     </View>
                                 </View>
                             </View>
-                            <Icon name="chevron-right" size={24} color={colors.textSecondary} />
+                            <Icon name="chevron-right" size={24} color={theme.colors.textSecondary} />
                         </View>
                         {isMyForum && (
                             <View style={styles.myForumBadge}>
@@ -135,7 +139,7 @@ const ForumsScreen = ({ navigation }) => {
         );
     };
 
-    const getForumsByCategory = () => {
+    const categorizedForums = useMemo(() => {
         const categories = {
             general: [],
             freelancer: [],
@@ -157,26 +161,26 @@ const ForumsScreen = ({ navigation }) => {
         });
 
         return categories;
-    };
+    }, [forums]);
+
+    const flatListData = useMemo(() => [
+        { key: 'header', type: 'header' },
+        ...Object.entries(categorizedForums).flatMap(([category, categoryForums]) => 
+            categoryForums.length > 0 ? [
+                { key: `${category}-header`, type: 'category-header', category },
+                ...categoryForums.map(forum => ({ key: forum._id, type: 'forum', data: forum }))
+            ] : []
+        )
+    ], [categorizedForums]);
 
     if (loading && !refreshing) {
         return <LoadingSpinner fullScreen text="Loading forums..." />;
     }
 
-    const categorizedForums = getForumsByCategory();
-
     return (
         <SafeAreaView style={styles.safeArea}>
             <FlatList
-                data={[
-                    { key: 'header', type: 'header' },
-                    ...Object.entries(categorizedForums).flatMap(([category, forums]) => 
-                        forums.length > 0 ? [
-                            { key: `${category}-header`, type: 'category-header', category },
-                            ...forums.map(forum => ({ key: forum._id, type: 'forum', data: forum }))
-                        ] : []
-                    )
-                ]}
+                data={flatListData}
                 renderItem={({ item }) => {
                     if (item.type === 'header') {
                         return (
@@ -200,7 +204,7 @@ const ForumsScreen = ({ navigation }) => {
                                 <Icon 
                                     name={categoryIcons[item.category]} 
                                     size={20} 
-                                    color={colors.primary} 
+                                    color={theme.colors.primary} 
                                 />
                                 <Text style={styles.categoryTitle}>
                                     {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
@@ -216,12 +220,12 @@ const ForumsScreen = ({ navigation }) => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
-                        tintColor={colors.primary}
+                        tintColor={theme.colors.primary}
                     />
                 }
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
-                    forums.length === 0 && (
+                    !loading && forums.length === 0 && (
                         <EmptyState
                             icon="forum-outline"
                             title="No forums yet"
@@ -244,6 +248,7 @@ const ForumsScreen = ({ navigation }) => {
                 icon="plus"
                 style={styles.fab}
                 onPress={() => setModalVisible(true)}
+                color={theme.colors.onPrimary} // Use theme color for icon
             />
 
             <Portal>
@@ -264,7 +269,6 @@ const ForumsScreen = ({ navigation }) => {
                         mode="outlined"
                         style={styles.input}
                         error={!!formErrors.title}
-                        theme={{ colors: { primary: colors.primary } }}
                     />
                     {formErrors.title && (
                         <Text style={styles.errorText}>{formErrors.title}</Text>
@@ -279,7 +283,6 @@ const ForumsScreen = ({ navigation }) => {
                         numberOfLines={3}
                         style={styles.input}
                         error={!!formErrors.description}
-                        theme={{ colors: { primary: colors.primary } }}
                     />
                     {formErrors.description && (
                         <Text style={styles.errorText}>{formErrors.description}</Text>

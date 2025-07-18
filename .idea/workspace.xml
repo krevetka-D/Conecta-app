@@ -13,7 +13,6 @@
       <change afterPath="$PROJECT_DIR$/backend/routes/configRoutes.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/routes/dashboardRoutes.js" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/backend/utils/logger.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/config/db.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/db.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/checklistController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/checklistController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/userController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/userController.js" afterDir="false" />
@@ -883,10 +882,7 @@
       <change beforePath="$PROJECT_DIR$/backend/routes/checklistRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/checklistRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/userRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/userRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/screens/budget/BudgetScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/budget/BudgetScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/screens/checklist/ChecklistScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/checklist/ChecklistScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/services/api/interceptors.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/api/interceptors.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/budget/BudgetScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/budget/BudgetScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/screens/forums/ForumScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/forums/ForumScreen.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -965,6 +961,7 @@
       <workItem from="1752610897414" duration="69987000" />
       <workItem from="1752785578057" duration="194000" />
       <workItem from="1752787992235" duration="502000" />
+      <workItem from="1752788499315" duration="954000" />
     </task>
     <servers />
   </component>

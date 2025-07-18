@@ -1,74 +1,36 @@
-// src/store/contexts/ThemeContext.js
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
+// frontend/src/store/contexts/ThemeContext.js
 
-const ThemeContext = createContext({});
+import React, { createContext, useState, useContext } from 'react';
+import { PaperProvider } from 'react-native-paper';
+import { theme as customTheme } from '../../constants/theme'; // Import your defined theme
 
-export const useTheme = () => useContext(ThemeContext);
+// Create the context for your theme logic
+const ThemeContext = createContext();
 
+/**
+ * This is the new, unified ThemeProvider for your app.
+ * It is responsible for rendering the PaperProvider and giving it the theme.
+ */
 export const ThemeProvider = ({ children }) => {
-    const systemColorScheme = useColorScheme();
-    const [theme, setTheme] = useState('light');
-    const [useSystemTheme, setUseSystemTheme] = useState(true);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
 
-    useEffect(() => {
-        loadThemePreference();
-    }, []);
+  const toggleTheme = () => {
+    setIsDarkTheme(prev => !prev);
+  };
 
-    useEffect(() => {
-        if (useSystemTheme) {
-            setTheme(systemColorScheme || 'light');
-        }
-    }, [systemColorScheme, useSystemTheme]);
+  // This ensures the theme object is always valid.
+  const theme = isDarkTheme ? customTheme : customTheme;
 
-    const loadThemePreference = async () => {
-        try {
-            const savedTheme = await AsyncStorage.getItem('theme');
-            const savedUseSystem = await AsyncStorage.getItem('useSystemTheme');
-
-            if (savedTheme) {
-                setTheme(savedTheme);
-            }
-            if (savedUseSystem !== null) {
-                setUseSystemTheme(savedUseSystem === 'true');
-            }
-        } catch (error) {
-            console.error('Error loading theme preference:', error);
-        }
-    };
-
-    const toggleTheme = async () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        setUseSystemTheme(false);
-
-        try {
-            await AsyncStorage.setItem('theme', newTheme);
-            await AsyncStorage.setItem('useSystemTheme', 'false');
-        } catch (error) {
-            console.error('Error saving theme preference:', error);
-        }
-    };
-
-    const enableSystemTheme = async () => {
-        setUseSystemTheme(true);
-        setTheme(systemColorScheme || 'light');
-
-        try {
-            await AsyncStorage.setItem('useSystemTheme', 'true');
-        } catch (error) {
-            console.error('Error enabling system theme:', error);
-        }
-    };
-
-    const value = {
-        theme,
-        isDark: theme === 'dark',
-        useSystemTheme,
-        toggleTheme,
-        enableSystemTheme,
-    };
-
-    return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ isDarkTheme, toggleTheme }}>
+      {/* PaperProvider is now correctly rendered here, at the top of your app,
+          and it receives the theme object directly. */}
+      <PaperProvider theme={theme}>
+        {children}
+      </PaperProvider>
+    </ThemeContext.Provider>
+  );
 };
+
+// Custom hook to access your theme's state (e.g., isDarkTheme)
+export const useAppTheme = () => useContext(ThemeContext);
