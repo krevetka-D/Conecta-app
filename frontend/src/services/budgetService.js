@@ -1,5 +1,11 @@
+// frontend/src/services/budgetService.js
 import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
+
+// Cache for categories to avoid repeated API calls
+let categoriesCache = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const budgetService = {
     getBudgetEntries: async (filters = {}) => {
@@ -7,7 +13,8 @@ const budgetService = {
             const response = await apiClient.get(API_ENDPOINTS.BUDGET.LIST, {
                 params: filters
             });
-            return response;
+            // Ensure we always return an array
+            return Array.isArray(response) ? response : response?.entries || [];
         } catch (error) {
             console.error('Error fetching budget entries:', error);
             throw error;
@@ -57,19 +64,31 @@ const budgetService = {
     },
 
     /**
-     * Fetches budget categories from the API.
-     * @param {string} professionalPath - The user's professional path (e.g., 'FREELANCER').
-     * @returns {Promise<Object>} An object containing arrays of income and expense categories.
+     * Fetches budget categories with caching
      */
     getCategories: async (professionalPath) => {
+        // Check if we have valid cached data
+        if (categoriesCache && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
+            return categoriesCache;
+        }
+
         try {
-            // Pass the professionalPath as a query parameter to the backend.
             const response = await apiClient.get('/config/categories', {
                 params: professionalPath ? { professionalPath } : {}
             });
+            
+            // Update cache
+            categoriesCache = response;
+            cacheTimestamp = Date.now();
+            
             return response;
         } catch (error) {
             console.error('Failed to fetch categories from API:', error);
+
+            // Return cached data if available, even if expired
+            if (categoriesCache) {
+                return categoriesCache;
+            }
 
             // Return default categories as fallback
             const defaultCategories = professionalPath === 'ENTREPRENEUR'
@@ -86,11 +105,17 @@ const budgetService = {
         }
     },
 
+    // Clear categories cache when user changes professional path
+    clearCategoriesCache: () => {
+        categoriesCache = null;
+        cacheTimestamp = null;
+    },
+
     exportBudgetData: async (format = 'csv', dateRange) => {
         try {
             const response = await apiClient.get(API_ENDPOINTS.BUDGET.EXPORT, {
                 params: { format, ...dateRange },
-                responseType: 'blob', // Important for file downloads
+                responseType: 'blob',
             });
             return response;
         } catch (error) {

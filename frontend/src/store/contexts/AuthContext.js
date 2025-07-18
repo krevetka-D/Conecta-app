@@ -1,8 +1,8 @@
 // frontend/src/store/contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
-import { showErrorAlert } from '../../utils/alerts';
+import budgetService from '../../services/budgetService';
 
 const AuthContext = createContext(null);
 
@@ -23,14 +23,15 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const loadUserFromStorage = async () => {
             try {
-                const storedToken = await AsyncStorage.getItem('userToken');
-                const storedUser = await AsyncStorage.getItem('user');
+                const [storedToken, storedUserStr] = await AsyncStorage.multiGet(['userToken', 'user']);
+                const tokenValue = storedToken[1];
+                const userValue = storedUserStr[1];
 
-                if (storedToken && storedUser) {
-                    setToken(storedToken);
-                    const userData = JSON.parse(storedUser);
+                if (tokenValue && userValue) {
+                    setToken(tokenValue);
+                    const userData = JSON.parse(userValue);
                     setUser(userData);
-                    authService.setAuthToken(storedToken);
+                    authService.setAuthToken(tokenValue);
                 }
             } catch (error) {
                 console.error('Failed to load user data from storage', error);
@@ -55,8 +56,10 @@ export const AuthProvider = ({ children }) => {
             setUser(data.user);
             setToken(data.token);
 
-            await AsyncStorage.setItem('userToken', data.token);
-            await AsyncStorage.setItem('user', JSON.stringify(data.user));
+            await AsyncStorage.multiSet([
+                ['userToken', data.token],
+                ['user', JSON.stringify(data.user)]
+            ]);
             authService.setAuthToken(data.token);
 
             return data;
@@ -77,8 +80,10 @@ export const AuthProvider = ({ children }) => {
             setUser(data.user);
             setToken(data.token);
 
-            await AsyncStorage.setItem('userToken', data.token);
-            await AsyncStorage.setItem('user', JSON.stringify(data.user));
+            await AsyncStorage.multiSet([
+                ['userToken', data.token],
+                ['user', JSON.stringify(data.user)]
+            ]);
             authService.setAuthToken(data.token);
 
             return data;
@@ -101,8 +106,11 @@ export const AuthProvider = ({ children }) => {
 
             setUser(null);
             setToken(null);
+            
+            // Clear storage and cache
             await AsyncStorage.multiRemove(['userToken', 'user']);
             authService.setAuthToken(null);
+            budgetService.clearCategoriesCache();
         } catch (error) {
             console.error('Logout failed:', error);
             // Still clear local state even if API call fails
@@ -120,6 +128,9 @@ export const AuthProvider = ({ children }) => {
             const updatedUser = { ...user, professionalPath };
             setUser(updatedUser);
             await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            
+            // Clear categories cache when professional path changes
+            budgetService.clearCategoriesCache();
         } catch (error) {
             console.error('Failed to update onboarding path:', error);
             throw error;
@@ -157,13 +168,19 @@ export const AuthProvider = ({ children }) => {
             const updatedUser = { ...user, ...userData };
             setUser(updatedUser);
             await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            
+            // Clear categories cache if professional path changed
+            if (userData.professionalPath && userData.professionalPath !== user?.professionalPath) {
+                budgetService.clearCategoriesCache();
+            }
         } catch (error) {
             console.error('Failed to update user:', error);
             throw error;
         }
     }, [user]);
 
-    const value = {
+    // Memoize the context value to prevent unnecessary re-renders
+    const value = useMemo(() => ({
         user,
         token,
         loading,
@@ -175,7 +192,7 @@ export const AuthProvider = ({ children }) => {
         updateUser,
         isAuthenticated: !!user && !!token,
         isOnboardingCompleted: user?.hasCompletedOnboarding || false,
-    };
+    }), [user, token, loading, login, register, logout, updateOnboardingPath, completeOnboarding, updateUser]);
 
     return (
         <AuthContext.Provider value={value}>

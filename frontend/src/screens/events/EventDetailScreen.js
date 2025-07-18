@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
     SafeAreaView,
 } from 'react-native';
-import { Card, Button, Chip, Avatar } from 'react-native-paper';
+import { Card, Button, Chip, Avatar, Menu, Divider } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import { format } from 'date-fns';
 
@@ -15,7 +15,7 @@ import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import eventService from '../../services/eventService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
+import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
 import { eventDetailStyles } from '../../styles/screens/events/EventDetailScreenStyles';
 
 const EventDetailScreen = ({ route, navigation }) => {
@@ -70,6 +70,7 @@ const EventDetailScreen = ({ route, navigation }) => {
             setActionLoading(false);
         }
     };
+
     const handleDeleteEvent = async () => {
         showConfirmAlert(
             'Delete Event',
@@ -110,55 +111,55 @@ const EventDetailScreen = ({ route, navigation }) => {
         <SafeAreaView style={styles.safeArea}>
             <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
                 <Card style={styles.headerCard}>
-    <Card.Content>
-        <View style={styles.dateContainer}>
-            <View style={styles.dateBadge}>
-                <Text style={styles.dateDay}>{format(eventDate, 'dd')}</Text>
-                <Text style={styles.dateMonth}>{format(eventDate, 'MMM')}</Text>
-            </View>
-            <View style={styles.headerInfo}>
-                <Text style={styles.title}>{event.title}</Text>
-                <View style={styles.metaContainer}>
-                    <Icon name="clock-outline" size={16} color={theme.colors.textSecondary} />
-                    <Text style={styles.metaText}>{event.time}</Text>
-                </View>
-            </View>
-            {isOrganizer && (
-                <Menu
-                    visible={menuVisible}
-                    onDismiss={() => setMenuVisible(false)}
-                    anchor={
-                        <TouchableOpacity
-                            onPress={() => setMenuVisible(true)}
-                            style={styles.menuButton}
-                        >
-                            <Icon name="dots-vertical" size={24} color={theme.colors.text} />
-                        </TouchableOpacity>
-                    }
-                >
-                    <Menu.Item
-                        onPress={() => {
-                            setMenuVisible(false);
-                            navigation.navigate('EditEvent', { eventId, event });
-                        }}
-                        title="Edit Event"
-                        icon="pencil"
-                    />
-                    <Divider />
-                    <Menu.Item
-                        onPress={() => {
-                            setMenuVisible(false);
-                            handleDeleteEvent();
-                        }}
-                        title="Delete Event"
-                        icon="delete"
-                        titleStyle={{ color: theme.colors.error }}
-                    />
-                </Menu>
-            )}
-        </View>
-    </Card.Content>
-</Card>
+                    <Card.Content>
+                        <View style={styles.dateContainer}>
+                            <View style={styles.dateBadge}>
+                                <Text style={styles.dateDay}>{format(eventDate, 'dd')}</Text>
+                                <Text style={styles.dateMonth}>{format(eventDate, 'MMM')}</Text>
+                            </View>
+                            <View style={styles.headerInfo}>
+                                <Text style={styles.title}>{event.title}</Text>
+                                <View style={styles.metaContainer}>
+                                    <Icon name="clock-outline" size={16} color={theme.colors.textSecondary} />
+                                    <Text style={styles.metaText}>{event.time}</Text>
+                                </View>
+                            </View>
+                            {isOrganizer && (
+                                <Menu
+                                    visible={menuVisible}
+                                    onDismiss={() => setMenuVisible(false)}
+                                    anchor={
+                                        <TouchableOpacity
+                                            onPress={() => setMenuVisible(true)}
+                                            style={styles.menuButton}
+                                        >
+                                            <Icon name="dots-vertical" size={24} color={theme.colors.text} />
+                                        </TouchableOpacity>
+                                    }
+                                >
+                                    <Menu.Item
+                                        onPress={() => {
+                                            setMenuVisible(false);
+                                            navigation.navigate('EditEvent', { eventId, event });
+                                        }}
+                                        title="Edit Event"
+                                        leadingIcon="pencil"
+                                    />
+                                    <Divider />
+                                    <Menu.Item
+                                        onPress={() => {
+                                            setMenuVisible(false);
+                                            handleDeleteEvent();
+                                        }}
+                                        title="Delete Event"
+                                        leadingIcon="delete"
+                                        titleStyle={{ color: theme.colors.error }}
+                                    />
+                                </Menu>
+                            )}
+                        </View>
+                    </Card.Content>
+                </Card>
 
                 <Card style={styles.infoCard}>
                     <Card.Content>

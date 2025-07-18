@@ -1,6 +1,12 @@
 // src/utils/security.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
+import { Buffer } from 'buffer';
+
+// Polyfill for btoa/atob in React Native
+global.Buffer = Buffer;
+const btoa = (str) => Buffer.from(str, 'utf8').toString('base64');
+const atob = (str) => Buffer.from(str, 'base64').toString('utf8');
 
 // Simple encryption for demo - in production use proper encryption library
 const encrypt = async (text) => {
@@ -80,7 +86,8 @@ export const secureStorage = {
 export const generateSecureToken = async (length = 32) => {
     try {
         const randomBytes = await Crypto.getRandomBytesAsync(length);
-        return btoa(String.fromCharCode.apply(null, new Uint8Array(randomBytes)))
+        const base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(randomBytes)));
+        return base64
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=/g, '');
@@ -103,22 +110,13 @@ export const sanitizeInput = (input) => {
         .trim();
 };
 
-// Validate URL to prevent malicious redirects
-// export const isValidUrl = (url) => {
-//     try {
-//         const urlObj = new URL(url);
-//         return ['http:', 'https:'].includes(urlObj.protocol);
-//     } catch {
-//         return false;
-//     }
-// };
-
+// Validate URL to prevent malicious redirects (without URL constructor)
 export const isValidUrl = (url) => {
     if (typeof url !== 'string') {
         return false;
     }
     // A robust regex to check for http and https protocols and a valid domain structure.
-    const urlRegex = /^(https|http):\/\/[^\s$.?#].[^\s]*$/;
+    const urlRegex = /^(https?):\/\/[^\s$.?#].[^\s]*$/;
     return urlRegex.test(url);
 };
 

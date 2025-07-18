@@ -8,23 +8,20 @@ import {
     TouchableOpacity,
     RefreshControl,
     SafeAreaView,
+    StyleSheet,
 } from 'react-native';
 import { Card, FAB, Chip, Avatar } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import { format } from 'date-fns';
 
 import { useAuth } from '../../store/contexts/AuthContext';
-import { useTheme } from '../../store/contexts/ThemeContext';
-import { colors } from '../../constants/theme';
+import { colors, fonts, spacing } from '../../constants/theme';
 import eventService from '../../services/eventService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { showErrorAlert } from '../../utils/alerts';
-import { eventsStyles } from '../../styles/screens/events/EventsScreenStyles';
 
 const EventsScreen = ({ navigation }) => {
-    const theme = useTheme();
-    const styles = eventsStyles(theme);
     const { user } = useAuth();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -195,5 +192,162 @@ const EventsScreen = ({ navigation }) => {
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    header: {
+        padding: spacing.md,
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: spacing.md,
+    },
+    filterContainer: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    filterChip: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: 20,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    filterChipActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    filterText: {
+        fontSize: 14,
+        color: colors.text,
+    },
+    filterTextActive: {
+        color: colors.textInverse,
+        fontWeight: 'bold',
+    },
+    listContent: {
+        padding: spacing.md,
+    },
+    eventCard: {
+        marginBottom: spacing.md,
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+    },
+    eventHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    eventDateBadge: {
+        width: 60,
+        height: 60,
+        backgroundColor: colors.primary,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.md,
+    },
+    eventDateDay: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.textInverse,
+    },
+    eventDateMonth: {
+        fontSize: 12,
+        color: colors.textInverse,
+        textTransform: 'uppercase',
+    },
+    eventInfo: {
+        flex: 1,
+    },
+    eventTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: spacing.xs,
+    },
+    eventMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    eventTime: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginLeft: spacing.xs,
+        marginRight: spacing.md,
+    },
+    metaIcon: {
+        marginLeft: spacing.sm,
+    },
+    eventLocation: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginLeft: spacing.xs,
+        flex: 1,
+    },
+    eventFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: spacing.sm,
+    },
+    attendeesPreview: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    attendeesCount: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginLeft: spacing.xs,
+    },
+    eventTags: {
+        flexDirection: 'row',
+        gap: spacing.xs,
+    },
+    attendingChip: {
+        height: 24,
+        backgroundColor: colors.primary,
+    },
+    fullChip: {
+        height: 24,
+        backgroundColor: colors.error,
+    },
+    chipText: {
+        fontSize: 12,
+        color: colors.textInverse,
+    },
+    fab: {
+        position: 'absolute',
+        margin: 16,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.primary,
+    },
+    createButton: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: 30,
+        marginTop: spacing.md,
+    },
+    createButtonText: {
+        color: colors.textInverse,
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+});
 
 export default React.memo(EventsScreen);

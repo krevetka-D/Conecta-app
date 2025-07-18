@@ -1,5 +1,5 @@
 // frontend/src/screens/forums/ForumScreen.js
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -7,9 +7,9 @@ import {
     TouchableOpacity,
     RefreshControl,
     SafeAreaView,
-    TextInput,
+    StyleSheet,
 } from 'react-native';
-import { Card, FAB, Portal, Modal, Button, Chip, Avatar, Menu, Divider } from 'react-native-paper';
+import { Card, FAB, Portal, Modal, Button, Chip } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
@@ -18,58 +18,11 @@ import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatDate } from '../../utils/formatting';
-
-const FORUM_CATEGORIES = [
-    { key: 'all', label: 'All Forums', icon: 'forum', color: '#6366F1' },
-    { key: 'general', label: 'General', icon: 'chat', color: '#10B981' },
-    { key: 'freelancer', label: 'Freelancer', icon: 'briefcase-account', color: '#F59E0B' },
-    { key: 'entrepreneur', label: 'Entrepreneur', icon: 'rocket-launch', color: '#EF4444' },
-    { key: 'social', label: 'Social', icon: 'account-group', color: '#8B5CF6' },
-    { key: 'help', label: 'Help & Support', icon: 'help-circle', color: '#06B6D4' },
-];
+import { colors, fonts, spacing } from '../../constants/theme';
 
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
     const { user } = useAuth();
-
-    // Create styles dynamically based on theme
-    const styles = useMemo(() => ({
-        safeArea: {
-            flex: 1,
-            backgroundColor: theme.colors?.background || '#F3F4F6',
-        },
-        container: {
-            flex: 1,
-            backgroundColor: theme.colors?.background || '#F3F4F6',
-        },
-        header: {
-            marginBottom: theme.spacing?.l || 16,
-            alignItems: 'center',
-            padding: theme.spacing?.m || 16,
-        },
-        headerTitle: {
-            fontSize: 28,
-            fontWeight: 'bold',
-            color: theme.colors?.text || '#111827',
-            marginBottom: theme.spacing?.xs || 4,
-        },
-        headerSubtitle: {
-            fontSize: 16,
-            color: theme.colors?.textSecondary || '#6B7280',
-            textAlign: 'center',
-        },
-        listContent: {
-            padding: theme.spacing?.m || 16,
-        },
-        fab: {
-            position: 'absolute',
-            margin: 16,
-            right: 0,
-            bottom: 0,
-            backgroundColor: theme.colors?.primary || '#1E3A8A',
-        },
-        // Add other styles as needed
-    }), [theme]);
 
     const [forums, setForums] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -133,10 +86,10 @@ const ForumScreen = ({ navigation }) => {
             })}
             activeOpacity={0.7}
         >
-            <Card style={{ marginBottom: 16 }}>
+            <Card style={styles.forumCard}>
                 <Card.Content>
-                    <Text style={styles.headerTitle}>{item.title}</Text>
-                    <Text style={styles.headerSubtitle}>{item.description}</Text>
+                    <Text style={styles.forumTitle}>{item.title}</Text>
+                    <Text style={styles.forumDescription}>{item.description}</Text>
                 </Card.Content>
             </Card>
         </TouchableOpacity>
@@ -165,7 +118,7 @@ const ForumScreen = ({ navigation }) => {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={handleRefresh}
-                            tintColor={theme.colors?.primary || '#1E3A8A'}
+                            tintColor={colors.primary}
                         />
                     }
                     showsVerticalScrollIndicator={false}
@@ -196,5 +149,62 @@ const ForumScreen = ({ navigation }) => {
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    header: {
+        marginBottom: spacing.lg,
+        alignItems: 'center',
+        padding: spacing.md,
+    },
+    headerTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: spacing.xs,
+        fontFamily: fonts.families.bold,
+    },
+    headerSubtitle: {
+        fontSize: 16,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        fontFamily: fonts.families.regular,
+    },
+    listContent: {
+        padding: spacing.md,
+    },
+    forumCard: {
+        marginBottom: 16,
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        elevation: 2,
+    },
+    forumTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: 8,
+        fontFamily: fonts.families.semiBold,
+    },
+    forumDescription: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        fontFamily: fonts.families.regular,
+    },
+    fab: {
+        position: 'absolute',
+        margin: 16,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.primary,
+    },
+});
 
 export default React.memo(ForumScreen);

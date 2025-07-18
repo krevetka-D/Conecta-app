@@ -5,10 +5,14 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LogBox } from 'react-native';
 
+// Import polyfills at the very top
+import 'react-native-url-polyfill/auto';
+
 // Suppress specific warnings
 LogBox.ignoreLogs([
     'Warning: isMounted(...) is deprecated',
     'Module RCTImageLoader requires',
+    'URL.protocol is not implemented',
 ]);
 
 // Import contexts in correct order

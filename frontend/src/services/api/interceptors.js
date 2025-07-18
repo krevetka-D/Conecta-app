@@ -2,21 +2,17 @@
 import { resetRoot } from '../../navigation/NavigationService';
 import { showErrorAlert } from '../../utils/alerts';
 import { ERROR_MESSAGES } from '../../constants/messages';
-import { SCREEN_NAMES } from '../../constants/routes';
 
 export const setupInterceptors = (apiClient) => {
     // Request interceptor
     apiClient.interceptors.request.use(
         (config) => {
-            // Add timestamp to prevent caching as a query parameter
+            // Add timestamp to prevent caching
             const timestamp = Date.now();
-
-            // Create URL object to properly handle query parameters
-            const url = new URL(config.url, config.baseURL);
-            url.searchParams.append('_t', timestamp);
-
-            // Update config.url with the relative path including query params
-            config.url = `${url.pathname}${url.search}`;
+            
+            // Simple query parameter addition without URL constructor
+            const separator = config.url.includes('?') ? '&' : '?';
+            config.url = `${config.url}${separator}_t=${timestamp}`;
 
             // Log request in development
             if (__DEV__) {

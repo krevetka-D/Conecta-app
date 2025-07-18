@@ -8,13 +8,13 @@ import {
     RefreshControl,
     SafeAreaView,
 } from 'react-native';
-import { Card, FAB, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { Card, FAB, Portal, Modal, TextInput, Button, Menu, Divider } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import forumService from '../../services/forumService';
-import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
+import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatDate } from '../../utils/formatting';
@@ -31,6 +31,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
+    const [menuVisible, setMenuVisible] = useState({});
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -97,7 +98,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
         });
     };
     
-const handleDeleteThread = async (threadId, threadTitle) => {
+    const handleDeleteThread = async (threadId, threadTitle) => {
         showConfirmAlert(
             'Delete Thread',
             `Are you sure you want to delete "${threadTitle}"? This action cannot be undone.`,
@@ -119,6 +120,7 @@ const handleDeleteThread = async (threadId, threadTitle) => {
             [threadId]: !prev[threadId]
         }));
     };
+
     const renderThreadItem = ({ item }) => {
         const isMyThread = item.author?._id === user?._id;
 
@@ -144,7 +146,32 @@ const handleDeleteThread = async (threadId, threadTitle) => {
                                     </View>
                                 </View>
                             </View>
-                            <Icon name="chevron-right" size={24} color={theme.colors.textSecondary} />
+                            {isMyThread ? (
+                                <Menu
+                                    visible={menuVisible[item._id]}
+                                    onDismiss={() => toggleMenu(item._id)}
+                                    anchor={
+                                        <TouchableOpacity
+                                            onPress={() => toggleMenu(item._id)}
+                                            style={{ padding: 8 }}
+                                        >
+                                            <Icon name="dots-vertical" size={24} color={theme.colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    }
+                                >
+                                    <Menu.Item
+                                        onPress={() => {
+                                            toggleMenu(item._id);
+                                            handleDeleteThread(item._id, item.title);
+                                        }}
+                                        title="Delete Thread"
+                                        leadingIcon="delete"
+                                        titleStyle={{ color: theme.colors.error }}
+                                    />
+                                </Menu>
+                            ) : (
+                                <Icon name="chevron-right" size={24} color={theme.colors.textSecondary} />
+                            )}
                         </View>
                         {isMyThread && (
                             <View style={styles.myThreadBadge}>
