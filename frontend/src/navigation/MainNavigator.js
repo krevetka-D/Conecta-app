@@ -12,8 +12,10 @@ import BudgetScreen from '../screens/budget/BudgetScreen';
 import ResourcesScreen from '../screens/content/ResourcesScreen';
 import ChecklistScreen from '../screens/checklist/ChecklistScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
-import ForumsScreen from '../screens/forums/ForumScreen';
-import EventsScreen from '../screens/events/EventsScreen';
+
+// Import nested navigators
+import ForumNavigator from './ForumNavigator';
+import EventNavigator from './EventNavigator';
 
 const Tab = createBottomTabNavigator();
 
@@ -55,8 +57,8 @@ const MainNavigator = () => {
             <Tab.Screen name={SCREEN_NAMES.BUDGET} component={BudgetScreen} />
             <Tab.Screen name={SCREEN_NAMES.RESOURCES} component={ResourcesScreen} />
             <Tab.Screen name={SCREEN_NAMES.CHECKLIST} component={ChecklistScreen} />
-            <Tab.Screen name={SCREEN_NAMES.FORUMS} component={ForumsScreen} />
-            <Tab.Screen name={SCREEN_NAMES.EVENTS} component={EventsScreen} />
+            <Tab.Screen name={SCREEN_NAMES.FORUMS} component={ForumNavigator} />
+            <Tab.Screen name={SCREEN_NAMES.EVENTS} component={EventNavigator} />
             <Tab.Screen name={SCREEN_NAMES.PROFILE} component={ProfileScreen} />
         </Tab.Navigator>
     );
