@@ -7,9 +7,9 @@ import { useTheme } from '../store/contexts/ThemeContext';
 import { SCREEN_NAMES } from '../constants/routes';
 
 // Import all the screens for the tabs
-import EnhancedDashboardScreen from '../screens/main/EnhancedDashboardScreen';
+import DashboardScreen from '../screens/main/DashboardScreen';
 import EventsScreen from '../screens/events/EventsScreen';
-import ForumsScreen from '../screens/forums/ForumsScreen';
+import ForumsScreen from '../screens/forums/ForumScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 
 // Import nested navigators

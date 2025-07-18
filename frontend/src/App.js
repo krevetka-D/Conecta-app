@@ -1,25 +1,23 @@
 // frontend/src/App.js
+// This file is now correctly located in the 'src' directory.
+// All import paths have been updated relative to this new location.
+
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Contexts
+// Contexts (Corrected paths to include 'store')
 import { AuthProvider, useAuth } from './store/contexts/AuthContext';
 import { ThemeProvider, useTheme } from './store/contexts/ThemeContext';
 
-// Navigation
+// Navigation (Corrected paths to be relative to 'src')
 import MainNavigator from './navigation/MainNavigator';
 import AuthNavigator from './navigation/AuthNavigator';
 import OnboardingNavigator from './navigation/OnboardingNavigator';
 
-// Services
+// Services (Corrected path to be relative to 'src')
 import authService from './services/authService';
-
-// For the new features, you'll need to either:
-// 1. Add them to existing screens
-// 2. Create new screens in the appropriate folders
-// 3. Import them from the correct locations
 
 const AppContent = () => {
     const { user, setUser } = useAuth();
@@ -37,7 +35,6 @@ const AppContent = () => {
                 const userData = await authService.getCurrentUser();
                 setUser(userData);
                 
-                // Check if user needs onboarding
                 if (!userData.preferences || !userData.hasCompletedOnboarding) {
                     setShowOnboarding(true);
                 }
@@ -53,7 +50,6 @@ const AppContent = () => {
         return null; // Or a loading screen
     }
 
-    // Determine which navigator to show
     if (!user) {
         return <AuthNavigator />;
     }
