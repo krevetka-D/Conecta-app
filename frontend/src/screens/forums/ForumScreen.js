@@ -1,5 +1,4 @@
-// 1. Optimize ForumScreen with React.memo and useCallback
-// frontend/src/screens/forums/ForumScreen.js - Optimized version
+// frontend/src/screens/forums/ForumScreen.js - Fixed version
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
 import { Card, FAB, Portal, Modal, Button, Chip, TextInput } from 'react-native-paper';
@@ -12,7 +11,6 @@ import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { colors, fonts, spacing } from '../../constants/theme';
-import { useMemo as useMemoHook } from 'react';
 
 // Memoized Forum Item Component
 const ForumItem = React.memo(({ item, onPress, styles }) => (
@@ -103,19 +101,26 @@ const ForumScreen = ({ navigation }) => {
         });
     }, [navigation]);
 
-    // Optimize form handlers
+    // Fixed: Use setTimeout to avoid state update during render
     const handleTitleChange = useCallback((text) => {
-        setFormData(prev => ({ ...prev, title: text }));
-        if (formErrors.title) {
-            setFormErrors(prev => ({ ...prev, title: null }));
-        }
+        // Defer state update to next tick
+        setTimeout(() => {
+            setFormData(prev => ({ ...prev, title: text }));
+            if (formErrors.title) {
+                setFormErrors(prev => ({ ...prev, title: null }));
+            }
+        }, 0);
     }, [formErrors.title]);
 
+    // Fixed: Use setTimeout to avoid state update during render
     const handleDescriptionChange = useCallback((text) => {
-        setFormData(prev => ({ ...prev, description: text }));
-        if (formErrors.description) {
-            setFormErrors(prev => ({ ...prev, description: null }));
-        }
+        // Defer state update to next tick
+        setTimeout(() => {
+            setFormData(prev => ({ ...prev, description: text }));
+            if (formErrors.description) {
+                setFormErrors(prev => ({ ...prev, description: null }));
+            }
+        }, 0);
     }, [formErrors.description]);
 
     // Optimize validation
@@ -191,6 +196,18 @@ const ForumScreen = ({ navigation }) => {
         />
     ), []);
 
+    // Handle modal dismiss
+    const handleModalDismiss = useCallback(() => {
+        if (!submitting) {
+            setModalVisible(false);
+            // Reset form data after modal is closed
+            setTimeout(() => {
+                setFormData({ title: '', description: '', tags: [] });
+                setFormErrors({});
+            }, 100);
+        }
+    }, [submitting]);
+
     if (loading && !refreshing) {
         return <LoadingSpinner fullScreen text="Loading forums..." />;
     }
@@ -235,13 +252,7 @@ const ForumScreen = ({ navigation }) => {
                 <Portal>
                     <Modal
                         visible={modalVisible}
-                        onDismiss={() => {
-                            if (!submitting) {
-                                setModalVisible(false);
-                                setFormData({ title: '', description: '', tags: [] });
-                                setFormErrors({});
-                            }
-                        }}
+                        onDismiss={handleModalDismiss}
                         contentContainerStyle={styles.modal}
                     >
                         <Text style={styles.modalTitle}>Create New Forum</Text>
@@ -281,11 +292,7 @@ const ForumScreen = ({ navigation }) => {
                         <View style={styles.modalButtons}>
                             <Button
                                 mode="outlined"
-                                onPress={() => {
-                                    setModalVisible(false);
-                                    setFormData({ title: '', description: '', tags: [] });
-                                    setFormErrors({});
-                                }}
+                                onPress={handleModalDismiss}
                                 style={styles.modalButton}
                                 disabled={submitting}
                             >
@@ -314,10 +321,14 @@ const createStyles = (theme) => StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
     listContent: {
         padding: theme.spacing.m,
     },
-    headerSection: {
+    header: {
         marginBottom: theme.spacing.l,
         alignItems: 'center',
     },
@@ -418,6 +429,5 @@ const createStyles = (theme) => StyleSheet.create({
         marginLeft: theme.spacing.m,
     },
 });
-
 
 export default React.memo(ForumScreen);
