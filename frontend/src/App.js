@@ -3,7 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { LogBox, View, Text } from 'react-native';
+import { LogBox, View, Text, ActivityIndicator } from 'react-native';
 
 // Import polyfills
 import 'react-native-url-polyfill/auto';
@@ -15,6 +15,20 @@ LogBox.ignoreLogs([
     'Module RCTImageLoader requires',
     'Non-serializable values were found in the navigation state',
 ]);
+
+// Add temporary debug for floating point error
+if (__DEV__) {
+    const originalWarn = console.warn;
+    console.warn = (...args) => {
+        if (args[0]?.includes('Unable to convert string to floating point value')) {
+            console.log('=== FLOATING POINT ERROR DETAILS ===');
+            console.log('Arguments:', args);
+            console.trace();
+            console.log('===================================');
+        }
+        originalWarn(...args);
+    };
+}
 
 // Import contexts
 import { AppProvider } from './store/contexts/AppContext';
@@ -32,6 +46,15 @@ import authService from './services/authService';
 import { initializeApiClient } from './services/api/client';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { navigationRef } from './navigation/NavigationService';
+import { colors } from './constants/theme';
+
+// Create a simple fallback loading component to avoid the size issue
+const FallbackLoading = () => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 10, color: colors.textSecondary }}>Loading...</Text>
+    </View>
+);
 
 const AppContent = () => {
     const { user, setUser, loading: authLoading } = useAuth();
@@ -68,15 +91,11 @@ const AppContent = () => {
     };
 
     if (initializing || authLoading) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <LoadingSpinner fullScreen text="Loading..." />
-            </View>
-        );
+        return <FallbackLoading />;
     }
 
     return (
-        <Suspense fallback={<LoadingSpinner fullScreen />}>
+        <Suspense fallback={<FallbackLoading />}>
             {!user ? (
                 <AuthNavigator />
             ) : showOnboarding ? (
