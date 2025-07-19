@@ -1,4 +1,4 @@
-// frontend/src/components/common/Icon.js
+
 import React from 'react';
 import { Text } from 'react-native';
 

@@ -1,4 +1,4 @@
-// src/components/ui/Header.js
+
 import React from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
 import Icon from '../common/Icon.js';

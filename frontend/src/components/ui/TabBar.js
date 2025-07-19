@@ -1,4 +1,4 @@
-// src/components/ui/TabBar.js
+
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from '../common/Icon.js';

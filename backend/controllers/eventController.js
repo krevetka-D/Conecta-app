@@ -1,4 +1,4 @@
-// backend/controllers/eventController.js
+
 import asyncHandler from 'express-async-handler';
 import Event from '../models/Event.js';
 

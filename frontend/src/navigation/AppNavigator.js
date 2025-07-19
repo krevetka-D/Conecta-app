@@ -1,4 +1,4 @@
-// frontend/src/navigation/AppNavigator.js
+
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';

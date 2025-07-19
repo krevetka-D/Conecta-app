@@ -1,4 +1,4 @@
-// frontend/src/screens/budget/BudgetScreen.js
+
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -23,6 +23,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../../utils/formatting';
 import { budgetStyles as styles } from '../../styles/screens/budget/BudgetScreenStyles';
+import { OptimizedInput } from '../../components/ui/OptimizedInput';
 
 const BudgetScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -237,7 +238,17 @@ const BudgetScreen = ({ navigation }) => {
                         {formErrors.category && <Text style={styles.errorText}>{formErrors.category}</Text>}
                         <TextInput label="Amount (€)" value={formData.amount} onChangeText={(text) => setFormData({ ...formData, amount: text })} mode="outlined" keyboardType="decimal-pad" style={styles.input} error={!!formErrors.amount} theme={{ colors: { primary: colors.primary } }} />
                         {formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
-                        <TextInput label="Description (Optional)" value={formData.description} onChangeText={(text) => setFormData({ ...formData, description: text })} mode="outlined" multiline numberOfLines={2} style={styles.input} theme={{ colors: { primary: colors.primary } }} />
+                        {/* <TextInput label="Description (Optional)" value={formData.description} onChangeText={(text) => setFormData({ ...formData, description: text })} mode="outlined" multiline numberOfLines={2} style={styles.input} theme={{ colors: { primary: colors.primary } }} /> */}
+                        <OptimizedInput
+    label="Description (Optional)"
+    value={formData.description}
+    onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+    multiline
+    numberOfLines={3}
+    maxLength={200}
+    placeholder="Enter description..."
+/>
+
                         <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
                             <Icon name="calendar" size={24} color={colors.primary} />
                             <Text style={styles.dateSelectorText}>{formatDate(formData.entryDate)}</Text>

@@ -1,5 +1,4 @@
 // Private Chat Feature with Real-time Messaging
-// File: components/PrivateChat.js
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, X, MessageCircle, User } from 'lucide-react';

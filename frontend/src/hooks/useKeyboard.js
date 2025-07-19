@@ -1,4 +1,4 @@
-// src/hooks/useKeyboard.js
+
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform } from 'react-native';
 

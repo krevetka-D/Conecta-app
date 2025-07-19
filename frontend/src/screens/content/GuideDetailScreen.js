@@ -1,4 +1,4 @@
-// src/screens/content/GuideDetailScreen.js
+
 import { WebView } from 'react-native-webview';
 import { styles } from '../../styles/screens/content/GuideDetailScreenStyles';
 import { useApi } from '../../hooks/useApi';

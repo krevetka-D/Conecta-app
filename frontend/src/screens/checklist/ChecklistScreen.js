@@ -1,4 +1,4 @@
-// frontend/src/screens/checklist/ChecklistScreen.js
+
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {

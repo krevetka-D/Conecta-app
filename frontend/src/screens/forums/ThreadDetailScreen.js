@@ -1,4 +1,4 @@
-// frontend/src/screens/forums/ThreadDetailScreen.js
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../store/contexts/ThemeContext';

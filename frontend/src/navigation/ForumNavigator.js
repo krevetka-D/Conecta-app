@@ -1,4 +1,4 @@
-// frontend/src/navigation/ForumNavigator.js
+
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import ForumsScreen from '../screens/forums/ForumScreen';

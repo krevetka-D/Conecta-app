@@ -1,4 +1,4 @@
-// src/screens/onboarding/PrioritySelectionScreen.js
+
 import React, { useState, useEffect } from 'react';
 import {
     View,

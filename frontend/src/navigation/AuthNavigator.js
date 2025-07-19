@@ -1,4 +1,4 @@
-// frontend/src/navigation/AuthNavigator.js
+
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';

@@ -1,4 +1,4 @@
-// src/screens/onboarding/PathSelectionScreen.js
+
 import React from 'react';
 import {
     View,

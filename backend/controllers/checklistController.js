@@ -1,4 +1,4 @@
-// backend/controllers/checklistController.js
+
 import asyncHandler from 'express-async-handler';
 import ChecklistItem from '../models/ChecklistItem.js';
 import User from '../models/User.js';
@@ -49,5 +49,5 @@ const updateChecklistItem = asyncHandler(async (req, res) => {
     res.status(200).json(item);
 });
 
-// IMPORTANT: Add this export statement
+
 export { getChecklist, updateChecklistItem };

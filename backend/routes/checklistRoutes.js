@@ -1,4 +1,3 @@
-// routes/checklistRoutes.js
 
 import express from 'express';
 import { getChecklist, updateChecklistItem } from '../controllers/checklistController.js';

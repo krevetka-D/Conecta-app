@@ -1,4 +1,4 @@
-// src/navigation/RootNavigator.js
+
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../store/contexts/AuthContext';

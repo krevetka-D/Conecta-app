@@ -1,4 +1,4 @@
-// backend/controllers/forumController.js
+
 import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import Forum from '../models/Forum.js';
@@ -331,7 +331,6 @@ const deleteThread = asyncHandler(async (req, res) => {
     }
 });
 
-// Add method to get threads with pagination
 const getThreads = asyncHandler(async (req, res) => {
     const { forumId } = req.params;
     const { page = 1, limit = 20 } = req.query;

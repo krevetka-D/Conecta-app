@@ -1,8 +1,8 @@
-// backend/middleware/cacheMiddleware.js - Enhanced version
+
 import NodeCache from 'node-cache';
 import crypto from 'crypto';
 
-// Create cache instances with different TTLs
+// Cache instances with different TTLs
 const caches = {
     short: new NodeCache({ stdTTL: 60 }), // 1 minute
     medium: new NodeCache({ stdTTL: 300 }), // 5 minutes

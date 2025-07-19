@@ -1,10 +1,10 @@
-// frontend/src/services/api/client.js
+
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../constants/config';
 import { setupInterceptors } from './interceptors';
 
-// Create axios instance with better defaults
+//axios instance
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 30000,
@@ -62,15 +62,15 @@ export const setAuthToken = (token) => {
     }
 };
 
-// Setup additional interceptors (must be after debug interceptors)
+// additional interceptors
 setupInterceptors(apiClient);
 
-// Function to reset the API client (useful after logout)
+// Resetting the API client (useful after logout)
 export const resetApiClient = () => {
     delete apiClient.defaults.headers.common['Authorization'];
 };
 
-// Function to initialize API client with stored token
+// Initializing API client with stored token
 export const initializeApiClient = async () => {
     try {
         const token = await AsyncStorage.getItem('userToken');

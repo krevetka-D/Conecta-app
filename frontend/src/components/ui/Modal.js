@@ -1,4 +1,4 @@
-// src/components/ui/Modal.js
+
 import React from 'react';
 import {
     View,

@@ -1,4 +1,4 @@
-// backend/routes/forumRoutes.js
+
 import express from 'express';
 import { 
     getForums, 

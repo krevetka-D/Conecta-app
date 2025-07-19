@@ -1,4 +1,4 @@
-// backend/middleware/performanceMiddleware.js
+
 import logger from '../utils/logger.js';
 
 // Performance metrics storage
@@ -72,7 +72,7 @@ export const performanceMonitor = (req, res, next) => {
     next();
 };
 
-// Request payload size limiter with better error handling
+// Requesting payload size limiter
 export const payloadSizeLimiter = (maxSize = 10485760) => { // 10MB default
     return (req, res, next) => {
         let size = 0;

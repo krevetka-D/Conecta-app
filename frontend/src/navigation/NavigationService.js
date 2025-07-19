@@ -1,4 +1,4 @@
-// frontend/src/navigation/NavigationService.js
+
 import { createNavigationContainerRef, CommonActions, StackActions } from '@react-navigation/native';
 import { SCREEN_NAMES } from '../constants/routes';
 

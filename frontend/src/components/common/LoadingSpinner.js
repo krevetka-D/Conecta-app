@@ -1,4 +1,4 @@
-// src/components/common/LoadingSpinner.js
+
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { styles } from '../../styles/components/common/LoadingSpinnerStyles';

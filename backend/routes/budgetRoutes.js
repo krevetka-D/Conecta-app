@@ -1,4 +1,4 @@
-// backend/routes/budgetRoutes.js
+
 import express from 'express';
 import {
     getBudget,

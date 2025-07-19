@@ -1,4 +1,4 @@
-// src/hooks/useOrientation.js
+
 import { useState, useEffect } from 'react';
 import { Dimensions } from 'react-native';
 

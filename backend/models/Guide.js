@@ -1,4 +1,3 @@
-// models/Guide.js
 
 import mongoose from 'mongoose';
 

@@ -1,4 +1,4 @@
-// src/components/ui/Button.js
+
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { styles } from '../../styles/components/ui/ButtonStyles';

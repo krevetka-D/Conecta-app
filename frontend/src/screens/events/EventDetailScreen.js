@@ -1,4 +1,4 @@
-// frontend/src/screens/events/EventDetailScreen.js
+
 import React, { useState, useEffect } from 'react';
 import {
     View,

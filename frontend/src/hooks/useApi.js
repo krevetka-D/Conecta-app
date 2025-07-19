@@ -1,4 +1,4 @@
-// src/hooks/useApi.js
+
 import { useState, useCallback } from 'react';
 
 export const useApi = (apiFunc) => {

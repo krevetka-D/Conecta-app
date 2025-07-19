@@ -1,4 +1,4 @@
-// backend/controllers/budgetController.js
+
 import asyncHandler from 'express-async-handler';
 import BudgetEntry from '../models/BudgetEntry.js';
 import { cacheMiddleware, clearCache } from '../middleware/cacheMiddleware.js';

@@ -1,4 +1,3 @@
-// models/ServiceDirectoryEntry.js
 
 import mongoose from 'mongoose';
 

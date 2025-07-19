@@ -1,4 +1,4 @@
-// frontend/src/screens/forums/ForumDetailScreen.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,

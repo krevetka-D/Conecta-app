@@ -1,20 +1,22 @@
-// backend/config/db.js - Enhanced version
+
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
     const maxRetries = 5;
     let retries = 0;
 
-    // Optimize connection settings
+    //Connection settings
     const options = {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
+
         // Connection pool settings
         maxPoolSize: 10,
         minPoolSize: 2,
         maxIdleTimeMS: 10000,
+
         // Performance settings
         writeConcern: {
             w: 'majority',
@@ -22,6 +24,7 @@ const connectDB = async () => {
             wtimeout: 1000
         },
         readPreference: 'primaryPreferred',
+        
         // Compression
         compressors: ['zlib'],
     };

@@ -1,4 +1,3 @@
-// src/constants/messages.js
 
 // Error Messages
 export const ERROR_MESSAGES = {

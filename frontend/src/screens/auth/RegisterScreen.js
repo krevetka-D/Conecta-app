@@ -1,4 +1,4 @@
-// frontend/src/screens/auth/RegisterScreen.js
+
 
 import React, { useState, useCallback, useMemo } from 'react';
 import {

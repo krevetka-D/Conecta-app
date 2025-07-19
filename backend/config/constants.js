@@ -1,4 +1,4 @@
-// backend/config/constants.js
+
 export const PROFESSIONAL_PATHS = {
     FREELANCER: 'FREELANCER',
     ENTREPRENEUR: 'ENTREPRENEUR',

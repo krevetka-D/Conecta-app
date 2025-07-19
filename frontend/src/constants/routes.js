@@ -1,4 +1,4 @@
-// src/constants/routes.js
+
 export const SCREEN_NAMES = {
     // Auth screens
     WELCOME: 'Welcome',

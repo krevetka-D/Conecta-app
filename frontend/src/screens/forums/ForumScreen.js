@@ -1,4 +1,4 @@
-// frontend/src/screens/forums/ForumScreen.js - Fixed version
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
 import { Card, FAB, Portal, Modal, Button, Chip, TextInput } from 'react-native-paper';
@@ -11,6 +11,7 @@ import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { colors, fonts, spacing } from '../../constants/theme';
+import { OptimizedInput } from '../../components/ui/OptimizedInput';
 
 // Memoized Forum Item Component
 const ForumItem = React.memo(({ item, onPress, styles }) => (
@@ -271,20 +272,15 @@ const ForumScreen = ({ navigation }) => {
                         {formErrors.title && (
                             <Text style={styles.errorText}>{formErrors.title}</Text>
                         )}
-                        
-                        <TextInput
-                            label="Description"
-                            value={formData.description}
-                            onChangeText={handleDescriptionChange}
-                            mode="outlined"
-                            multiline
-                            numberOfLines={4}
-                            style={styles.input}
-                            error={!!formErrors.description}
-                            disabled={submitting}
-                            theme={{ colors: { primary: colors.primary } }}
-                            maxLength={500}
-                        />
+                        <OptimizedInput
+    label="Description"
+    value={formData.description}
+    onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+    multiline
+    numberOfLines={4}
+    maxLength={500}
+    error={formErrors.description}
+/>
                         {formErrors.description && (
                             <Text style={styles.errorText}>{formErrors.description}</Text>
                         )}
@@ -315,7 +311,7 @@ const ForumScreen = ({ navigation }) => {
     );
 };
 
-// Move styles creation outside component
+// styles component
 const createStyles = (theme) => StyleSheet.create({
     safeArea: {
         flex: 1,

@@ -182,6 +182,7 @@ eventSchema.methods.removeAttendee = async function(userId) {
     return await this.save();
 };
 
+
 const Event = mongoose.model('Event', eventSchema);
 
 export default Event;

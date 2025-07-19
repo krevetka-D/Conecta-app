@@ -1,4 +1,4 @@
-// frontend/src/screens/resources/ResourcesScreen.js
+
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {

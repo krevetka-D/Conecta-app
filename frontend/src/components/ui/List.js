@@ -1,4 +1,4 @@
-// src/components/ui/List.js
+
 import React from 'react';
 import { FlatList, RefreshControl } from 'react-native';
 import EmptyState from '../common/EmptyState';

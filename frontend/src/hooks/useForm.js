@@ -1,4 +1,4 @@
-// src/hooks/useForm.js
+
 import { useState, useCallback } from 'react';
 
 export const useForm = ({ initialValues, validationRules = {} }) => {

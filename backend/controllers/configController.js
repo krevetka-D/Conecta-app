@@ -1,5 +1,5 @@
+
 import asyncHandler from 'express-async-handler';
-// The path has been corrected from ../../ to ../
 import { BUDGET_CATEGORIES, CHECKLIST_ITEMS, PROFESSIONAL_PATHS } from '../config/constants.js';
 
 /**

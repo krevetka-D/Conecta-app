@@ -1,4 +1,4 @@
-// src/components/ui/index.js
+
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';

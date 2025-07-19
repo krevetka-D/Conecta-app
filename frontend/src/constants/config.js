@@ -1,7 +1,4 @@
-// frontend/src/constants/config.js
 
-// For React Native, use your machine's IP address instead of localhost
-// Update this to match your development machine's IP
 const DEV_API_URL = 'http://192.168.1.129:5001/api'; // Your MacBook's IP
 const PROD_API_URL = 'https://api.conectaalicante.com/api'; // Your production API
 

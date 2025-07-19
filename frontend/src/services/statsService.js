@@ -1,4 +1,4 @@
-// frontend/src/services/statsService.js
+
 import api from './api/client';
 import endpoints from './api/endpoints';
 

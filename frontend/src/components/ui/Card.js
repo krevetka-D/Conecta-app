@@ -1,4 +1,4 @@
-// src/components/ui/Card.js
+
 import React from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { styles } from '../../styles/components/ui/CardStyles';

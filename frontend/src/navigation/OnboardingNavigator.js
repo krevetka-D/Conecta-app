@@ -1,4 +1,4 @@
-// frontend/src/navigation/OnboardingNavigator.js
+
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import PathSelectionScreen from '../screens/onboarding/PathSelectionScreen';

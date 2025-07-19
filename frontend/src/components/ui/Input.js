@@ -1,4 +1,4 @@
-// src/components/ui/Input.js
+
 import React, { forwardRef } from 'react';
 import { View, TextInput, Text } from 'react-native';
 import { inputStyles as styles } from '../../styles/components/ui/InputStyles';

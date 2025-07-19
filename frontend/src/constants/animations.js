@@ -1,4 +1,4 @@
-// src/constants/animations.js
+
 import { Easing } from 'react-native';
 
 export const ANIMATION_DURATIONS = {

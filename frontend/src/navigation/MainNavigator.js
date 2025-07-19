@@ -1,4 +1,4 @@
-// frontend/src/navigation/MainNavigator.js
+
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from '../components/common/Icon.js';

@@ -1,4 +1,4 @@
-// src/constants/theme.js
+
 import { DefaultTheme } from 'react-native-paper';
 import { Platform } from 'react-native';
 

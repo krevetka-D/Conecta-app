@@ -1,4 +1,4 @@
-// backend/controllers/dashboardController.js - Enhanced with upcoming events
+
 import asyncHandler from 'express-async-handler';
 import BudgetEntry from '../models/BudgetEntry.js';
 import ChecklistItem from '../models/ChecklistItem.js';
@@ -106,7 +106,7 @@ export const getDashboardOverview = asyncHandler(async (req, res) => {
     }
 });
 
-// Keep the existing getDashboardEvents function for backward compatibility
+
 export const getDashboardEvents = asyncHandler(async (req, res) => {
     const events = [];
 

@@ -1,4 +1,4 @@
-// frontend/src/screens/main/DashboardScreen.js
+
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
@@ -91,7 +91,7 @@ const DashboardScreen = ({ navigation }) => {
     );
 };
 
-// Define styles directly in the component file
+// styles components
 const styles = {
     container: {
         flex: 1,

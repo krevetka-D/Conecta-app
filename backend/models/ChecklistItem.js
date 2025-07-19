@@ -27,10 +27,10 @@ const checklistItemSchema = new Schema(
     }
 );
 
-// Add compound index with the correct field name
+// Adding compound index with the correct field name
 checklistItemSchema.index({ user: 1, itemKey: 1 }, { unique: true });
 
-// Remove any potential duplicate model compilation
+// Removing any potential duplicate model compilation
 const ChecklistItem = mongoose.models.ChecklistItem || mongoose.model('ChecklistItem', checklistItemSchema);
 
 export default ChecklistItem;

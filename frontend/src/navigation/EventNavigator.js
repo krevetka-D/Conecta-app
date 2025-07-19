@@ -1,4 +1,4 @@
-// frontend/src/navigation/EventNavigator.js
+
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import EventsScreen from '../screens/events/EventsScreen';
