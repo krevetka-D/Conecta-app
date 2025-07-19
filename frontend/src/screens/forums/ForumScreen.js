@@ -1,5 +1,5 @@
 // frontend/src/screens/forums/ForumScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -44,6 +44,9 @@ const ForumScreen = ({ navigation }) => {
     const [formErrors, setFormErrors] = useState({});
     const [tagInput, setTagInput] = useState('');
 
+    // Memoize styles to prevent recreation on every render
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     useEffect(() => {
         loadForums();
     }, []);
@@ -54,7 +57,6 @@ const ForumScreen = ({ navigation }) => {
             setForums(data || []);
         } catch (error) {
             console.error('Failed to load forums:', error);
-            // If API fails, show empty state instead of mock data
             setForums([]);
         } finally {
             setLoading(false);
@@ -67,7 +69,7 @@ const ForumScreen = ({ navigation }) => {
         loadForums();
     }, [loadForums]);
 
-    const validateForm = () => {
+    const validateForm = useCallback(() => {
         const errors = {};
         if (!formData.title.trim()) {
             errors.title = 'Forum title is required';
@@ -77,9 +79,9 @@ const ForumScreen = ({ navigation }) => {
         }
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
-    };
+    }, [formData.title, formData.description]);
 
-    const handleCreateForum = async () => {
+    const handleCreateForum = useCallback(async () => {
         if (!validateForm()) return;
 
         setSubmitting(true);
@@ -95,9 +97,9 @@ const ForumScreen = ({ navigation }) => {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [formData.title, formData.description, validateForm, loadForums]);
 
-    const resetForm = () => {
+    const resetForm = useCallback(() => {
         setFormData({
             title: '',
             description: '',
@@ -106,26 +108,42 @@ const ForumScreen = ({ navigation }) => {
         });
         setFormErrors({});
         setTagInput('');
-    };
+    }, []);
 
-    const handleAddTag = () => {
+    const handleAddTag = useCallback(() => {
         if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-            setFormData({
-                ...formData,
-                tags: [...formData.tags, tagInput.trim().toLowerCase()],
-            });
+            setFormData(prev => ({
+                ...prev,
+                tags: [...prev.tags, tagInput.trim().toLowerCase()],
+            }));
             setTagInput('');
         }
-    };
+    }, [tagInput, formData.tags]);
 
-    const handleRemoveTag = (tag) => {
-        setFormData({
-            ...formData,
-            tags: formData.tags.filter(t => t !== tag),
-        });
-    };
+    const handleRemoveTag = useCallback((tag) => {
+        setFormData(prev => ({
+            ...prev,
+            tags: prev.tags.filter(t => t !== tag),
+        }));
+    }, []);
 
-    const renderForumItem = ({ item }) => (
+    // Optimize text input handlers
+    const handleTitleChange = useCallback((text) => {
+        setFormData(prev => ({ ...prev, title: text }));
+    }, []);
+
+    const handleDescriptionChange = useCallback((text) => {
+        setFormData(prev => ({ ...prev, description: text }));
+    }, []);
+
+    const handleModalDismiss = useCallback(() => {
+        if (!submitting) {
+            setModalVisible(false);
+            resetForm();
+        }
+    }, [submitting, resetForm]);
+
+    const renderForumItem = useCallback(({ item }) => (
         <TouchableOpacity
             onPress={() => navigation.navigate('ForumDetail', {
                 forumId: item._id,
@@ -163,7 +181,9 @@ const ForumScreen = ({ navigation }) => {
                 </Card.Content>
             </Card>
         </TouchableOpacity>
-    );
+    ), [navigation, styles]);
+
+    const keyExtractor = useCallback((item) => item._id, []);
 
     if (loading && !refreshing) {
         return <LoadingSpinner fullScreen text="Loading forums..." />;
@@ -182,7 +202,7 @@ const ForumScreen = ({ navigation }) => {
                 <FlatList
                     data={forums}
                     renderItem={renderForumItem}
-                    keyExtractor={(item) => item._id}
+                    keyExtractor={keyExtractor}
                     contentContainerStyle={styles.listContent}
                     refreshControl={
                         <RefreshControl
@@ -220,12 +240,7 @@ const ForumScreen = ({ navigation }) => {
                 <Portal>
                     <Modal
                         visible={modalVisible}
-                        onDismiss={() => {
-                            if (!submitting) {
-                                setModalVisible(false);
-                                resetForm();
-                            }
-                        }}
+                        onDismiss={handleModalDismiss}
                         contentContainerStyle={styles.modal}
                     >
                         <ScrollView showsVerticalScrollIndicator={false}>
@@ -234,7 +249,7 @@ const ForumScreen = ({ navigation }) => {
                             <TextInput
                                 label="Forum Title"
                                 value={formData.title}
-                                onChangeText={(text) => setFormData({ ...formData, title: text })}
+                                onChangeText={handleTitleChange}
                                 mode="outlined"
                                 style={styles.input}
                                 error={!!formErrors.title}
@@ -248,7 +263,7 @@ const ForumScreen = ({ navigation }) => {
                             <TextInput
                                 label="Description"
                                 value={formData.description}
-                                onChangeText={(text) => setFormData({ ...formData, description: text })}
+                                onChangeText={handleDescriptionChange}
                                 mode="outlined"
                                 multiline
                                 numberOfLines={4}
@@ -256,6 +271,7 @@ const ForumScreen = ({ navigation }) => {
                                 error={!!formErrors.description}
                                 disabled={submitting}
                                 theme={{ colors: { primary: colors.primary } }}
+                                maxLength={500}
                             />
                             {formErrors.description && (
                                 <Text style={styles.errorText}>{formErrors.description}</Text>
@@ -301,10 +317,7 @@ const ForumScreen = ({ navigation }) => {
                             <View style={styles.modalButtons}>
                                 <Button
                                     mode="outlined"
-                                    onPress={() => {
-                                        setModalVisible(false);
-                                        resetForm();
-                                    }}
+                                    onPress={handleModalDismiss}
                                     style={styles.modalButton}
                                     disabled={submitting}
                                 >
@@ -328,7 +341,8 @@ const ForumScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+// Move styles outside component and create them once
+const createStyles = (theme) => StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: colors.background,
