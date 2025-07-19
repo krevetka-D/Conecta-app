@@ -1,26 +1,29 @@
-
+// frontend/src/components/ui/Button.js
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { styles } from '../../styles/components/ui/ButtonStyles';
 
 export const Button = React.memo(({
-                                      title,
-                                      onPress,
-                                      variant = 'primary',
-                                      size = 'medium',
-                                      loading = false,
-                                      disabled = false,
-                                      icon,
-                                      iconPosition = 'left',
-                                      fullWidth = false,
-                                      style,
-                                      textStyle,
-                                      ...props
-                                  }) => {
+    title,
+    onPress,
+    variant = 'primary',
+    size = 'medium',
+    loading = false,
+    disabled = false,
+    icon,
+    iconPosition = 'left',
+    fullWidth = false,
+    style,
+    textStyle,
+    ...props
+}) => {
+    // Ensure size is valid
+    const validSize = ['small', 'medium', 'large'].includes(size) ? size : 'medium';
+    
     const buttonStyle = [
         styles.base,
-        styles[variant],
-        styles[size],
+        styles[variant] || styles.primary,
+        styles[validSize],
         fullWidth && styles.fullWidth,
         disabled && styles.disabled,
         style,
@@ -28,18 +31,22 @@ export const Button = React.memo(({
 
     const textStyles = [
         styles.text,
-        styles[`${variant}Text`],
-        styles[`${size}Text`],
+        styles[`${variant}Text`] || styles.primaryText,
+        styles[`${validSize}Text`],
         disabled && styles.disabledText,
         textStyle,
     ];
 
     const renderContent = () => {
         if (loading) {
+            // Ensure ActivityIndicator receives proper size
+            const spinnerSize = validSize === 'small' ? 'small' : 'large';
+            const spinnerColor = variant === 'primary' ? '#fff' : '#1E3A8A';
+            
             return (
                 <ActivityIndicator
-                    color={variant === 'primary' ? '#fff' : '#1E3A8A'}
-                    size={size === 'small' ? 'small' : 'large'}
+                    color={spinnerColor}
+                    size={spinnerSize}
                 />
             );
         }

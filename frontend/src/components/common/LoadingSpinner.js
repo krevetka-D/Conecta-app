@@ -5,7 +5,7 @@ import { styles } from '../../styles/components/common/LoadingSpinnerStyles';
 import { colors } from '../../constants/theme';
 
 const LoadingSpinner = ({
-    size = 'large', // This is correct - ActivityIndicator accepts 'small' or 'large'
+    size = 'large', // ActivityIndicator accepts 'small' or 'large' as strings
     color = colors.primary,
     text = '',
     fullScreen = false,
@@ -20,10 +20,13 @@ const LoadingSpinner = ({
         style,
     ];
 
+    // Ensure size is valid for ActivityIndicator
+    const validSize = size === 'small' || size === 'large' ? size : 'large';
+
     return (
         <View style={containerStyle}>
             <ActivityIndicator
-                size={size} // Make sure this receives 'small' or 'large', not a number
+                size={validSize}
                 color={color}
                 style={styles.spinner}
             />
