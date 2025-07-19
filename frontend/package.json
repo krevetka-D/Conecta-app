@@ -7,7 +7,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "clear-cache": "expo start --clear"
+    "clear-cache": "expo start --clear",
+    "reset-cache": "expo start -c",
+    "clean": "watchman watch-del-all && rm -rf node_modules && npm install",
+    "postinstall": "react-native-vector-icons link || true"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.1.2",
@@ -22,10 +25,13 @@
     "date-fns": "^2.30.0",
     "events": "^3.3.0",
     "expo": "^53.0.0",
+    "expo-constants": "~17.1.3",
     "expo-crypto": "~14.1.5",
+    "expo-device": "~7.1.5",
     "expo-linear-gradient": "~14.1.5",
     "expo-status-bar": "~2.2.3",
     "process": "^0.11.10",
+    "promise": "^8.3.0",
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-gesture-handler": "~2.24.0",
@@ -35,11 +41,14 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
+    "react-native-svg-transformer": "^1.3.0",
     "react-native-url-polyfill": "^2.0.0",
+    "react-native-vector-icons": "^10.0.3",
     "react-native-webview": "13.13.5",
     "readable-stream": "^4.5.2",
     "socket.io-client": "^4.7.5",
     "stream-browserify": "^3.0.0",
+    "text-encoding": "^0.7.0",
     "vm-browserify": "^1.1.2",
     "react-native-web": "^0.20.0",
     "react-dom": "19.0.0",
@@ -47,7 +56,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-decorators": "^7.24.0",
+    "@babel/plugin-transform-flow-strip-types": "^7.24.0",
     "@types/react": "~18.2.79",
+    "babel-plugin-module-resolver": "^5.0.0",
+    "babel-plugin-transform-remove-console": "^6.9.4",
     "typescript": "~5.3.3"
   },
   "private": true

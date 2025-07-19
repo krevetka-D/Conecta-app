@@ -1,10 +1,10 @@
-
+// frontend/src/services/api/client.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../../constants/config';
+import { API_BASE_URL } from '../../config/network';
 import { setupInterceptors } from './interceptors';
 
-//axios instance
+// Create axios instance with optimized config
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 30000,
@@ -14,30 +14,22 @@ const apiClient = axios.create({
     },
 });
 
-// Track request/response for debugging
+// Development logging
 if (__DEV__) {
-    // Request logger
     apiClient.interceptors.request.use(request => {
         console.log('🚀 API Request:', {
             method: request.method?.toUpperCase(),
             url: request.url,
             baseURL: request.baseURL,
-            data: request.data,
-            headers: request.headers,
         });
         return request;
-    }, error => {
-        console.error('🚀 Request Error:', error);
-        return Promise.reject(error);
     });
 
-    // Response logger
     apiClient.interceptors.response.use(
         response => {
             console.log('✅ API Response:', {
                 status: response.status,
                 url: response.config.url,
-                data: response.data,
             });
             return response;
         },
@@ -46,14 +38,13 @@ if (__DEV__) {
                 status: error.response?.status,
                 url: error.config?.url,
                 message: error.message,
-                data: error.response?.data,
             });
             return Promise.reject(error);
         }
     );
 }
 
-// Export function to set auth token
+// Token management
 export const setAuthToken = (token) => {
     if (token) {
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -62,15 +53,15 @@ export const setAuthToken = (token) => {
     }
 };
 
-// additional interceptors
+// Setup interceptors
 setupInterceptors(apiClient);
 
-// Resetting the API client (useful after logout)
+// Reset API client
 export const resetApiClient = () => {
     delete apiClient.defaults.headers.common['Authorization'];
 };
 
-// Initializing API client with stored token
+// Initialize API client with stored token
 export const initializeApiClient = async () => {
     try {
         const token = await AsyncStorage.getItem('userToken');

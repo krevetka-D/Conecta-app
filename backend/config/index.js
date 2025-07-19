@@ -1,9 +1,12 @@
-const dotenv = require('dotenv');
+// backend/config/index.js
+import dotenv from 'dotenv';
 
 dotenv.config();
 
-module.exports = {
+export const config = {
     port: process.env.PORT,
-    dbUri: process.env.DB_URI,
+    dbUri: process.env.MONGO_URI,
     jwtSecret: process.env.JWT_SECRET,
 };
+
+export default config;

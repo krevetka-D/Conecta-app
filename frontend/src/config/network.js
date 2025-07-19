@@ -1,5 +1,7 @@
+// frontend/src/config/network.js
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
+import env from './environment';
 
 const getApiUrl = () => {
     if (__DEV__) {
@@ -7,22 +9,28 @@ const getApiUrl = () => {
         if (Platform.OS === 'android') {
             if (Device.isDevice) {
                 // Physical Android device - use your computer's IP
-                return 'http://192.168.1.129:5001/api';
+                return env.API_BASE_URL;
             } else {
                 // Android emulator
-                return 'http://10.0.2.2:5001/api';
+                return env.ANDROID_EMULATOR_API_URL;
             }
         } else if (Platform.OS === 'ios') {
-            // iOS simulator or device
-            return 'http://192.168.1.129:5001/api';
+            if (Device.isDevice) {
+                // Physical iOS device
+                return env.API_BASE_URL;
+            } else {
+                // iOS simulator
+                return env.IOS_SIMULATOR_API_URL;
+            }
         } else {
             // Web
-            return 'http://localhost:5001/api';
+            return env.API_BASE_URL;
         }
     } else {
         // Production URL
-        return 'https://api.conectaalicante.com/api';
+        return env.API_BASE_URL;
     }
 };
 
 export const API_BASE_URL = getApiUrl();
+export const WS_BASE_URL = env.WS_BASE_URL;
