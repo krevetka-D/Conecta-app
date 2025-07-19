@@ -58,3 +58,7 @@
 {"level":"info","message":"GET /api/forums?_t=1752928779394 - 8ms - Status: 500","service":"conecta-alicante","timestamp":"2025-07-19 14:39:39"}
 {"level":"info","message":"POST /api/forums?_t=1752928951532 - 322ms - Status: 201","service":"conecta-alicante","timestamp":"2025-07-19 14:42:31"}
 {"level":"info","message":"GET /api/forums?_t=1752928952154 - 1ms - Status: 500","service":"conecta-alicante","timestamp":"2025-07-19 14:42:32"}
+{"level":"info","message":"GET /api/users/me?_t=1752930549342 - 135ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 15:09:09"}
+{"level":"info","message":"GET /api/users/me?_t=1752930549353 - 131ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 15:09:09"}
+{"level":"info","message":"GET /api/events?_t=1752930555017&upcoming=true - 210ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 15:09:15"}
+{"level":"info","message":"GET /api/forums?_t=1752930556513 - 136ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-19 15:09:16"}

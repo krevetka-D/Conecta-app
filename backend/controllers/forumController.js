@@ -1,26 +1,30 @@
 // backend/controllers/forumController.js
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 import Forum from '../models/Forum.js';
 import Thread from '../models/Thread.js';
 import Post from '../models/Post.js';
+import { cacheMiddleware, clearCache } from '../middleware/cacheMiddleware.js';
 
 const getForums = asyncHandler(async (req, res) => {
     try {
         const forums = await Forum.find({ isActive: true })
-            .select('title description user threads createdAt')
+            .select('title description user threads createdAt tags')
             .populate({
                 path: 'user',
-                select: 'name email',
+                select: 'name email professionalPath',
                 options: { lean: true }
             })
             .sort('-createdAt')
-            .lean()
-            .cache('long'); // Add caching
+            .lean(); // Remove the .cache('long') call - it doesn't exist
         
         res.json(forums);
     } catch (error) {
         console.error('Error fetching forums:', error);
-        res.status(500).json({ message: 'Failed to fetch forums' });
+        res.status(500).json({ 
+            message: 'Failed to fetch forums',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -77,6 +81,9 @@ const createForum = asyncHandler(async (req, res) => {
         const populatedForum = await Forum.findById(forum._id)
             .populate('user', 'name email professionalPath');
 
+        // Clear cache when new forum is created
+        clearCache('forums');
+
         res.status(201).json({
             success: true,
             data: populatedForum
@@ -106,11 +113,15 @@ const getForum = asyncHandler(async (req, res) => {
                 path: 'threads',
                 populate: { 
                     path: 'author', 
-                    select: 'name email' 
+                    select: 'name email professionalPath' 
                 },
-                options: { sort: { createdAt: -1 } }
+                options: { 
+                    sort: { createdAt: -1 },
+                    limit: 50 // Limit threads for performance
+                }
             })
-            .populate('user', 'name email');
+            .populate('user', 'name email professionalPath')
+            .lean();
 
         if (!forum) {
             res.status(404);
@@ -163,13 +174,20 @@ const createThread = asyncHandler(async (req, res) => {
             author: req.user._id
         });
 
-        // Add thread to forum
-        forum.threads.push(thread._id);
-        await forum.save();
+        // Add thread to forum - use $push for better performance
+        await Forum.findByIdAndUpdate(
+            forum._id,
+            { $push: { threads: thread._id } },
+            { new: true }
+        );
 
         // Populate and return thread
         const populatedThread = await Thread.findById(thread._id)
-            .populate('author', 'name email');
+            .populate('author', 'name email professionalPath')
+            .lean();
+
+        // Clear forum cache
+        clearCache(`forum_${forumId}`);
 
         res.status(201).json(populatedThread);
     } catch (error) {
@@ -206,7 +224,11 @@ const createPost = asyncHandler(async (req, res) => {
         });
 
         const populatedPost = await Post.findById(post._id)
-            .populate('author', 'name email');
+            .populate('author', 'name email professionalPath')
+            .lean();
+
+        // Clear thread cache
+        clearCache(`thread_${threadId}`);
 
         res.status(201).json(populatedPost);
     } catch (error) {
@@ -233,17 +255,24 @@ const deleteForum = asyncHandler(async (req, res) => {
             throw new Error('Only the forum creator can delete this forum');
         }
 
-        // Delete all posts in threads of this forum
-        const threads = await Thread.find({ forum: req.params.id });
-        for (const thread of threads) {
-            await Post.deleteMany({ thread: thread._id });
-        }
+        // Use bulk operations for better performance
+        const threads = await Thread.find({ forum: req.params.id }).select('_id');
+        const threadIds = threads.map(t => t._id);
 
-        // Delete all threads in this forum
-        await Thread.deleteMany({ forum: req.params.id });
+        if (threadIds.length > 0) {
+            // Delete all posts in threads of this forum
+            await Post.deleteMany({ thread: { $in: threadIds } });
+            
+            // Delete all threads in this forum
+            await Thread.deleteMany({ _id: { $in: threadIds } });
+        }
 
         // Delete the forum
         await Forum.findByIdAndDelete(req.params.id);
+
+        // Clear all forum-related caches
+        clearCache('forums');
+        clearCache(`forum_${req.params.id}`);
 
         res.status(200).json({ 
             message: 'Forum and all associated content deleted successfully',
@@ -285,6 +314,10 @@ const deleteThread = asyncHandler(async (req, res) => {
         // Delete the thread
         await Thread.findByIdAndDelete(req.params.threadId);
 
+        // Clear caches
+        clearCache(`forum_${thread.forum}`);
+        clearCache(`thread_${req.params.threadId}`);
+
         res.status(200).json({ 
             message: 'Thread deleted successfully',
             id: req.params.threadId 
@@ -298,6 +331,38 @@ const deleteThread = asyncHandler(async (req, res) => {
     }
 });
 
+// Add method to get threads with pagination
+const getThreads = asyncHandler(async (req, res) => {
+    const { forumId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    
+    try {
+        const forum = await Forum.findById(forumId);
+        if (!forum) {
+            res.status(404);
+            throw new Error('Forum not found');
+        }
+
+        const threads = await Thread.find({ forum: forumId })
+            .populate('author', 'name email professionalPath')
+            .sort('-createdAt')
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .lean();
+
+        const count = await Thread.countDocuments({ forum: forumId });
+
+        res.json({
+            threads,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            totalThreads: count
+        });
+    } catch (error) {
+        throw error;
+    }
+});
+
 export { 
     getForums, 
     createForum, 
@@ -305,5 +370,6 @@ export {
     createThread, 
     createPost,
     deleteForum,
-    deleteThread 
+    deleteThread,
+    getThreads 
 };
