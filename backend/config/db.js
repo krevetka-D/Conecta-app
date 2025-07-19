@@ -1,21 +1,42 @@
+// backend/config/db.js - Enhanced version
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
     const maxRetries = 5;
     let retries = 0;
 
+    // Optimize connection settings
+    const options = {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        // Connection pool settings
+        maxPoolSize: 10,
+        minPoolSize: 2,
+        maxIdleTimeMS: 10000,
+        // Performance settings
+        writeConcern: {
+            w: 'majority',
+            j: true,
+            wtimeout: 1000
+        },
+        readPreference: 'primaryPreferred',
+        // Compression
+        compressors: ['zlib'],
+    };
+
     while (retries < maxRetries) {
         try {
-            const conn = await mongoose.connect(process.env.MONGO_URI, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
-                serverSelectionTimeoutMS: 5000,
-                socketTimeoutMS: 45000,
-            });
+            const conn = await mongoose.connect(process.env.MONGO_URI, options);
 
             console.log(`MongoDB Connected: ${conn.connection.host}`);
 
-            // Setup connection event handlers
+            // Enable query optimization
+            mongoose.set('debug', process.env.NODE_ENV === 'development');
+            mongoose.set('autoIndex', process.env.NODE_ENV !== 'production');
+
+            // Connection event handlers
             mongoose.connection.on('disconnected', () => {
                 console.log('MongoDB disconnected. Attempting to reconnect...');
             });
@@ -34,7 +55,6 @@ const connectDB = async () => {
                 process.exit(1);
             }
 
-            // Wait before retrying (exponential backoff)
             const delay = Math.min(1000 * Math.pow(2, retries), 10000);
             console.log(`Retrying in ${delay / 1000} seconds...`);
             await new Promise(resolve => setTimeout(resolve, delay));

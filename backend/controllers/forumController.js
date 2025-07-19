@@ -6,9 +6,17 @@ import Post from '../models/Post.js';
 
 const getForums = asyncHandler(async (req, res) => {
     try {
-        const forums = await Forum.find({})
-            .populate('user', 'name email')
-            .sort('-createdAt');
+        const forums = await Forum.find({ isActive: true })
+            .select('title description user threads createdAt')
+            .populate({
+                path: 'user',
+                select: 'name email',
+                options: { lean: true }
+            })
+            .sort('-createdAt')
+            .lean()
+            .cache('long'); // Add caching
+        
         res.json(forums);
     } catch (error) {
         console.error('Error fetching forums:', error);
@@ -17,12 +25,27 @@ const getForums = asyncHandler(async (req, res) => {
 });
 
 const createForum = asyncHandler(async (req, res) => {
-    const { title, description } = req.body;
+    const { title, description, tags } = req.body;
     
-    // Validation
+    // Enhanced validation
     if (!title || !description) {
         res.status(400);
         throw new Error('Title and description are required');
+    }
+
+    // Sanitize inputs
+    const sanitizedTitle = title.trim();
+    const sanitizedDescription = description.trim();
+
+    // Additional validation
+    if (sanitizedTitle.length < 3) {
+        res.status(400);
+        throw new Error('Title must be at least 3 characters long');
+    }
+
+    if (sanitizedDescription.length < 10) {
+        res.status(400);
+        throw new Error('Description must be at least 10 characters long');
     }
 
     if (!req.user || !req.user._id) {
@@ -31,31 +54,47 @@ const createForum = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Check if forum with same title exists
-        const forumExists = await Forum.findOne({ title });
+        // Check if forum with same title exists (case-insensitive)
+        const forumExists = await Forum.findOne({ 
+            title: { $regex: new RegExp(`^${sanitizedTitle}$`, 'i') }
+        });
+        
         if (forumExists) {
             res.status(400);
             throw new Error('A forum with this title already exists');
         }
 
-        // Create forum with proper user reference
+        // Create forum with sanitized data
         const forum = await Forum.create({
-            title: title.trim(),
-            description: description.trim(),
+            title: sanitizedTitle,
+            description: sanitizedDescription,
             user: req.user._id,
-            threads: []
+            threads: [],
+            tags: tags || []
         });
 
         // Populate user info before sending response
         const populatedForum = await Forum.findById(forum._id)
-            .populate('user', 'name email');
+            .populate('user', 'name email professionalPath');
 
-        res.status(201).json(populatedForum);
+        res.status(201).json({
+            success: true,
+            data: populatedForum
+        });
     } catch (error) {
+        // Handle duplicate key error
         if (error.code === 11000) {
             res.status(400);
             throw new Error('A forum with this title already exists');
         }
+        
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            res.status(400);
+            throw new Error(messages.join(', '));
+        }
+        
         throw error;
     }
 });
