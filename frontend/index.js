@@ -1,21 +1,7 @@
-/**
- * @format
- */
-
-import { AppRegistry, LogBox } from 'react-native';
+import { registerRootComponent } from 'expo';
 import App from './src/App';
-import { name as appName } from './app.json';
 
-// Import and apply patches
-import './src/utils/polyfills';
-
-// Ignore specific warnings
-LogBox.ignoreLogs([
-  'Warning: isMounted(...) is deprecated',
-  'Module RCTImageLoader requires',
-  'Non-serializable values were found',
-  'Unable to convert string to floating point value',
-  'EventEmitter.removeListener',
-]);
-
-AppRegistry.registerComponent(appName, () => App);
+// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
+// It also ensures that whether you load the app in Expo Go or in a native build,
+// the environment is set up appropriately
+registerRootComponent(App);

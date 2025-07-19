@@ -1,19 +1,14 @@
-// metro.config.js
-const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+// frontend/metro.config.js
+const { getDefaultConfig } = require('expo/metro-config');
 
-/**
- * Metro configuration
- * https://facebook.github.io/metro/docs/configuration
- *
- * @type {import('metro-config').MetroConfig}
- */
-const config = {
+const defaultConfig = getDefaultConfig(__dirname);
+
+module.exports = {
+  ...defaultConfig,
   resolver: {
-    // Ensure .cjs files are resolved
-    sourceExts: ['jsx', 'js', 'ts', 'tsx', 'cjs', 'mjs', 'json'],
+    ...defaultConfig.resolver,
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'cjs', 'mjs'],
   },
-  watchFolders: [],
-  resetCache: true,
+
 };
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
