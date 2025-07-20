@@ -1,8 +1,10 @@
-
 import asyncHandler from 'express-async-handler';
 import BudgetEntry from '../models/BudgetEntry.js';
 import ChecklistItem from '../models/ChecklistItem.js';
 import Event from '../models/Event.js';
+import Forum from '../models/Forum.js';
+import Thread from '../models/Thread.js';
+import { cacheMiddleware } from '../middleware/cacheMiddleware.js';
 
 /**
  * @desc    Get aggregated data for the dashboard
@@ -14,58 +16,56 @@ export const getDashboardOverview = asyncHandler(async (req, res) => {
         const userId = req.user._id;
         const currentDate = new Date();
 
-        // Get recent budget entries
-        const recentBudgetEntries = await BudgetEntry.find({ user: userId })
-            .sort({ createdAt: -1 })
-            .limit(5);
+        // Use Promise.all for parallel execution
+        const [
+            recentBudgetEntries,
+            monthlyBudget,
+            checklistItems,
+            upcomingEvents,
+            recentForumActivity
+        ] = await Promise.all([
+            // Get recent budget entries
+            BudgetEntry.find({ user: userId })
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .select('type category amount description entryDate')
+                .lean(),
 
-        // Get budget summary for current month
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        
-        const monthlyBudget = await BudgetEntry.aggregate([
-            {
-                $match: {
-                    user: userId,
-                    entryDate: { $gte: startOfMonth, $lte: endOfMonth }
-                }
-            },
-            {
-                $group: {
-                    _id: '$type',
-                    total: { $sum: '$amount' }
-                }
-            }
+            // Get budget summary for current month
+            getBudgetSummary(userId, currentDate),
+
+            // Get checklist progress
+            ChecklistItem.find({ user: userId })
+                .select('itemKey isCompleted')
+                .lean(),
+
+            // Get upcoming events (optimized query)
+            Event.find({
+                date: { $gte: currentDate },
+                isCancelled: false,
+                $or: [
+                    { organizer: userId },
+                    { attendees: userId }
+                ]
+            })
+            .select('title date time location attendees organizer')
+            .populate('organizer', 'name')
+            .sort({ date: 1 })
+            .limit(5)
+            .lean(),
+
+            // Get recent forum activity (optimized)
+            getRecentForumActivity(userId, 5)
         ]);
 
-        const income = monthlyBudget.find(item => item._id === 'INCOME')?.total || 0;
-        const expenses = monthlyBudget.find(item => item._id === 'EXPENSE')?.total || 0;
-
-        // Get checklist progress
-        const checklistItems = await ChecklistItem.find({ user: userId });
+        // Calculate checklist progress
         const completedItems = checklistItems.filter(item => item.isCompleted).length;
         const totalItems = checklistItems.length;
         const checklistProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
-        // Get upcoming events (user is attending or organizing)
-        const upcomingEvents = await Event.find({
-            $and: [
-                { date: { $gte: currentDate } },
-                { isCancelled: false },
-                {
-                    $or: [
-                        { organizer: userId },
-                        { attendees: userId }
-                    ]
-                }
-            ]
-        })
-        .populate('organizer', 'name')
-        .sort({ date: 1 })
-        .limit(5);
-
-        // Get recent forum activity (if user has created forums/threads)
-        // This would require Forum/Thread models to be imported
+        // Process monthly budget
+        const income = monthlyBudget.find(item => item._id === 'INCOME')?.total || 0;
+        const expenses = monthlyBudget.find(item => item._id === 'EXPENSE')?.total || 0;
 
         // Compile dashboard data
         const dashboardData = {
@@ -78,7 +78,8 @@ export const getDashboardOverview = asyncHandler(async (req, res) => {
             checklist: {
                 completedItems,
                 totalItems,
-                progressPercentage: Math.round(checklistProgress)
+                progressPercentage: Math.round(checklistProgress),
+                items: checklistItems
             },
             upcomingEvents: upcomingEvents.map(event => ({
                 _id: event._id,
@@ -90,13 +91,17 @@ export const getDashboardOverview = asyncHandler(async (req, res) => {
                 organizerName: event.organizer.name,
                 attendeeCount: event.attendees?.length || 0
             })),
+            recentActivity: recentForumActivity,
             stats: {
                 totalEventsAttending: upcomingEvents.length,
                 eventsOrganizing: upcomingEvents.filter(e => e.organizer._id.toString() === userId.toString()).length,
-                checklistCompletion: Math.round(checklistProgress)
+                checklistCompletion: Math.round(checklistProgress),
+                monthlyBalance: income - expenses
             }
         };
 
+        // Set cache headers for client-side caching
+        res.set('Cache-Control', 'private, max-age=60'); // Cache for 1 minute
         res.status(200).json(dashboardData);
     } catch (error) {
         console.error('Dashboard overview error:', error);
@@ -106,47 +111,80 @@ export const getDashboardOverview = asyncHandler(async (req, res) => {
     }
 });
 
-
+/**
+ * @desc    Get dashboard events with pagination
+ * @route   GET /api/dashboard/events
+ * @access  Private
+ */
 export const getDashboardEvents = asyncHandler(async (req, res) => {
+    const { limit = 10, offset = 0 } = req.query;
     const events = [];
 
     try {
-        // Fetch the user's budget entries
-        const budgetEntries = await BudgetEntry.find({ user: req.user._id })
-            .sort({ createdAt: -1 })
-            .limit(5);
+        // Use aggregation pipeline for better performance
+        const [budgetEvents, checklistEvents] = await Promise.all([
+            // Budget events
+            BudgetEntry.aggregate([
+                { $match: { user: req.user._id } },
+                { $sort: { createdAt: -1 } },
+                { $skip: parseInt(offset) },
+                { $limit: parseInt(limit) },
+                {
+                    $project: {
+                        id: { $concat: ['budget_', { $toString: '$_id' }] },
+                        type: { $literal: 'BUDGET_ENTRY' },
+                        title: { $concat: ['$type', ': ', '$category'] },
+                        details: {
+                            $concat: [
+                                'Amount: €',
+                                { $toString: '$amount' },
+                                { $cond: [{ $ne: ['$description', ''] }, { $concat: [' - ', '$description'] }, ''] }
+                            ]
+                        },
+                        date: { $ifNull: ['$entryDate', '$createdAt'] },
+                        isCompleted: { $literal: true }
+                    }
+                }
+            ]),
 
-        // Fetch the user's checklist items
-        const checklistItems = await ChecklistItem.find({ user: req.user._id });
+            // Checklist events
+            ChecklistItem.aggregate([
+                { $match: { user: req.user._id } },
+                { $sort: { updatedAt: -1 } },
+                { $skip: parseInt(offset) },
+                { $limit: parseInt(limit) },
+                {
+                    $project: {
+                        id: { $concat: ['checklist_', { $toString: '$_id' }] },
+                        type: { $literal: 'CHECKLIST_ITEM' },
+                        title: {
+                            $replaceAll: {
+                                input: { $toLower: '$itemKey' },
+                                find: '_',
+                                replacement: ' '
+                            }
+                        },
+                        details: {
+                            $concat: [
+                                'Status: ',
+                                { $cond: ['$isCompleted', 'Completed', 'Pending'] }
+                            ]
+                        },
+                        date: '$updatedAt',
+                        isCompleted: '$isCompleted'
+                    }
+                }
+            ])
+        ]);
 
-        // Transform budget entries into events
-        budgetEntries.forEach(entry => {
-            events.push({
-                id: `budget_${entry._id}`,
-                type: 'BUDGET_ENTRY',
-                title: `${entry.type}: ${entry.category}`,
-                details: `Amount: €${entry.amount} ${entry.description ? `- ${entry.description}` : ''}`,
-                date: entry.entryDate || entry.createdAt,
-                isCompleted: true,
-            });
-        });
-
-        // Transform checklist items into event objects
-        checklistItems.forEach(item => {
-            events.push({
-                id: `checklist_${item._id}`,
-                type: 'CHECKLIST_ITEM',
-                title: item.itemKey.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
-                details: `Status: ${item.isCompleted ? 'Completed' : 'Pending'}`,
-                date: item.updatedAt,
-                isCompleted: item.isCompleted,
-            });
-        });
-
-        // Sort events by date, most recent first
+        // Combine and sort events
+        events.push(...budgetEvents, ...checklistEvents);
         events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        res.status(200).json({ events });
+        res.status(200).json({ 
+            events: events.slice(0, limit),
+            hasMore: events.length > limit 
+        });
     } catch (error) {
         console.error('Dashboard events error:', error);
         res.status(500).json({
@@ -155,3 +193,49 @@ export const getDashboardEvents = asyncHandler(async (req, res) => {
         });
     }
 });
+
+// Helper function to get budget summary
+async function getBudgetSummary(userId, currentDate) {
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    
+    return BudgetEntry.aggregate([
+        {
+            $match: {
+                user: userId,
+                entryDate: { $gte: startOfMonth, $lte: endOfMonth }
+            }
+        },
+        {
+            $group: {
+                _id: '$type',
+                total: { $sum: '$amount' },
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+}
+
+// Helper function to get recent forum activity
+async function getRecentForumActivity(userId, limit) {
+    // Get forums created by user or where user has participated
+    const userForums = await Forum.find({
+        $or: [
+            { user: userId },
+            { 'threads.author': userId }
+        ]
+    })
+    .select('_id')
+    .lean();
+
+    const forumIds = userForums.map(f => f._id);
+
+    // Get recent threads in those forums
+    return Thread.find({ forum: { $in: forumIds } })
+        .select('title forum createdAt author')
+        .populate('author', 'name')
+        .populate('forum', 'title')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+}

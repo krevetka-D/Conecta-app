@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from '../components/common/Icon.js';
@@ -48,7 +47,7 @@ const MainNavigator = () => {
                             iconName = focused ? 'forum' : 'forum-outline';
                             break;
                         case SCREEN_NAMES.EVENTS:
-                            iconName = focused ? 'calendar-multiple' : 'calendar-multiple-outline';
+                            iconName = focused ? 'calendar-month' : 'calendar-month-outline';
                             break;
                         default:
                             iconName = 'circle';

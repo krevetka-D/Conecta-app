@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -73,44 +71,46 @@ const EventsScreen = ({ navigation }) => {
         return (
             <TouchableOpacity onPress={() => handleEventPress(item)} activeOpacity={0.7}>
                 <Card style={styles.eventCard}>
-                    <Card.Content>
-                        <View style={styles.eventHeader}>
-                            <View style={styles.eventDateBadge}>
-                                <Text style={styles.eventDateDay}>{format(eventDate, 'dd')}</Text>
-                                <Text style={styles.eventDateMonth}>{format(eventDate, 'MMM')}</Text>
-                            </View>
-                            <View style={styles.eventInfo}>
-                                <Text style={styles.eventTitle} numberOfLines={2}>{item.title}</Text>
-                                <View style={styles.eventMeta}>
-                                    <Icon name="clock-outline" size={14} color={colors.textSecondary} />
-                                    <Text style={styles.eventTime}>{item.time}</Text>
-                                    <Icon name="map-marker-outline" size={14} color={colors.textSecondary} style={styles.metaIcon} />
-                                    <Text style={styles.eventLocation} numberOfLines={1}>{item.location.name}</Text>
+                    <View style={styles.cardContentWrapper}>
+                        <Card.Content>
+                            <View style={styles.eventHeader}>
+                                <View style={styles.eventDateBadge}>
+                                    <Text style={styles.eventDateDay}>{format(eventDate, 'dd')}</Text>
+                                    <Text style={styles.eventDateMonth}>{format(eventDate, 'MMM')}</Text>
                                 </View>
-                                <View style={styles.eventFooter}>
-                                    <View style={styles.attendeesPreview}>
-                                        <Icon name="account-group" size={16} color={colors.textSecondary} />
-                                        <Text style={styles.attendeesCount}>
-                                            {item.attendees?.length || 0}
-                                            {item.maxAttendees && ` / ${item.maxAttendees}`}
-                                        </Text>
+                                <View style={styles.eventInfo}>
+                                    <Text style={styles.eventTitle} numberOfLines={2}>{item.title}</Text>
+                                    <View style={styles.eventMeta}>
+                                        <Icon name="clock-outline" size={14} color={colors.textSecondary} />
+                                        <Text style={styles.eventTime}>{item.time}</Text>
+                                        <Icon name="map-marker-outline" size={14} color={colors.textSecondary} style={styles.metaIcon} />
+                                        <Text style={styles.eventLocation} numberOfLines={1}>{item.location.name}</Text>
                                     </View>
-                                    <View style={styles.eventTags}>
-                                        {isAttending && (
-                                            <Chip style={styles.attendingChip} textStyle={styles.chipText}>
-                                                Attending
-                                            </Chip>
-                                        )}
-                                        {isFull && !isAttending && (
-                                            <Chip style={styles.fullChip} textStyle={styles.chipText}>
-                                                Full
-                                            </Chip>
-                                        )}
+                                    <View style={styles.eventFooter}>
+                                        <View style={styles.attendeesPreview}>
+                                            <Icon name="account-group" size={16} color={colors.textSecondary} />
+                                            <Text style={styles.attendeesCount}>
+                                                {item.attendees?.length || 0}
+                                                {item.maxAttendees && ` / ${item.maxAttendees}`}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.eventTags}>
+                                            {isAttending && (
+                                                <Chip style={styles.attendingChip} textStyle={styles.chipText}>
+                                                    Attending
+                                                </Chip>
+                                            )}
+                                            {isFull && !isAttending && (
+                                                <Chip style={styles.fullChip} textStyle={styles.chipText}>
+                                                    Full
+                                                </Chip>
+                                            )}
+                                        </View>
                                     </View>
                                 </View>
                             </View>
-                        </View>
-                    </Card.Content>
+                        </Card.Content>
+                    </View>
                 </Card>
             </TouchableOpacity>
         );
@@ -245,6 +245,11 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
         backgroundColor: colors.surface,
         borderRadius: 12,
+        // Remove overflow: 'hidden' to prevent shadow clipping
+    },
+    cardContentWrapper: {
+        borderRadius: 12,
+        overflow: 'hidden', // Apply overflow to inner wrapper instead
     },
     eventHeader: {
         flexDirection: 'row',

@@ -1,10 +1,24 @@
 import express from 'express';
-import { getDashboardEvents } from '../controllers/dashboardController.js';
+import { getDashboardEvents, getDashboardOverview } from '../controllers/dashboardController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { cacheMiddleware } from '../middleware/cacheMiddleware.js';
 
 const router = express.Router();
 
-// Route for fetching dashboard events. The 'protect' middleware ensures only logged-in users can access it.
-router.route('/events').get(protect, getDashboardEvents);
+// Route for fetching complete dashboard overview
+router.route('/overview')
+    .get(
+        protect, 
+        cacheMiddleware('short'), // Cache for 1 minute
+        getDashboardOverview
+    );
+
+// Route for fetching dashboard events
+router.route('/events')
+    .get(
+        protect, 
+        cacheMiddleware('short'), 
+        getDashboardEvents
+    );
 
 export default router;

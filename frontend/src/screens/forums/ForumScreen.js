@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
 import { Card, FAB, Portal, Modal, Button, Chip, TextInput } from 'react-native-paper';
@@ -11,7 +10,6 @@ import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { colors, fonts, spacing } from '../../constants/theme';
-import { OptimizedInput } from '../../components/ui/OptimizedInput';
 
 // Memoized Forum Item Component
 const ForumItem = React.memo(({ item, onPress, styles }) => (
@@ -102,26 +100,19 @@ const ForumScreen = ({ navigation }) => {
         });
     }, [navigation]);
 
-    // Fixed: Use setTimeout to avoid state update during render
+    // Fixed: Direct state updates without side effects
     const handleTitleChange = useCallback((text) => {
-        // Defer state update to next tick
-        setTimeout(() => {
-            setFormData(prev => ({ ...prev, title: text }));
-            if (formErrors.title) {
-                setFormErrors(prev => ({ ...prev, title: null }));
-            }
-        }, 0);
+        setFormData(prev => ({ ...prev, title: text }));
+        if (formErrors.title) {
+            setFormErrors(prev => ({ ...prev, title: null }));
+        }
     }, [formErrors.title]);
 
-    // Fixed: Use setTimeout to avoid state update during render
     const handleDescriptionChange = useCallback((text) => {
-        // Defer state update to next tick
-        setTimeout(() => {
-            setFormData(prev => ({ ...prev, description: text }));
-            if (formErrors.description) {
-                setFormErrors(prev => ({ ...prev, description: null }));
-            }
-        }, 0);
+        setFormData(prev => ({ ...prev, description: text }));
+        if (formErrors.description) {
+            setFormErrors(prev => ({ ...prev, description: null }));
+        }
     }, [formErrors.description]);
 
     // Optimize validation
@@ -201,11 +192,8 @@ const ForumScreen = ({ navigation }) => {
     const handleModalDismiss = useCallback(() => {
         if (!submitting) {
             setModalVisible(false);
-            // Reset form data after modal is closed
-            setTimeout(() => {
-                setFormData({ title: '', description: '', tags: [] });
-                setFormErrors({});
-            }, 100);
+            setFormData({ title: '', description: '', tags: [] });
+            setFormErrors({});
         }
     }, [submitting]);
 
@@ -272,15 +260,20 @@ const ForumScreen = ({ navigation }) => {
                         {formErrors.title && (
                             <Text style={styles.errorText}>{formErrors.title}</Text>
                         )}
-                        <OptimizedInput
-    label="Description"
-    value={formData.description}
-    onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-    multiline
-    numberOfLines={4}
-    maxLength={500}
-    error={formErrors.description}
-/>
+                        
+                        <TextInput
+                            label="Forum Description"
+                            value={formData.description}
+                            onChangeText={handleDescriptionChange}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={4}
+                            style={styles.input}
+                            error={!!formErrors.description}
+                            disabled={submitting}
+                            theme={{ colors: { primary: colors.primary } }}
+                            maxLength={500}
+                        />
                         {formErrors.description && (
                             <Text style={styles.errorText}>{formErrors.description}</Text>
                         )}
