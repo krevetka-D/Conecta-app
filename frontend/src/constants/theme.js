@@ -1,4 +1,4 @@
-
+// frontend/src/constants/theme.js
 import { DefaultTheme } from 'react-native-paper';
 import { Platform } from 'react-native';
 
@@ -73,19 +73,29 @@ export const colors = {
 export const fonts = {
     families: {
         regular: Platform.select({
-            ios: 'Poppins-Regular, System',
-            android: 'Poppins-Regular, Roboto',
-            default: 'Poppins-Regular, sans-serif'
+            ios: 'System',
+            android: 'Roboto',
+            default: 'System'
         }),
         semiBold: Platform.select({
-            ios: 'Poppins-SemiBold, System',
-            android: 'Poppins-SemiBold, Roboto',
-            default: 'Poppins-SemiBold, sans-serif'
+            ios: 'System',
+            android: 'Roboto-Medium',
+            default: 'System'
         }),
         bold: Platform.select({
-            ios: 'Poppins-Bold, System',
-            android: 'Poppins-Bold, Roboto',
-            default: 'Poppins-Bold, sans-serif'
+            ios: 'System',
+            android: 'Roboto-Bold',
+            default: 'System'
+        }),
+        medium: Platform.select({
+            ios: 'System',
+            android: 'Roboto-Medium',
+            default: 'System'
+        }),
+        light: Platform.select({
+            ios: 'System',
+            android: 'Roboto-Light',
+            default: 'System'
         }),
     },
     sizes: {
@@ -97,6 +107,14 @@ export const fonts = {
         xxl: 24,
         xxxl: 32,
         display: 40,
+        // Add legacy sizes
+        small: 14,
+        regular: 16,
+        medium: 18,
+        large: 20,
+        h1: 32,
+        h2: 28,
+        h3: 24,
     },
     lineHeights: {
         tight: 1.2,
@@ -132,6 +150,7 @@ export const borderRadius = {
     xxl: 24,
     full: 30,
     round: 9999,
+    pill: 9999, // Add this alias
 };
 
 // Shadows
@@ -208,21 +227,20 @@ export const theme = {
             fontWeight: fonts.weights.normal,
         },
         medium: {
-            fontFamily: fonts.families.semiBold,
-            fontWeight: fonts.weights.semiBold,
+            fontFamily: fonts.families.medium,
+            fontWeight: fonts.weights.medium,
         },
         light: {
-            fontFamily: fonts.families.regular,
+            fontFamily: fonts.families.light,
             fontWeight: fonts.weights.normal,
         },
         thin: {
-            fontFamily: fonts.families.regular,
+            fontFamily: fonts.families.light,
             fontWeight: fonts.weights.normal,
         },
     },
     roundness: borderRadius.md,
-    
-spacing: {
+    spacing: {
         xs: spacing.xs,
         s: spacing.sm,
         m: spacing.md,

@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "clean": "watchman watch-del-all && rm -rf node_modules && npm install",
     "postinstall": "node scripts/fix-metro.js",
-    "reset-cache": "expo start -c"
+    "reset-cache": "expo start -c",
+    "build:web": "expo export:web"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",

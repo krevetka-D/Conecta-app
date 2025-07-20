@@ -1,4 +1,3 @@
-
 import { createNavigationContainerRef, CommonActions, StackActions } from '@react-navigation/native';
 import { SCREEN_NAMES } from '../constants/routes';
 
@@ -34,18 +33,21 @@ export function goBack() {
 
 /**
  * Resets the navigation stack to the Authentication flow (Login screen).
- * This is the primary function for logging a user out.
  */
 export function resetRoot() {
     // Use a timeout to ensure navigation is ready
     const performReset = () => {
         if (navigationRef.isReady()) {
-            navigationRef.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: SCREEN_NAMES.WELCOME }],
-                })
-            );
+            try {
+                navigationRef.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: SCREEN_NAMES.WELCOME }],
+                    })
+                );
+            } catch (error) {
+                console.error('Failed to reset navigation:', error);
+            }
         } else {
             // If navigation is not ready, try again after a short delay
             setTimeout(performReset, 100);
@@ -59,17 +61,25 @@ export function resetRoot() {
  * Reset to main app (after successful login)
  */
 export function resetToMain() {
-    if (navigationRef.isReady()) {
-        navigationRef.dispatch(
-            CommonActions.reset({
-                index: 0,
-                routes: [{ name: SCREEN_NAMES.DASHBOARD }],
-            })
-        );
-    } else {
-        // Retry after a short delay
-        setTimeout(() => resetToMain(), 100);
-    }
+    const performReset = () => {
+        if (navigationRef.isReady()) {
+            try {
+                navigationRef.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: SCREEN_NAMES.DASHBOARD }],
+                    })
+                );
+            } catch (error) {
+                console.error('Failed to reset to main:', error);
+            }
+        } else {
+            // Retry after a short delay
+            setTimeout(performReset, 100);
+        }
+    };
+
+    performReset();
 }
 
 /**
@@ -77,7 +87,11 @@ export function resetToMain() {
  */
 export function replace(name, params) {
     if (navigationRef.isReady()) {
-        navigationRef.dispatch(StackActions.replace(name, params));
+        try {
+            navigationRef.dispatch(StackActions.replace(name, params));
+        } catch (error) {
+            console.error('Failed to replace screen:', error);
+        }
     } else {
         console.warn('Navigation not ready, replace to', name, 'was skipped.');
     }
