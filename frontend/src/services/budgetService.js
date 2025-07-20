@@ -3,9 +3,13 @@ import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
 
 // Cache for categories to avoid repeated API calls
-let categoriesCache = null;
-let cacheTimestamp = null;
+let categoriesCache = new Map(); // professionalPath -> categories
+let cacheTimestamp = new Map(); // professionalPath -> timestamp
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Cache for budget entries
+let entriesCache = null;
+let entriesCacheTimestamp = null;
 
 const budgetService = {
     getBudgetEntries: async (filters = {}) => {
@@ -63,13 +67,17 @@ const budgetService = {
         }
     },
 
-    /**
+ /**
      * Fetches budget categories with caching
      */
     getCategories: async (professionalPath) => {
+        const cacheKey = professionalPath || 'default';
+        
         // Check if we have valid cached data
-        if (categoriesCache && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
-            return categoriesCache;
+        if (categoriesCache.has(cacheKey) && 
+            cacheTimestamp.has(cacheKey) && 
+            (Date.now() - cacheTimestamp.get(cacheKey) < CACHE_DURATION)) {
+            return categoriesCache.get(cacheKey);
         }
 
         try {
@@ -78,16 +86,16 @@ const budgetService = {
             });
             
             // Update cache
-            categoriesCache = response;
-            cacheTimestamp = Date.now();
+            categoriesCache.set(cacheKey, response);
+            cacheTimestamp.set(cacheKey, Date.now());
             
             return response;
         } catch (error) {
             console.error('Failed to fetch categories from API:', error);
 
             // Return cached data if available, even if expired
-            if (categoriesCache) {
-                return categoriesCache;
+            if (categoriesCache.has(cacheKey)) {
+                return categoriesCache.get(cacheKey);
             }
 
             // Return default categories as fallback
@@ -105,10 +113,12 @@ const budgetService = {
         }
     },
 
-    // Clear categories cache when user changes professional path
+ // Clear categories cache when user changes professional path
     clearCategoriesCache: () => {
-        categoriesCache = null;
-        cacheTimestamp = null;
+        categoriesCache.clear();
+        cacheTimestamp.clear();
+        entriesCache = null;
+        entriesCacheTimestamp = null;
     },
 
     exportBudgetData: async (format = 'csv', dateRange) => {

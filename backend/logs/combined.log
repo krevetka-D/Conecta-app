@@ -456,3 +456,5 @@
 {"level":"info","message":"GET /api/checklist?_t=1753042177125 - 430ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 22:09:37"}
 {"level":"info","message":"GET /api/events?_t=1753042177122&upcoming=true&limit=5 - 567ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 22:09:37"}
 {"level":"info","message":"GET /api/forums?_t=1753042185243 - 231ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 22:09:45"}
+{"level":"info","message":"GET /api/users/me?_t=1753047244119 - 282ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 23:34:04"}
+{"level":"info","message":"GET /api/users/me?_t=1753048503624 - 324ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 23:55:04"}

@@ -1,7 +1,7 @@
 // frontend/src/App.js
 import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
-import { LogBox, Platform } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { LogBox, Platform, View, Text } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -25,7 +25,6 @@ LogBox.ignoreLogs([
     'Non-serializable values were found in the navigation state',
     'VirtualizedLists should never be nested',
     'Invariant Violation: "main" has not been registered',
-    // ActivityIndicator warning is now fixed by our patch
 ]);
 
 // Keep splash screen visible while loading
@@ -55,7 +54,7 @@ export default function App() {
         prepare();
     }, []);
 
-    const onLayoutRootView = React.useCallback(async () => {
+    const onLayoutRootView = useCallback(async () => {
         if (appIsReady) {
             await SplashScreen.hideAsync();
         }
