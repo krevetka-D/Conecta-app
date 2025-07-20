@@ -1,6 +1,6 @@
 // frontend/src/utils/globalPatches.js
 import React from 'react';
-import { ActivityIndicator, Text, TextInput } from 'react-native';
+import { ActivityIndicator, Text, TextInput, Platform } from 'react-native';
 
 /**
  * Global patches for React Native components to fix common issues
@@ -11,6 +11,9 @@ import { ActivityIndicator, Text, TextInput } from 'react-native';
 const OriginalActivityIndicator = ActivityIndicator;
 const OriginalText = Text;
 const OriginalTextInput = TextInput;
+
+// Track if patches have been applied
+let patchesApplied = false;
 
 // === PATCH 1: ActivityIndicator Size Fix ===
 export const PatchedActivityIndicator = React.forwardRef((props, ref) => {
@@ -60,9 +63,12 @@ export const PatchedText = React.forwardRef((props, ref) => {
     if (typeof children === 'number') {
         safeChildren = String(children);
     } else if (Array.isArray(children)) {
-        safeChildren = children.map(child => 
-            typeof child === 'number' ? String(child) : child
-        );
+        safeChildren = React.Children.map(children, child => {
+            if (typeof child === 'number') {
+                return String(child);
+            }
+            return child;
+        });
     }
     
     return <OriginalText ref={ref} {...restProps}>{safeChildren}</OriginalText>;
@@ -104,20 +110,31 @@ for (const key in OriginalTextInput) {
 
 // === Apply All Patches ===
 export const applyGlobalPatches = () => {
+    if (patchesApplied) {
+        if (__DEV__) {
+            console.log('[Global Patches] Patches already applied, skipping...');
+        }
+        return;
+    }
+
     if (__DEV__) {
         console.log('[Global Patches] Applying React Native component patches...');
     }
     
     // Override the components globally
-    global.ActivityIndicator = PatchedActivityIndicator;
-    global.Text = PatchedText;
-    global.TextInput = PatchedTextInput;
-    
-    // Also patch the React Native exports
     const RN = require('react-native');
+    
+    // Patch ActivityIndicator
     RN.ActivityIndicator = PatchedActivityIndicator;
+    
+    // Patch Text
     RN.Text = PatchedText;
+    
+    // Patch TextInput
     RN.TextInput = PatchedTextInput;
+    
+    // Mark patches as applied
+    patchesApplied = true;
     
     if (__DEV__) {
         console.log('[Global Patches] ✓ ActivityIndicator patched');
@@ -125,6 +142,14 @@ export const applyGlobalPatches = () => {
         console.log('[Global Patches] ✓ TextInput patched');
         console.log('[Global Patches] All patches applied successfully');
     }
+};
+
+// === Legacy Support for patchActivityIndicator ===
+export const patchActivityIndicator = () => {
+    if (__DEV__) {
+        console.log('[Global Patches] patchActivityIndicator called - redirecting to applyGlobalPatches');
+    }
+    applyGlobalPatches();
 };
 
 // === Utility Functions ===
@@ -162,6 +187,23 @@ export const safeNumberToString = (value, decimals = 2) => {
     return String(value || '');
 };
 
+/**
+ * Format currency values safely
+ */
+export const safeFormatCurrency = (amount, currency = 'EUR') => {
+    const safeAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
+    try {
+        return new Intl.NumberFormat('es-ES', {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(safeAmount);
+    } catch (error) {
+        return `€${safeAmount.toFixed(2)}`;
+    }
+};
+
 // === Error Boundary for Patched Components ===
 export class PatchedComponentErrorBoundary extends React.Component {
     constructor(props) {
@@ -182,14 +224,44 @@ export class PatchedComponentErrorBoundary extends React.Component {
 
     render() {
         if (this.state.hasError) {
+            const FallbackText = OriginalText || Text;
             return (
-                <Text style={{ color: 'red', padding: 20, textAlign: 'center' }}>
+                <FallbackText style={{ 
+                    color: 'red', 
+                    padding: 20, 
+                    textAlign: 'center',
+                    backgroundColor: '#fee',
+                    margin: 10,
+                    borderRadius: 5
+                }}>
                     Component Error: {this.state.error?.message || 'Unknown error'}
-                </Text>
+                </FallbackText>
             );
         }
         return this.props.children;
     }
+}
+
+// === Platform-specific patches ===
+if (Platform.OS === 'web') {
+    // Web-specific patches can go here
+    if (__DEV__) {
+        console.log('[Global Patches] Running on web platform');
+    }
+}
+
+// === Performance monitoring ===
+if (__DEV__) {
+    const originalRender = React.Component.prototype.render;
+    let renderCount = 0;
+    
+    React.Component.prototype.render = function() {
+        renderCount++;
+        if (renderCount % 100 === 0) {
+            console.log(`[Performance] Total renders: ${renderCount}`);
+        }
+        return originalRender.call(this);
+    };
 }
 
 // Export patched components for direct use
@@ -197,4 +269,17 @@ export {
     PatchedActivityIndicator as ActivityIndicator,
     PatchedText as Text,
     PatchedTextInput as TextInput,
+};
+
+// Default export for convenience
+export default {
+    applyGlobalPatches,
+    patchActivityIndicator,
+    ActivityIndicator: PatchedActivityIndicator,
+    Text: PatchedText,
+    TextInput: PatchedTextInput,
+    validateActivityIndicatorSize,
+    safeNumberToString,
+    safeFormatCurrency,
+    PatchedComponentErrorBoundary,
 };

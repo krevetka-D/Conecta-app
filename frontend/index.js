@@ -2,25 +2,7 @@
 import { registerRootComponent } from 'expo';
 import { Platform } from 'react-native';
 
-// For testing - switch between different app versions
-const APP_VERSION = 'full'; // Options: 'minimal', 'gradual', 'full', 'navigators'
-
-let App;
-switch (APP_VERSION) {
-    case 'minimal':
-        App = require('./src/AppMinimal').default;
-        break;
-    case 'gradual':
-        App = require('./src/AppGradual').default;
-        break;
-    case 'navigators':
-        App = require('./src/AppTestNavigators').default;
-        break;
-    case 'full':
-    default:
-        App = require('./src/App').default;
-        break;
-}
+import App from './src/App';
 
 // Register the app
 registerRootComponent(App);

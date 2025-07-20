@@ -1,4 +1,4 @@
-// frontend/App.js
+// frontend/src/App.js
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
 import { LogBox, Platform } from 'react-native';
@@ -7,26 +7,25 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as PaperProvider } from 'react-native-paper';
 
-// Apply ActivityIndicator fix before any other imports
-import { patchActivityIndicator } from './src/components/common/SafeActivityIndicator';
-patchActivityIndicator();
+// Apply global patches before any other imports
+import { applyGlobalPatches } from './utils/globalPatches';
+applyGlobalPatches();
 
-import RootNavigator from './src/navigation/RootNavigator';
-import { AuthProvider } from './src/store/contexts/AuthContext';
-import { ThemeProvider } from './src/store/contexts/ThemeContext';
-import { AppProvider } from './src/store/contexts/AppContext';
-import { initializeApiClient } from './src/services/api/client';
-import ErrorBoundary from './src/components/common/ErrorBoundary';
-import { theme } from './src/constants/theme';
-import { loadFonts } from './src/utils/fontLoader';
+import RootNavigator from './navigation/RootNavigator';
+import { AuthProvider } from './store/contexts/AuthContext';
+import { ThemeProvider } from './store/contexts/ThemeContext';
+import { AppProvider } from './store/contexts/AppContext';
+import { initializeApiClient } from './services/api/client';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import { theme } from './constants/theme';
+import { loadFonts } from './utils/fontLoader';
 
 // Ignore specific warnings
 LogBox.ignoreLogs([
     'Non-serializable values were found in the navigation state',
     'VirtualizedLists should never be nested',
     'Invariant Violation: "main" has not been registered',
-    // Add the ActivityIndicator warning to ignore list as we've fixed it
-    'Invariant Violation: ActivityIndicator does not support'
+    // ActivityIndicator warning is now fixed by our patch
 ]);
 
 // Keep splash screen visible while loading
