@@ -335,3 +335,13 @@
 {"level":"info","message":"GET /api/budget?_t=1753016201241 - 258ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 14:56:41"}
 {"level":"info","message":"GET /api/checklist?_t=1753016202450 - 131ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 14:56:42"}
 {"level":"info","message":"GET /api/events/687c3778b68238a7f6787121?_t=1753016215727 - 140ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 14:56:55"}
+{"level":"info","message":"GET /api/users/me?_t=1753016985021 - 115ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:09:45"}
+{"level":"info","message":"GET /api/users/me?_t=1753016985014 - 143ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:09:45"}
+{"level":"info","message":"GET /api/budget/summary?_t=1753016985308&period=month - 110ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:09:45"}
+{"level":"info","message":"GET /api/events?_t=1753016985306&upcoming=true&limit=5 - 532ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:09:45"}
+{"level":"info","message":"GET /api/checklist?_t=1753016985309 - 547ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:09:45"}
+{"level":"info","message":"GET /api/users/me?_t=1753017111270 - 403ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:11:51"}
+{"level":"info","message":"GET /api/users/me?_t=1753017111265 - 451ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:11:51"}
+{"level":"info","message":"GET /api/checklist?_t=1753017111840 - 122ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:11:51"}
+{"level":"info","message":"GET /api/budget/summary?_t=1753017111839&period=month - 127ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:11:51"}
+{"level":"info","message":"GET /api/events?_t=1753017111838&upcoming=true&limit=5 - 526ms - Status: 200","service":"conecta-alicante","timestamp":"2025-07-20 15:11:52"}

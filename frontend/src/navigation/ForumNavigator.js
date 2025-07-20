@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import ForumsScreen from '../screens/forums/ForumScreen';
+import ForumScreen from '../screens/forums/ForumScreen';
 import ForumDetailScreen from '../screens/forums/ForumDetailScreen';
 import ThreadDetailScreen from '../screens/forums/ThreadDetailScreen';
 import { SCREEN_NAMES } from '../constants/routes';
@@ -24,7 +23,7 @@ const ForumNavigator = () => {
         >
             <Stack.Screen 
                 name="ForumsList" 
-                component={ForumsScreen}
+                component={ForumScreen}  // This is the correct component name
                 options={{ headerShown: false }}
             />
             <Stack.Screen 
