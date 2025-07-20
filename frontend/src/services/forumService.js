@@ -1,6 +1,6 @@
-
 import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
+import mockChatService from './mockChatService';
 
 // Cache for forums to reduce API calls
 let forumsCache = null;
@@ -30,6 +30,12 @@ const forumService = {
             if (forumsCache) {
                 console.warn('Returning stale cache due to error');
                 return forumsCache;
+            }
+            
+            // In development, return mock data if API fails
+            if (__DEV__) {
+                console.log('Using mock forums due to API error');
+                return mockChatService.getRooms();
             }
             
             // Return empty array as fallback

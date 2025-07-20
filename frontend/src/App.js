@@ -3,9 +3,7 @@ import 'react-native-gesture-handler';
 import React, { useEffect, useCallback } from 'react';
 import { LogBox, Platform, View, Text } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Provider as PaperProvider } from 'react-native-paper';
 
 // Apply global patches before any other imports
 import { applyGlobalPatches } from './utils/globalPatches';
@@ -17,7 +15,6 @@ import { ThemeProvider } from './store/contexts/ThemeContext';
 import { AppProvider } from './store/contexts/AppContext';
 import { initializeApiClient } from './services/api/client';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import { theme } from './constants/theme';
 import { loadFonts } from './utils/fontLoader';
 
 // Ignore specific warnings
@@ -70,11 +67,7 @@ export default function App() {
                 <AppProvider>
                     <ThemeProvider>
                         <AuthProvider>
-                            <PaperProvider theme={theme}>
-                                <NavigationContainer>
-                                    <RootNavigator />
-                                </NavigationContainer>
-                            </PaperProvider>
+                            <RootNavigator />
                         </AuthProvider>
                     </ThemeProvider>
                 </AppProvider>

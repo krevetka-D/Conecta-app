@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -9,9 +10,12 @@ import {
     Platform,
     SafeAreaView,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
+import { Avatar, Badge } from 'react-native-paper';
+import Icon from '../../components/common/Icon.js';
 import { format } from 'date-fns';
-import Icon from '../../components/common/Icon';
+
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import socketService from '../../services/socketService';
@@ -21,7 +25,7 @@ import { chatRoomStyles } from '../../styles/screens/chat/ChatRoomStyles';
 
 const ChatRoomScreen = ({ route, navigation }) => {
     const theme = useTheme();
-    const styles = useMemo(() => chatRoomStyles(theme), [theme]);
+    const styles = chatRoomStyles(theme);
     const { user } = useAuth();
     const { roomId, roomTitle } = route.params;
 
@@ -30,11 +34,14 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [typingUsers, setTypingUsers] = useState([]);
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [connectionError, setConnectionError] = useState(false);
     
     const flatListRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
     useEffect(() => {
+        // Set navigation header
         navigation.setOptions({
             title: roomTitle,
             headerRight: () => (
@@ -47,10 +54,14 @@ const ChatRoomScreen = ({ route, navigation }) => {
             ),
         });
 
+        // Connect to socket and join room
         initializeChat();
 
         return () => {
-            socketService.leaveRoom(roomId);
+            // Leave room and cleanup
+            if (socketService.isConnected()) {
+                socketService.leaveRoom(roomId);
+            }
             cleanupSocketListeners();
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
@@ -60,21 +71,43 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
     const initializeChat = async () => {
         try {
+            setConnectionError(false);
+            
+            // Connect socket if not connected
             if (!socketService.isConnected()) {
-                await socketService.connect(user._id);
+                console.log('Attempting to connect socket...');
+                try {
+                    await socketService.connect(user._id);
+                    console.log('Socket connected successfully');
+                } catch (error) {
+                    console.error('Socket connection failed:', error);
+                    setConnectionError(true);
+                    // Continue anyway to load messages from API
+                }
             }
 
-            socketService.joinRoom(roomId);
+            // Join the room if connected
+            if (socketService.isConnected()) {
+                socketService.joinRoom(roomId);
+                // Setup socket listeners
+                setupSocketListeners();
+            }
 
-            const initialMessages = await chatService.getRoomMessages(roomId);
-            setMessages(initialMessages);
+            // Load initial messages from API (works even without socket)
+            try {
+                const initialMessages = await chatService.getRoomMessages(roomId);
+                setMessages(initialMessages || []);
+            } catch (error) {
+                console.error('Failed to load messages:', error);
+                showErrorAlert('Error', 'Failed to load messages');
+            }
 
-            setupSocketListeners();
             setLoading(false);
         } catch (error) {
             console.error('Failed to initialize chat:', error);
-            showErrorAlert('Error', 'Failed to load chat');
+            showErrorAlert('Error', 'Failed to connect to chat');
             setLoading(false);
+            setConnectionError(true);
         }
     };
 

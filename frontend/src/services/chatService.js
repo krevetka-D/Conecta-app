@@ -1,4 +1,9 @@
+
 import apiClient from './api/client';
+import mockChatService from './mockChatService';
+
+// Flag to use mock service in development when backend is unavailable
+const USE_MOCK = __DEV__ && false; // Set to true to use mock service
 
 // Cache for chat data
 const chatCache = {
@@ -13,6 +18,11 @@ const CACHE_DURATION = 60000; // 1 minute
 const chatService = {
     // Get chat rooms with caching
     getChatRooms: async (forceRefresh = false) => {
+        // Use mock service if enabled
+        if (USE_MOCK) {
+            return mockChatService.getRooms();
+        }
+
         const now = Date.now();
         
         if (!forceRefresh && 
@@ -23,7 +33,7 @@ const chatService = {
         }
 
         try {
-            const response = await apiClient.get('/chat/rooms');
+            const response = await apiClient.get('/forums');
             chatCache.rooms = response;
             chatCache.roomsTimestamp = now;
             return response;
@@ -33,12 +43,22 @@ const chatService = {
             if (chatCache.rooms) {
                 return chatCache.rooms;
             }
+            // Return mock data in development if API fails
+            if (__DEV__) {
+                console.log('Using mock chat rooms due to API error');
+                return mockChatService.getRooms();
+            }
             throw error;
         }
     },
 
     // Get room messages with caching and pagination
     getRoomMessages: async (roomId, options = {}) => {
+        // Use mock service if enabled
+        if (USE_MOCK) {
+            return mockChatService.getRoomMessages(roomId);
+        }
+
         const { forceRefresh = false, limit = 50, before = null } = options;
         const now = Date.now();
         const cacheKey = `${roomId}_${limit}_${before || 'latest'}`;
@@ -70,9 +90,15 @@ const chatService = {
             if (chatCache.messages.has(cacheKey)) {
                 return chatCache.messages.get(cacheKey);
             }
-            throw error;
+            // Return mock data in development if API fails
+            if (__DEV__) {
+                console.log('Using mock messages due to API error');
+                return mockChatService.getRoomMessages(roomId);
+            }
+            return [];
         }
     },
+
 
     // Search messages with debouncing handled by the component
     searchMessages: async (query, roomId = null) => {

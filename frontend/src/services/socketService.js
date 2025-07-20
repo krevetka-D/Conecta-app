@@ -11,25 +11,43 @@ class SocketService {
         this.reconnectDelay = 1000;
         this.messageQueue = [];
         this.isConnecting = false;
+        this.isInitialized = false;
     }
 
     async connect(userId) {
-        if (this.socket?.connected || this.isConnecting) return;
+        if (this.socket?.connected || this.isConnecting) {
+            console.log('Socket already connected or connecting');
+            return Promise.resolve();
+        }
 
         this.isConnecting = true;
 
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const socketUrl = API_BASE_URL.replace('/api', '');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            // Determine socket URL based on environment
+            let socketUrl;
+            if (__DEV__) {
+                // In development, use the same host as API but without /api
+                socketUrl = API_BASE_URL.replace('/api', '');
+                console.log('Connecting to socket at:', socketUrl);
+            } else {
+                // In production
+                socketUrl = 'wss://api.conectaalicante.com';
+            }
 
             this.socket = io(socketUrl, {
                 auth: { token },
-                transports: ['websocket'],
+                transports: ['websocket', 'polling'], // Add polling as fallback
                 reconnection: true,
                 reconnectionAttempts: this.maxReconnectAttempts,
                 reconnectionDelay: this.reconnectDelay,
                 reconnectionDelayMax: 5000,
                 timeout: 20000,
+                autoConnect: true,
             });
 
             this.setupEventHandlers(userId);
