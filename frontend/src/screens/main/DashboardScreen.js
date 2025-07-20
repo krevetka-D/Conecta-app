@@ -19,6 +19,7 @@ import eventService from '../../services/eventService';
 import budgetService from '../../services/budgetService';
 import checklistService from '../../services/checklistService';
 import { formatCurrency } from '../../utils/formatting';
+import { SCREEN_NAMES } from '../../constants/routes';
 
 // Create styles inline to avoid style function issues
 const createStyles = (theme) => {
@@ -341,7 +342,7 @@ const DashboardScreen = ({ navigation }) => {
         return (
             <TouchableOpacity 
                 style={styles.eventCard} 
-                onPress={() => navigation.navigate('Events', { 
+                onPress={() => navigation.navigate(SCREEN_NAMES.EVENTS, { 
                     screen: 'EventDetail', 
                     params: { eventId: item._id }
                 })}
@@ -401,7 +402,7 @@ const DashboardScreen = ({ navigation }) => {
                 </View>
                 <TouchableOpacity 
                     style={styles.profileButton}
-                    onPress={() => navigation.navigate('Profile')}
+                    onPress={() => navigation.navigate(SCREEN_NAMES.PROFILE)}
                 >
                     <Icon name="account-circle" size={40} color={theme?.colors?.primary || '#1E3A8A'} />
                 </TouchableOpacity>
@@ -411,7 +412,7 @@ const DashboardScreen = ({ navigation }) => {
             <View style={styles.statsContainer}>
                 <Card style={styles.statCard}>
                     <TouchableOpacity 
-                        onPress={() => navigation.navigate('Budget')}
+                        onPress={() => navigation.navigate(SCREEN_NAMES.BUDGET)}
                         style={styles.statContent}
                     >
                         <Icon name="wallet" size={32} color={theme?.colors?.primary || '#1E3A8A'} />
@@ -424,7 +425,7 @@ const DashboardScreen = ({ navigation }) => {
 
                 <Card style={styles.statCard}>
                     <TouchableOpacity 
-                        onPress={() => navigation.navigate('Checklist')}
+                        onPress={() => navigation.navigate(SCREEN_NAMES.CHECKLIST)}
                         style={styles.statContent}
                     >
                         <Icon name="clipboard-check" size={32} color={theme?.colors?.success || '#10B981'} />
@@ -441,7 +442,7 @@ const DashboardScreen = ({ navigation }) => {
                         <Text style={styles.sectionTitle}>Upcoming Events</Text>
                         <TouchableOpacity 
                             style={styles.viewAllButton}
-                            onPress={() => navigation.navigate('Events')}
+                            onPress={() => navigation.navigate(SCREEN_NAMES.EVENTS)}
                         >
                             <Text style={styles.viewAllText}>View All</Text>
                             <Icon name="chevron-right" size={20} color={theme?.colors?.primary || '#1E3A8A'} />
@@ -463,7 +464,7 @@ const DashboardScreen = ({ navigation }) => {
                             <Text style={styles.emptyStateText}>No upcoming events</Text>
                             <TouchableOpacity 
                                 style={styles.emptyStateButton}
-                                onPress={() => navigation.navigate('Events', { 
+                                onPress={() => navigation.navigate(SCREEN_NAMES.EVENTS, { 
                                     screen: 'CreateEvent' 
                                 })}
                             >
@@ -481,7 +482,7 @@ const DashboardScreen = ({ navigation }) => {
                     <View style={styles.quickActions}>
                         <TouchableOpacity 
                             style={styles.quickActionButton}
-                            onPress={() => navigation.navigate('Budget')}
+                            onPress={() => navigation.navigate(SCREEN_NAMES.BUDGET)}
                         >
                             <Icon name="plus-circle" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
                             <Text style={styles.quickActionText}>Add Entry</Text>
@@ -489,7 +490,7 @@ const DashboardScreen = ({ navigation }) => {
                         
                         <TouchableOpacity 
                             style={styles.quickActionButton}
-                            onPress={() => navigation.navigate('Forums')}
+                            onPress={() => navigation.navigate(SCREEN_NAMES.FORUMS)}
                         >
                             <Icon name="forum" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
                             <Text style={styles.quickActionText}>Forums</Text>
@@ -497,7 +498,7 @@ const DashboardScreen = ({ navigation }) => {
                         
                         <TouchableOpacity 
                             style={styles.quickActionButton}
-                            onPress={() => navigation.navigate('Resources')}
+                            onPress={() => navigation.navigate(SCREEN_NAMES.RESOURCES)}
                         >
                             <Icon name="book-open-variant" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
                             <Text style={styles.quickActionText}>Guides</Text>
@@ -505,7 +506,7 @@ const DashboardScreen = ({ navigation }) => {
                         
                         <TouchableOpacity 
                             style={styles.quickActionButton}
-                            onPress={() => navigation.navigate('Events', { 
+                            onPress={() => navigation.navigate(SCREEN_NAMES.EVENTS, { 
                                 screen: 'CreateEvent' 
                             })}
                         >
@@ -524,7 +525,7 @@ const DashboardScreen = ({ navigation }) => {
                             <Text style={styles.sectionTitle}>This Month</Text>
                             <TouchableOpacity 
                                 style={styles.viewAllButton}
-                                onPress={() => navigation.navigate('Budget')}
+                                onPress={() => navigation.navigate(SCREEN_NAMES.BUDGET)}
                             >
                                 <Text style={styles.viewAllText}>Details</Text>
                                 <Icon name="chevron-right" size={20} color={theme?.colors?.primary || '#1E3A8A'} />

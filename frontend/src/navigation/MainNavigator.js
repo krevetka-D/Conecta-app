@@ -186,6 +186,18 @@ const MainNavigator = () => {
             >
                 {(props) => <SafeScreen component={ProfileScreen} screenName="Profile" {...props} />}
             </Tab.Screen>
+             <Tab.Screen
+                name={SCREEN_NAMES.FORUMS}
+                options={{ title: 'Forums' }}
+            >
+                {(props) => <SafeScreen component={ForumNavigator} screenName="Forums" {...props} />}
+            </Tab.Screen>
+            <Tab.Screen
+                name={SCREEN_NAMES.EVENTS}
+                options={{ title: 'Events' }}
+            >
+                {(props) => <SafeScreen component={EventNavigator} screenName="Events" {...props} />}
+            </Tab.Screen>
         </Tab.Navigator>
     );
 };
