@@ -3,7 +3,7 @@ import { registerRootComponent } from 'expo';
 import { Platform } from 'react-native';
 
 // For testing - switch between different app versions
-const APP_VERSION = 'navigators'; // Options: 'minimal', 'gradual', 'full'
+const APP_VERSION = 'full'; // Options: 'minimal', 'gradual', 'full', 'navigators'
 
 let App;
 switch (APP_VERSION) {
@@ -13,12 +13,11 @@ switch (APP_VERSION) {
     case 'gradual':
         App = require('./src/AppGradual').default;
         break;
+    case 'navigators':
+        App = require('./src/AppTestNavigators').default;
+        break;
     case 'full':
     default:
-      case 'navigators':
-    App = require('./src/AppTestNavigators').default;
-    break;
-
         App = require('./src/App').default;
         break;
 }

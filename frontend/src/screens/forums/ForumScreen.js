@@ -304,119 +304,153 @@ const ForumScreen = ({ navigation }) => {
     );
 };
 
-// styles component
-const createStyles = (theme) => StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    listContent: {
-        padding: theme.spacing.m,
-    },
-    header: {
-        marginBottom: theme.spacing.l,
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-        marginBottom: theme.spacing.xs,
-    },
-    headerSubtitle: {
-        fontSize: 16,
-        color: theme.colors.textSecondary,
-        textAlign: 'center',
-    },
-    categoryHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: theme.spacing.m,
-        marginTop: theme.spacing.m,
-    },
-    categoryTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginLeft: theme.spacing.s,
-        color: theme.colors.primary,
-    },
-    
-    forumCard: {
-        marginBottom: theme.spacing.m,
-        backgroundColor: theme.colors.card,
-        borderRadius: theme.roundness,
-    },
-    forumHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    forumInfo: {
-        flex: 1,
-    },
-    forumTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-    },
-    forumDescription: {
-        fontSize: 14,
-        color: theme.colors.textSecondary,
-        marginTop: theme.spacing.xs,
-    },
-    forumMeta: {
-        flexDirection: 'row',
-        marginTop: theme.spacing.m,
-    },
-    metaItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: theme.spacing.l,
-    },
-    metaText: {
-        marginLeft: theme.spacing.xs,
-        fontSize: 12,
-        color: theme.colors.textSecondary,
-    },
-    fab: {
-        position: 'absolute',
-        margin: 16,
-        right: 0,
-        bottom: 0,
-        backgroundColor: theme.colors.primary,
-    },
-    modal: {
-        backgroundColor: theme.colors.background,
-        padding: theme.spacing.l,
-        margin: theme.spacing.l,
-        borderRadius: theme.roundness,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: theme.spacing.l,
-        textAlign: 'center',
-    },
-    input: {
-        marginBottom: theme.spacing.m,
-    },
-    errorText: {
-        color: theme.colors.error,
-        marginBottom: theme.spacing.m,
-        marginTop: -theme.spacing.s,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginTop: theme.spacing.m,
-    },
-    modalButton: {
-        marginLeft: theme.spacing.m,
-    },
-});
 
-export default React.memo(ForumScreen);
+
+// Fixed styles component
+const createStyles = (theme) => {
+    // Ensure theme is defined with default values
+    const safeTheme = {
+        colors: {
+            background: '#F3F4F6',
+            surface: '#FFFFFF',
+            text: '#111827',
+            textSecondary: '#6B7280',
+            textTertiary: '#9CA3AF',
+            primary: '#1E3A8A',
+            card: '#FFFFFF',
+            backdrop: '#E5E7EB',
+            error: '#EF4444',
+            onPrimary: '#FFFFFF',
+            ...theme?.colors
+        },
+        spacing: {
+            xs: 4,
+            s: 8,
+            m: 16,
+            l: 20,
+            xl: 30,
+            ...theme?.spacing
+        },
+        roundness: theme?.roundness || 8,
+        fonts: {
+            regular: 'System',
+            medium: 'System',
+            bold: 'System',
+            ...theme?.fonts
+        }
+    };
+
+    return StyleSheet.create({
+        safeArea: {
+            flex: 1,
+            backgroundColor: safeTheme.colors.background,
+        },
+        container: {
+            flex: 1,
+            backgroundColor: safeTheme.colors.background,
+        },
+        listContent: {
+            padding: safeTheme.spacing.m,
+        },
+        header: {
+            marginBottom: safeTheme.spacing.l,
+            alignItems: 'center',
+        },
+        headerTitle: {
+            fontSize: 28,
+            fontWeight: 'bold',
+            color: safeTheme.colors.text,
+            marginBottom: safeTheme.spacing.xs,
+        },
+        headerSubtitle: {
+            fontSize: 16,
+            color: safeTheme.colors.textSecondary,
+            textAlign: 'center',
+        },
+        categoryHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: safeTheme.spacing.m,
+            marginTop: safeTheme.spacing.m,
+        },
+        categoryTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            marginLeft: safeTheme.spacing.s,
+            color: safeTheme.colors.primary,
+        },
+        
+        forumCard: {
+            marginBottom: safeTheme.spacing.m,
+            backgroundColor: safeTheme.colors.card,
+            borderRadius: safeTheme.roundness,
+        },
+        forumHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        },
+        forumInfo: {
+            flex: 1,
+        },
+        forumTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: safeTheme.colors.text,
+        },
+        forumDescription: {
+            fontSize: 14,
+            color: safeTheme.colors.textSecondary,
+            marginTop: safeTheme.spacing.xs,
+        },
+        forumMeta: {
+            flexDirection: 'row',
+            marginTop: safeTheme.spacing.m,
+        },
+        metaItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginRight: safeTheme.spacing.l,
+        },
+        metaText: {
+            marginLeft: safeTheme.spacing.xs,
+            fontSize: 12,
+            color: safeTheme.colors.textSecondary,
+        },
+        fab: {
+            position: 'absolute',
+            margin: 16,
+            right: 0,
+            bottom: 0,
+            backgroundColor: safeTheme.colors.primary,
+        },
+        modal: {
+            backgroundColor: safeTheme.colors.background,
+            padding: safeTheme.spacing.l,
+            margin: safeTheme.spacing.l,
+            borderRadius: safeTheme.roundness,
+        },
+        modalTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            marginBottom: safeTheme.spacing.l,
+            textAlign: 'center',
+        },
+        input: {
+            marginBottom: safeTheme.spacing.m,
+        },
+        errorText: {
+            color: safeTheme.colors.error,
+            marginBottom: safeTheme.spacing.m,
+            marginTop: -safeTheme.spacing.s,
+        },
+        modalButtons: {
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            marginTop: safeTheme.spacing.m,
+        },
+        modalButton: {
+            marginLeft: safeTheme.spacing.m,
+        },
+    });
+};

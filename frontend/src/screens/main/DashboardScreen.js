@@ -6,25 +6,281 @@ import {
     RefreshControl, 
     TouchableOpacity,
     FlatList,
-    ActivityIndicator 
+    ActivityIndicator,
+    StyleSheet
 } from 'react-native';
 import { Card } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
-import { format } from 'date-fns';
 
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
 import eventService from '../../services/eventService';
 import budgetService from '../../services/budgetService';
 import checklistService from '../../services/checklistService';
 import { formatCurrency } from '../../utils/formatting';
-import { enhancedDashboardStyles } from '../../styles/screens/main/EnhancedDashboardStyles';
+
+// Create styles inline to avoid style function issues
+const createStyles = (theme) => {
+    const safeTheme = {
+        colors: {
+            background: '#F3F4F6',
+            surface: '#FFFFFF',
+            text: '#111827',
+            textSecondary: '#6B7280',
+            primary: '#1E3A8A',
+            success: '#10B981',
+            error: '#EF4444',
+            ...theme?.colors
+        },
+        spacing: {
+            xs: 4,
+            s: 8,
+            m: 16,
+            l: 20,
+            xl: 30,
+            ...theme?.spacing
+        },
+        fonts: {
+            regular: 'System',
+            medium: 'System',
+            bold: 'System',
+            ...theme?.fonts
+        }
+    };
+
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: safeTheme.colors.background,
+        },
+        scrollView: {
+            padding: safeTheme.spacing.m,
+        },
+        welcomeSection: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 10,
+        },
+        welcomeText: {
+            fontSize: 16,
+            color: safeTheme.colors.textSecondary,
+        },
+        userName: {
+            fontSize: 28,
+            fontWeight: 'bold',
+            color: safeTheme.colors.text,
+            marginTop: 4,
+        },
+        profileButton: {
+            position: 'relative',
+        },
+        statsContainer: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            paddingHorizontal: 15,
+            paddingVertical: 10,
+            justifyContent: 'space-between',
+        },
+        statCard: {
+            width: '48%',
+            marginBottom: 15,
+            elevation: 2,
+            backgroundColor: safeTheme.colors.surface,
+            borderRadius: 12,
+        },
+        statContent: {
+            alignItems: 'center',
+            paddingVertical: 20,
+        },
+        statNumber: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: safeTheme.colors.text,
+            marginTop: 8,
+        },
+        statLabel: {
+            fontSize: 12,
+            color: safeTheme.colors.textSecondary,
+            marginTop: 4,
+            textAlign: 'center',
+        },
+        sectionCard: {
+            margin: 15,
+            marginTop: 10,
+            elevation: 3,
+            backgroundColor: safeTheme.colors.surface,
+            borderRadius: 12,
+        },
+        sectionHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 15,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: safeTheme.colors.text,
+        },
+        viewAllButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        viewAllText: {
+            fontSize: 14,
+            color: safeTheme.colors.primary,
+            marginRight: 4,
+        },
+        eventsList: {
+            paddingVertical: 10,
+        },
+        eventCard: {
+            backgroundColor: safeTheme.colors.background,
+            borderRadius: 12,
+            padding: 15,
+            marginRight: 12,
+            width: 280,
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: safeTheme.colors.border || '#E5E7EB',
+        },
+        eventDateBadge: {
+            backgroundColor: safeTheme.colors.primary,
+            borderRadius: 8,
+            padding: 10,
+            alignItems: 'center',
+            marginRight: 15,
+            minWidth: 50,
+        },
+        eventDateDay: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: '#FFFFFF',
+        },
+        eventDateMonth: {
+            fontSize: 12,
+            color: '#FFFFFF',
+            textTransform: 'uppercase',
+        },
+        eventInfo: {
+            flex: 1,
+        },
+        eventTitle: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: safeTheme.colors.text,
+            marginBottom: 6,
+        },
+        eventMeta: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 4,
+        },
+        eventTime: {
+            fontSize: 13,
+            color: safeTheme.colors.textSecondary,
+            marginLeft: 4,
+        },
+        eventLocation: {
+            fontSize: 13,
+            color: safeTheme.colors.textSecondary,
+            marginLeft: 4,
+            flex: 1,
+        },
+        eventAttendees: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: 4,
+        },
+        eventAttendeesText: {
+            fontSize: 12,
+            color: safeTheme.colors.textSecondary,
+            marginLeft: 4,
+        },
+        quickActions: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            marginTop: 15,
+            marginHorizontal: -5,
+        },
+        quickActionButton: {
+            width: '25%',
+            paddingVertical: 15,
+            alignItems: 'center',
+        },
+        quickActionText: {
+            fontSize: 12,
+            color: safeTheme.colors.textSecondary,
+            marginTop: 8,
+            textAlign: 'center',
+        },
+        emptyState: {
+            paddingVertical: 30,
+            alignItems: 'center',
+        },
+        emptyStateText: {
+            fontSize: 14,
+            color: safeTheme.colors.textSecondary,
+            marginTop: 10,
+        },
+        emptyStateButton: {
+            marginTop: 15,
+            paddingHorizontal: 20,
+            paddingVertical: 8,
+            backgroundColor: safeTheme.colors.primary,
+            borderRadius: 20,
+        },
+        emptyStateButtonText: {
+            fontSize: 14,
+            color: '#FFFFFF',
+        },
+        budgetSummary: {
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            paddingVertical: 10,
+        },
+        budgetItem: {
+            alignItems: 'center',
+        },
+        budgetLabel: {
+            fontSize: 14,
+            color: safeTheme.colors.textSecondary,
+            marginBottom: 4,
+        },
+        budgetAmount: {
+            fontSize: 18,
+            fontWeight: 'bold',
+        },
+        budgetDivider: {
+            width: 1,
+            backgroundColor: safeTheme.colors.border || '#E5E7EB',
+            marginHorizontal: 20,
+        },
+    });
+};
+
+// Simple date formatting function to replace date-fns
+const formatEventDate = (dateString) => {
+    try {
+        const date = new Date(dateString);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return {
+            day: date.getDate(),
+            month: months[date.getMonth()]
+        };
+    } catch (error) {
+        return { day: '?', month: '???' };
+    }
+};
 
 const DashboardScreen = ({ navigation }) => {
     const theme = useTheme();
-    const styles = enhancedDashboardStyles(theme);
+    const styles = React.useMemo(() => createStyles(theme), [theme]);
     const { user } = useAuth();
     
     const [loading, setLoading] = useState(true);
@@ -39,11 +295,15 @@ const DashboardScreen = ({ navigation }) => {
     const loadDashboardData = useCallback(async () => {
         try {
             // Load all dashboard data in parallel
-            const [eventsData, budgetData, checklistData] = await Promise.all([
-                eventService.getUpcomingEvents(5).catch(() => []),
+            const [eventsResponse, budgetData, checklistData] = await Promise.all([
+                eventService.getUpcomingEvents(5).catch(() => ({ events: [] })),
                 budgetService.getBudgetSummary('month').catch(() => null),
                 checklistService.getChecklist().catch(() => [])
             ]);
+
+            // Handle the events response structure
+            const events = Array.isArray(eventsResponse) ? eventsResponse : 
+                          (eventsResponse?.events || []);
 
             // Calculate checklist progress
             const checklistProgress = checklistData.length > 0 
@@ -51,10 +311,10 @@ const DashboardScreen = ({ navigation }) => {
                 : 0;
 
             setDashboardData({
-                upcomingEvents: eventsData || [],
+                upcomingEvents: events,
                 budgetSummary: budgetData,
                 checklistProgress,
-                recentForumActivity: [] // Placeholder for forum activity
+                recentForumActivity: []
             });
         } catch (error) {
             console.error("Failed to load dashboard data", error);
@@ -74,7 +334,9 @@ const DashboardScreen = ({ navigation }) => {
     }, [loadDashboardData]);
 
     const renderEventCard = ({ item }) => {
-        const eventDate = new Date(item.date);
+        if (!item) return null;
+        
+        const { day, month } = formatEventDate(item.date);
         
         return (
             <TouchableOpacity 
@@ -86,22 +348,22 @@ const DashboardScreen = ({ navigation }) => {
                 activeOpacity={0.7}
             >
                 <View style={styles.eventDateBadge}>
-                    <Text style={styles.eventDateDay}>{format(eventDate, 'dd')}</Text>
-                    <Text style={styles.eventDateMonth}>{format(eventDate, 'MMM')}</Text>
+                    <Text style={styles.eventDateDay}>{day}</Text>
+                    <Text style={styles.eventDateMonth}>{month}</Text>
                 </View>
                 <View style={styles.eventInfo}>
-                    <Text style={styles.eventTitle} numberOfLines={1}>{item.title}</Text>
+                    <Text style={styles.eventTitle} numberOfLines={1}>{item.title || 'Untitled Event'}</Text>
                     <View style={styles.eventMeta}>
-                        <Icon name="clock-outline" size={14} color={theme.colors.textSecondary} />
-                        <Text style={styles.eventTime}>{item.time}</Text>
+                        <Icon name="clock-outline" size={14} color={theme?.colors?.textSecondary || '#6B7280'} />
+                        <Text style={styles.eventTime}>{item.time || 'TBD'}</Text>
                     </View>
                     <View style={styles.eventMeta}>
-                        <Icon name="map-marker-outline" size={14} color={theme.colors.textSecondary} />
-                        <Text style={styles.eventLocation} numberOfLines={1}>{item.location?.name}</Text>
+                        <Icon name="map-marker-outline" size={14} color={theme?.colors?.textSecondary || '#6B7280'} />
+                        <Text style={styles.eventLocation} numberOfLines={1}>{item.location?.name || 'Location TBD'}</Text>
                     </View>
                     {item.attendees && (
                         <View style={styles.eventAttendees}>
-                            <Icon name="account-group-outline" size={14} color={theme.colors.textSecondary} />
+                            <Icon name="account-group-outline" size={14} color={theme?.colors?.textSecondary || '#6B7280'} />
                             <Text style={styles.eventAttendeesText}>
                                 {item.attendees.length} attending
                             </Text>
@@ -126,7 +388,7 @@ const DashboardScreen = ({ navigation }) => {
                 <RefreshControl 
                     refreshing={refreshing} 
                     onRefresh={onRefresh} 
-                    tintColor={theme.colors.primary} 
+                    tintColor={theme?.colors?.primary || '#1E3A8A'} 
                 />
             }
             showsVerticalScrollIndicator={false}
@@ -141,7 +403,7 @@ const DashboardScreen = ({ navigation }) => {
                     style={styles.profileButton}
                     onPress={() => navigation.navigate('Profile')}
                 >
-                    <Icon name="account-circle" size={40} color={theme.colors.primary} />
+                    <Icon name="account-circle" size={40} color={theme?.colors?.primary || '#1E3A8A'} />
                 </TouchableOpacity>
             </View>
 
@@ -152,9 +414,9 @@ const DashboardScreen = ({ navigation }) => {
                         onPress={() => navigation.navigate('Budget')}
                         style={styles.statContent}
                     >
-                        <Icon name="wallet" size={32} color={theme.colors.primary} />
+                        <Icon name="wallet" size={32} color={theme?.colors?.primary || '#1E3A8A'} />
                         <Text style={styles.statNumber}>
-                            {budgetSummary ? formatCurrency(budgetSummary.balance) : '€0'}
+                            {budgetSummary ? formatCurrency(budgetSummary.balance || 0) : '€0'}
                         </Text>
                         <Text style={styles.statLabel}>Monthly Balance</Text>
                     </TouchableOpacity>
@@ -165,7 +427,7 @@ const DashboardScreen = ({ navigation }) => {
                         onPress={() => navigation.navigate('Checklist')}
                         style={styles.statContent}
                     >
-                        <Icon name="clipboard-check" size={32} color={theme.colors.success} />
+                        <Icon name="clipboard-check" size={32} color={theme?.colors?.success || '#10B981'} />
                         <Text style={styles.statNumber}>{checklistProgress}%</Text>
                         <Text style={styles.statLabel}>Tasks Complete</Text>
                     </TouchableOpacity>
@@ -182,22 +444,22 @@ const DashboardScreen = ({ navigation }) => {
                             onPress={() => navigation.navigate('Events')}
                         >
                             <Text style={styles.viewAllText}>View All</Text>
-                            <Icon name="chevron-right" size={20} color={theme.colors.primary} />
+                            <Icon name="chevron-right" size={20} color={theme?.colors?.primary || '#1E3A8A'} />
                         </TouchableOpacity>
                     </View>
 
-                    {upcomingEvents.length > 0 ? (
+                    {upcomingEvents && upcomingEvents.length > 0 ? (
                         <FlatList
                             data={upcomingEvents}
                             renderItem={renderEventCard}
-                            keyExtractor={(item) => item._id}
+                            keyExtractor={(item) => item?._id || String(Math.random())}
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.eventsList}
                         />
                     ) : (
                         <View style={styles.emptyState}>
-                            <Icon name="calendar-blank-outline" size={48} color={theme.colors.textSecondary} />
+                            <Icon name="calendar-blank-outline" size={48} color={theme?.colors?.textSecondary || '#6B7280'} />
                             <Text style={styles.emptyStateText}>No upcoming events</Text>
                             <TouchableOpacity 
                                 style={styles.emptyStateButton}
@@ -221,7 +483,7 @@ const DashboardScreen = ({ navigation }) => {
                             style={styles.quickActionButton}
                             onPress={() => navigation.navigate('Budget')}
                         >
-                            <Icon name="plus-circle" size={48} color={theme.colors.primary} />
+                            <Icon name="plus-circle" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
                             <Text style={styles.quickActionText}>Add Entry</Text>
                         </TouchableOpacity>
                         
@@ -229,7 +491,7 @@ const DashboardScreen = ({ navigation }) => {
                             style={styles.quickActionButton}
                             onPress={() => navigation.navigate('Forums')}
                         >
-                            <Icon name="forum" size={48} color={theme.colors.primary} />
+                            <Icon name="forum" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
                             <Text style={styles.quickActionText}>Forums</Text>
                         </TouchableOpacity>
                         
@@ -237,7 +499,7 @@ const DashboardScreen = ({ navigation }) => {
                             style={styles.quickActionButton}
                             onPress={() => navigation.navigate('Resources')}
                         >
-                            <Icon name="book-open-variant" size={48} color={theme.colors.primary} />
+                            <Icon name="book-open-variant" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
                             <Text style={styles.quickActionText}>Guides</Text>
                         </TouchableOpacity>
                         
@@ -247,7 +509,7 @@ const DashboardScreen = ({ navigation }) => {
                                 screen: 'CreateEvent' 
                             })}
                         >
-                            <Icon name="calendar-plus" size={48} color={theme.colors.primary} />
+                            <Icon name="calendar-plus" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
                             <Text style={styles.quickActionText}>New Event</Text>
                         </TouchableOpacity>
                     </View>
@@ -265,21 +527,21 @@ const DashboardScreen = ({ navigation }) => {
                                 onPress={() => navigation.navigate('Budget')}
                             >
                                 <Text style={styles.viewAllText}>Details</Text>
-                                <Icon name="chevron-right" size={20} color={theme.colors.primary} />
+                                <Icon name="chevron-right" size={20} color={theme?.colors?.primary || '#1E3A8A'} />
                             </TouchableOpacity>
                         </View>
                         
                         <View style={styles.budgetSummary}>
                             <View style={styles.budgetItem}>
                                 <Text style={styles.budgetLabel}>Income</Text>
-                                <Text style={[styles.budgetAmount, { color: theme.colors.success }]}>
+                                <Text style={[styles.budgetAmount, { color: theme?.colors?.success || '#10B981' }]}>
                                     {formatCurrency(budgetSummary.income?.total || 0)}
                                 </Text>
                             </View>
                             <View style={styles.budgetDivider} />
                             <View style={styles.budgetItem}>
                                 <Text style={styles.budgetLabel}>Expenses</Text>
-                                <Text style={[styles.budgetAmount, { color: theme.colors.error }]}>
+                                <Text style={[styles.budgetAmount, { color: theme?.colors?.error || '#EF4444' }]}>
                                     {formatCurrency(budgetSummary.expenses?.total || 0)}
                                 </Text>
                             </View>
