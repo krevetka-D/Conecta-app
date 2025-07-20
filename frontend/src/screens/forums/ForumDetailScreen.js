@@ -1,302 +1,332 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     Text,
     FlatList,
+    TextInput,
     TouchableOpacity,
-    RefreshControl,
+    KeyboardAvoidingView,
+    Platform,
     SafeAreaView,
+    ActivityIndicator,
 } from 'react-native';
-import { Card, FAB, Portal, Modal, TextInput, Button, Menu, Divider } from 'react-native-paper';
+import { Avatar, Badge } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
+import { format } from 'date-fns';
 
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
-import forumService from '../../services/forumService';
-import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
-import { formatDate } from '../../utils/formatting';
-import { forumDetailStyles } from '../../styles/screens/forums/ForumDetailScreenStyles';
+import socketService from '../../services/socketService';
+import chatService from '../../services/chatService';
+import { showErrorAlert } from '../../utils/alerts';
+import { chatRoomStyles } from '../../styles/screens/chat/ChatRoomStyles';
 
-const ForumDetailScreen = ({ route, navigation }) => {
+const ChatRoomScreen = ({ route, navigation }) => {
     const theme = useTheme();
-    const styles = forumDetailStyles(theme);
+    const styles = chatRoomStyles(theme);
     const { user } = useAuth();
-    const { forumId, forumTitle } = route.params;
+    const { roomId, roomTitle } = route.params;
 
-    const [forum, setForum] = useState(null);
-    const [threads, setThreads] = useState([]);
+    const [messages, setMessages] = useState([]);
+    const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [menuVisible, setMenuVisible] = useState({});
-    const [formData, setFormData] = useState({
-        title: '',
-        content: '',
-    });
-    const [formErrors, setFormErrors] = useState({});
+    const [sending, setSending] = useState(false);
+    const [typingUsers, setTypingUsers] = useState([]);
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    
+    const flatListRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
 
     useEffect(() => {
-        loadForumDetail();
-    }, [forumId]);
-
-    const loadForumDetail = useCallback(async () => {
-        try {
-            const data = await forumService.getForumDetail(forumId);
-            setForum(data);
-            setThreads(data.threads || []);
-        } catch (error) {
-            console.error('Failed to load forum details:', error);
-            if (!refreshing) {
-                showErrorAlert('Error', 'Failed to load forum details');
-            }
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [forumId, refreshing]);
-
-    const handleRefresh = useCallback(() => {
-        setRefreshing(true);
-        loadForumDetail();
-    }, [loadForumDetail]);
-
-    const validateForm = () => {
-        const errors = {};
-        if (!formData.title.trim()) errors.title = 'Title is required';
-        if (!formData.content.trim()) errors.content = 'Content is required';
-        setFormErrors(errors);
-        return Object.keys(errors).length === 0;
-    };
-
-    const handleCreateThread = async () => {
-        if (!validateForm()) return;
-
-        try {
-            await forumService.createThread(forumId, formData.title, formData.content);
-            showSuccessAlert('Success', 'Thread created successfully!');
-            setModalVisible(false);
-            resetForm();
-            loadForumDetail();
-        } catch (error) {
-            console.error('Failed to create thread:', error);
-            showErrorAlert('Error', error.message || 'Failed to create thread');
-        }
-    };
-
-    const resetForm = () => {
-        setFormData({ title: '', content: '' });
-        setFormErrors({});
-    };
-
-    const handleThreadPress = (thread) => {
-        navigation.navigate('ThreadDetail', { 
-            threadId: thread._id, 
-            threadTitle: thread.title 
+        // Set navigation header
+        navigation.setOptions({
+            title: roomTitle,
+            headerRight: () => (
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('ChatInfo', { roomId, roomTitle })}
+                    style={{ marginRight: 15 }}
+                >
+                    <Icon name="information-outline" size={24} color={theme.colors.primary} />
+                </TouchableOpacity>
+            ),
         });
-    };
-    
-    const handleDeleteThread = async (threadId, threadTitle) => {
-        showConfirmAlert(
-            'Delete Thread',
-            `Are you sure you want to delete "${threadTitle}"? This action cannot be undone.`,
-            async () => {
-                try {
-                    await forumService.deleteThread(threadId);
-                    showSuccessAlert('Success', 'Thread deleted successfully');
-                    loadForumDetail();
-                } catch (error) {
-                    showErrorAlert('Error', 'Failed to delete thread');
-                }
+
+        // Connect to socket and join room
+        initializeChat();
+
+        return () => {
+            // Leave room and cleanup
+            socketService.leaveRoom(roomId);
+            cleanupSocketListeners();
+        };
+    }, [roomId]);
+
+    const initializeChat = async () => {
+        try {
+            // Connect socket if not connected
+            if (!socketService.isConnected()) {
+                await socketService.connect(user._id);
             }
-        );
+
+            // Join the room
+            socketService.joinRoom(roomId);
+
+            // Load initial messages
+            const initialMessages = await chatService.getRoomMessages(roomId);
+            setMessages(initialMessages);
+
+            // Setup socket listeners
+            setupSocketListeners();
+
+            setLoading(false);
+        } catch (error) {
+            console.error('Failed to initialize chat:', error);
+            showErrorAlert('Error', 'Failed to load chat');
+            setLoading(false);
+        }
     };
 
-    const toggleMenu = (threadId) => {
-        setMenuVisible(prev => ({
-            ...prev,
-            [threadId]: !prev[threadId]
-        }));
+    const setupSocketListeners = () => {
+        // Listen for new messages
+        socketService.on('newMessage', handleNewMessage);
+        socketService.on('messageDeleted', handleMessageDeleted);
+        socketService.on('messageReaction', handleMessageReaction);
+        socketService.on('userTyping', handleUserTyping);
+        socketService.on('roomUsers', setOnlineUsers);
+        socketService.on('userJoinedRoom', handleUserJoined);
+        socketService.on('userLeftRoom', handleUserLeft);
+        socketService.on('roomMessages', handleRoomMessages);
     };
 
-    const renderThreadItem = ({ item }) => {
-        const isMyThread = item.author?._id === user?._id;
+    const cleanupSocketListeners = () => {
+        socketService.off('newMessage', handleNewMessage);
+        socketService.off('messageDeleted', handleMessageDeleted);
+        socketService.off('messageReaction', handleMessageReaction);
+        socketService.off('userTyping', handleUserTyping);
+        socketService.off('roomUsers', setOnlineUsers);
+        socketService.off('userJoinedRoom', handleUserJoined);
+        socketService.off('userLeftRoom', handleUserLeft);
+        socketService.off('roomMessages', handleRoomMessages);
+    };
+
+    const handleNewMessage = useCallback((message) => {
+        setMessages(prev => [...prev, message]);
+        // Scroll to bottom
+        setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+    }, []);
+
+    const handleMessageDeleted = useCallback(({ messageId }) => {
+        setMessages(prev => prev.map(msg => 
+            msg._id === messageId ? { ...msg, deleted: true } : msg
+        ));
+    }, []);
+
+    const handleMessageReaction = useCallback(({ messageId, reactions }) => {
+        setMessages(prev => prev.map(msg => 
+            msg._id === messageId ? { ...msg, reactions } : msg
+        ));
+    }, []);
+
+    const handleUserTyping = useCallback(({ userId, isTyping }) => {
+        setTypingUsers(prev => {
+            if (isTyping) {
+                return [...prev.filter(id => id !== userId), userId];
+            } else {
+                return prev.filter(id => id !== userId);
+            }
+        });
+    }, []);
+
+    const handleRoomMessages = useCallback((messages) => {
+        setMessages(messages);
+    }, []);
+
+    const handleUserJoined = useCallback(({ userId }) => {
+        // Could show a system message
+        console.log('User joined:', userId);
+    }, []);
+
+    const handleUserLeft = useCallback(({ userId }) => {
+        // Could show a system message
+        console.log('User left:', userId);
+    }, []);
+
+    const sendMessage = async () => {
+        if (!inputText.trim() || sending) return;
+
+        const messageText = inputText.trim();
+        setInputText('');
+        setSending(true);
+
+        try {
+            socketService.sendMessage({
+                roomId,
+                content: messageText,
+                type: 'text'
+            });
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            showErrorAlert('Error', 'Failed to send message');
+            setInputText(messageText); // Restore input on error
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleTyping = (text) => {
+        setInputText(text);
+
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Emit typing event
+        if (text.trim()) {
+            socketService.typing(roomId, true);
+
+            // Stop typing after 3 seconds
+            typingTimeoutRef.current = setTimeout(() => {
+                socketService.typing(roomId, false);
+            }, 3000);
+        } else {
+            socketService.typing(roomId, false);
+        }
+    };
+
+    const renderMessage = ({ item, index }) => {
+        const isOwnMessage = item.sender._id === user._id;
+        const showAvatar = index === 0 || messages[index - 1]?.sender._id !== item.sender._id;
+
+        if (item.deleted) {
+            return (
+                <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
+                    <Text style={styles.deletedMessage}>Message deleted</Text>
+                </View>
+            );
+        }
 
         return (
-            <TouchableOpacity onPress={() => handleThreadPress(item)} activeOpacity={0.7}>
-                <Card style={styles.threadCard}>
-                    <Card.Content>
-                        <View style={styles.threadHeader}>
-                            <View style={styles.threadInfo}>
-                                <Text style={styles.threadTitle}>{item.title}</Text>
-                                <View style={styles.threadMeta}>
-                                    <View style={styles.metaItem}>
-                                        <Icon name="account" size={14} color={theme.colors.textSecondary} />
-                                        <Text style={styles.metaText}>
-                                            {item.author?.name || 'Unknown'}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.metaItem}>
-                                        <Icon name="clock-outline" size={14} color={theme.colors.textSecondary} />
-                                        <Text style={styles.metaText}>
-                                            {formatDate(item.createdAt)}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </View>
-                            {isMyThread ? (
-                                <Menu
-                                    visible={menuVisible[item._id]}
-                                    onDismiss={() => toggleMenu(item._id)}
-                                    anchor={
-                                        <TouchableOpacity
-                                            onPress={() => toggleMenu(item._id)}
-                                            style={{ padding: 8 }}
-                                        >
-                                            <Icon name="dots-vertical" size={24} color={theme.colors.textSecondary} />
-                                        </TouchableOpacity>
-                                    }
-                                >
-                                    <Menu.Item
-                                        onPress={() => {
-                                            toggleMenu(item._id);
-                                            handleDeleteThread(item._id, item.title);
-                                        }}
-                                        title="Delete Thread"
-                                        leadingIcon="delete"
-                                        titleStyle={{ color: theme.colors.error }}
-                                    />
-                                </Menu>
-                            ) : (
-                                <Icon name="chevron-right" size={24} color={theme.colors.textSecondary} />
-                            )}
+            <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
+                {showAvatar && !isOwnMessage && (
+                    <Avatar.Text
+                        size={32}
+                        label={item.sender.name.charAt(0)}
+                        style={styles.avatar}
+                    />
+                )}
+                
+                <View style={[styles.messageBubble, isOwnMessage && styles.ownMessageBubble]}>
+                    {!isOwnMessage && showAvatar && (
+                        <Text style={styles.senderName}>{item.sender.name}</Text>
+                    )}
+                    
+                    {item.replyTo && (
+                        <View style={styles.replyContainer}>
+                            <Text style={styles.replyText}>
+                                {item.replyTo.sender.name}: {item.replyTo.content}
+                            </Text>
                         </View>
-                        {isMyThread && (
-                            <View style={styles.myThreadBadge}>
-                                <Text style={styles.myThreadText}>Your thread</Text>
-                            </View>
+                    )}
+                    
+                    <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
+                        {item.content}
+                    </Text>
+                    
+                    <View style={styles.messageFooter}>
+                        <Text style={[styles.messageTime, isOwnMessage && styles.ownMessageTime]}>
+                            {format(new Date(item.createdAt), 'HH:mm')}
+                        </Text>
+                        {isOwnMessage && item.readBy?.length > 1 && (
+                            <Icon name="check-all" size={16} color={theme.colors.primary} />
                         )}
-                    </Card.Content>
-                </Card>
-            </TouchableOpacity>
+                    </View>
+
+                    {item.reactions?.length > 0 && (
+                        <View style={styles.reactionsContainer}>
+                            {item.reactions.map((reaction, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.reaction}
+                                    onPress={() => socketService.addReaction(item._id, reaction.emoji)}
+                                >
+                                    <Text>{reaction.emoji}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                </View>
+            </View>
         );
     };
 
-    if (loading && !refreshing) {
-        return <LoadingSpinner fullScreen text="Loading forum..." />;
+    const renderTypingIndicator = () => {
+        if (typingUsers.length === 0) return null;
+
+        return (
+            <View style={styles.typingContainer}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <Text style={styles.typingText}>
+                    {typingUsers.length === 1 ? 'Someone is typing...' : 'Multiple people are typing...'}
+                </Text>
+            </View>
+        );
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+        );
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                {forum && (
-                    <View style={styles.forumHeader}>
-                        <Text style={styles.forumTitle}>{forum.title}</Text>
-                        <Text style={styles.forumDescription}>{forum.description}</Text>
-                    </View>
-                )}
-
+        <SafeAreaView style={styles.container}>
+            <KeyboardAvoidingView 
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
                 <FlatList
-                    data={threads}
-                    renderItem={renderThreadItem}
+                    ref={flatListRef}
+                    data={messages}
+                    renderItem={renderMessage}
                     keyExtractor={(item) => item._id}
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={handleRefresh}
-                            tintColor={theme.colors.primary}
-                        />
-                    }
+                    contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        <EmptyState
-                            icon="forum-outline"
-                            title="No threads yet"
-                            message="Be the first to start a discussion!"
-                            action={
-                                <Button
-                                    mode="contained"
-                                    onPress={() => setModalVisible(true)}
-                                    icon="plus"
-                                >
-                                    Create Thread
-                                </Button>
-                            }
-                        />
-                    }
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
                 />
 
-                <FAB
-                    icon="plus"
-                    style={styles.fab}
-                    onPress={() => setModalVisible(true)}
-                    color={theme.colors.onPrimary}
-                />
+                {renderTypingIndicator()}
 
-                <Portal>
-                    <Modal
-                        visible={modalVisible}
-                        onDismiss={() => {
-                            setModalVisible(false);
-                            resetForm();
-                        }}
-                        contentContainerStyle={styles.modal}
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        value={inputText}
+                        onChangeText={handleTyping}
+                        placeholder="Type a message..."
+                        multiline
+                        maxLength={1000}
+                    />
+                    
+                    <TouchableOpacity
+                        onPress={sendMessage}
+                        disabled={!inputText.trim() || sending}
+                        style={[styles.sendButton, (!inputText.trim() || sending) && styles.sendButtonDisabled]}
                     >
-                        <Text style={styles.modalTitle}>Create New Thread</Text>
-                        
-                        <TextInput
-                            label="Thread Title"
-                            value={formData.title}
-                            onChangeText={(text) => setFormData({ ...formData, title: text })}
-                            mode="outlined"
-                            style={styles.input}
-                            error={!!formErrors.title}
+                        <Icon 
+                            name="send" 
+                            size={24} 
+                            color={inputText.trim() && !sending ? theme.colors.primary : theme.colors.disabled} 
                         />
-                        {formErrors.title && (
-                            <Text style={styles.errorText}>{formErrors.title}</Text>
-                        )}
-                        
-                        <TextInput
-                            label="First Post"
-                            value={formData.content}
-                            onChangeText={(text) => setFormData({ ...formData, content: text })}
-                            mode="outlined"
-                            multiline
-                            numberOfLines={4}
-                            style={styles.input}
-                            error={!!formErrors.content}
-                        />
-                        {formErrors.content && (
-                            <Text style={styles.errorText}>{formErrors.content}</Text>
-                        )}
-                        
-                        <View style={styles.modalButtons}>
-                            <Button
-                                mode="outlined"
-                                onPress={() => {
-                                    setModalVisible(false);
-                                    resetForm();
-                                }}
-                                style={styles.modalButton}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                mode="contained"
-                                onPress={handleCreateThread}
-                                style={styles.modalButton}
-                            >
-                                Create Thread
-                            </Button>
-                        </View>
-                    </Modal>
-                </Portal>
-            </View>
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
 
-export default React.memo(ForumDetailScreen);
+export default React.memo(ChatRoomScreen);

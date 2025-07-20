@@ -1,33 +1,81 @@
+//modifyed to use chat-rooms
 
 import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import Forum from '../models/Forum.js';
-import Thread from '../models/Thread.js';
-import Post from '../models/Post.js';
+import ChatMessage from '../models/ChatMessage.js';
 import { cacheMiddleware, clearCache } from '../middleware/cacheMiddleware.js';
 
+/**
+ * @desc    Get all chat rooms (forums)
+ * @route   GET /api/forums
+ * @access  Public
+ */
 const getForums = asyncHandler(async (req, res) => {
     try {
         const forums = await Forum.find({ isActive: true })
-            .select('title description user threads createdAt tags')
+            .select('title description user createdAt tags lastActivity')
             .populate({
                 path: 'user',
                 select: 'name email professionalPath',
                 options: { lean: true }
             })
-            .sort('-createdAt')
-            .lean(); // Remove the .cache('long') call - it doesn't exist
+            .sort('-lastActivity')
+            .lean();
+
+        // Get additional info for each forum (last message, unread count, online users)
+        const forumsWithInfo = await Promise.all(
+            forums.map(async (forum) => {
+                // Get last message
+                const lastMessage = await ChatMessage.findOne({ 
+                    roomId: forum._id,
+                    deleted: false 
+                })
+                .populate('sender', 'name')
+                .sort('-createdAt')
+                .lean();
+
+                // Get unread count for current user
+                let unreadCount = 0;
+                if (req.user) {
+                    unreadCount = await ChatMessage.countDocuments({
+                        roomId: forum._id,
+                        'readBy.user': { $ne: req.user._id },
+                        sender: { $ne: req.user._id }
+                    });
+                }
+
+                // Get message count
+                const messageCount = await ChatMessage.countDocuments({ 
+                    roomId: forum._id 
+                });
+
+                return {
+                    ...forum,
+                    lastMessage,
+                    unreadCount,
+                    messageCount,
+                    // Online count will be handled by Socket.IO
+                    onlineCount: 0
+                };
+            })
+        );
         
-        res.json(forums);
+        res.json(forumsWithInfo);
     } catch (error) {
         console.error('Error fetching forums:', error);
         res.status(500).json({ 
-            message: 'Failed to fetch forums',
+            message: 'Failed to fetch chat rooms',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
 
+/**
+ * @desc    Create a new chat room (forum)
+ * @route   POST /api/forums
+ * @access  Private
+ */
 const createForum = asyncHandler(async (req, res) => {
     const { title, description, tags } = req.body;
     
@@ -65,7 +113,7 @@ const createForum = asyncHandler(async (req, res) => {
         
         if (forumExists) {
             res.status(400);
-            throw new Error('A forum with this title already exists');
+            throw new Error('A chat room with this title already exists');
         }
 
         // Create forum with sanitized data
@@ -73,13 +121,21 @@ const createForum = asyncHandler(async (req, res) => {
             title: sanitizedTitle,
             description: sanitizedDescription,
             user: req.user._id,
-            threads: [],
-            tags: tags || []
+            tags: tags || [],
+            lastActivity: new Date()
         });
 
         // Populate user info before sending response
         const populatedForum = await Forum.findById(forum._id)
             .populate('user', 'name email professionalPath');
+
+        // Create welcome message
+        await ChatMessage.create({
+            roomId: forum._id,
+            sender: req.user._id,
+            content: `Welcome to ${sanitizedTitle}! This chat room was created for: ${sanitizedDescription}`,
+            type: 'system'
+        });
 
         // Clear cache when new forum is created
         clearCache('forums');
@@ -92,7 +148,7 @@ const createForum = asyncHandler(async (req, res) => {
         // Handle duplicate key error
         if (error.code === 11000) {
             res.status(400);
-            throw new Error('A forum with this title already exists');
+            throw new Error('A chat room with this title already exists');
         }
         
         // Handle validation errors
@@ -106,166 +162,79 @@ const createForum = asyncHandler(async (req, res) => {
     }
 });
 
+/**
+ * @desc    Get single chat room details
+ * @route   GET /api/forums/:id
+ * @access  Public
+ */
 const getForum = asyncHandler(async (req, res) => {
     try {
         const forum = await Forum.findById(req.params.id)
-            .populate({
-                path: 'threads',
-                populate: { 
-                    path: 'author', 
-                    select: 'name email professionalPath' 
-                },
-                options: { 
-                    sort: { createdAt: -1 },
-                    limit: 50 // Limit threads for performance
-                }
-            })
             .populate('user', 'name email professionalPath')
             .lean();
 
         if (!forum) {
             res.status(404);
-            throw new Error('Forum not found');
+            throw new Error('Chat room not found');
         }
 
-        res.json(forum);
+        // Get participant count
+        const participantCount = await ChatMessage.distinct('sender', { 
+            roomId: req.params.id 
+        }).countDocuments();
+
+        // Get message count
+        const messageCount = await ChatMessage.countDocuments({ 
+            roomId: req.params.id 
+        });
+
+        // Get last 50 messages for preview
+        const recentMessages = await ChatMessage.find({ 
+            roomId: req.params.id,
+            deleted: false
+        })
+        .populate('sender', 'name email')
+        .sort('-createdAt')
+        .limit(50)
+        .lean();
+
+        res.json({
+            ...forum,
+            participantCount,
+            messageCount,
+            recentMessages: recentMessages.reverse() // Chronological order
+        });
     } catch (error) {
         if (error.name === 'CastError') {
             res.status(404);
-            throw new Error('Forum not found');
+            throw new Error('Chat room not found');
         }
         throw error;
     }
 });
 
-const createThread = asyncHandler(async (req, res) => {
-    const { title, content } = req.body;
-    const forumId = req.params.id;
-
-    // Validation
-    if (!title || !content) {
-        res.status(400);
-        throw new Error('Title and content are required');
-    }
-
-    if (!req.user || !req.user._id) {
-        res.status(401);
-        throw new Error('User not authenticated');
-    }
-
-    try {
-        const forum = await Forum.findById(forumId);
-        if (!forum) {
-            res.status(404);
-            throw new Error('Forum not found');
-        }
-
-        // Create thread
-        const thread = await Thread.create({
-            title: title.trim(),
-            forum: forum._id,
-            author: req.user._id
-        });
-
-        // Create initial post
-        await Post.create({
-            content: content.trim(),
-            thread: thread._id,
-            author: req.user._id
-        });
-
-        // Add thread to forum - use $push for better performance
-        await Forum.findByIdAndUpdate(
-            forum._id,
-            { $push: { threads: thread._id } },
-            { new: true }
-        );
-
-        // Populate and return thread
-        const populatedThread = await Thread.findById(thread._id)
-            .populate('author', 'name email professionalPath')
-            .lean();
-
-        // Clear forum cache
-        clearCache(`forum_${forumId}`);
-
-        res.status(201).json(populatedThread);
-    } catch (error) {
-        throw error;
-    }
-});
-
-const createPost = asyncHandler(async (req, res) => {
-    const { content } = req.body;
-    const threadId = req.params.threadId;
-
-    // Validation
-    if (!content) {
-        res.status(400);
-        throw new Error('Content is required');
-    }
-
-    if (!req.user || !req.user._id) {
-        res.status(401);
-        throw new Error('User not authenticated');
-    }
-
-    try {
-        const thread = await Thread.findById(threadId);
-        if (!thread) {
-            res.status(404);
-            throw new Error('Thread not found');
-        }
-
-        const post = await Post.create({
-            content: content.trim(),
-            thread: thread._id,
-            author: req.user._id
-        });
-
-        const populatedPost = await Post.findById(post._id)
-            .populate('author', 'name email professionalPath')
-            .lean();
-
-        // Clear thread cache
-        clearCache(`thread_${threadId}`);
-
-        res.status(201).json(populatedPost);
-    } catch (error) {
-        if (error.name === 'CastError') {
-            res.status(404);
-            throw new Error('Thread not found');
-        }
-        throw error;
-    }
-});
-
+/**
+ * @desc    Delete a chat room and all its messages
+ * @route   DELETE /api/forums/:id
+ * @access  Private (creator only)
+ */
 const deleteForum = asyncHandler(async (req, res) => {
     try {
         const forum = await Forum.findById(req.params.id);
 
         if (!forum) {
             res.status(404);
-            throw new Error('Forum not found');
+            throw new Error('Chat room not found');
         }
 
         // Check if user is the creator
         if (forum.user.toString() !== req.user._id.toString()) {
             res.status(403);
-            throw new Error('Only the forum creator can delete this forum');
+            throw new Error('Only the chat room creator can delete this room');
         }
 
-        // Use bulk operations for better performance
-        const threads = await Thread.find({ forum: req.params.id }).select('_id');
-        const threadIds = threads.map(t => t._id);
-
-        if (threadIds.length > 0) {
-            // Delete all posts in threads of this forum
-            await Post.deleteMany({ thread: { $in: threadIds } });
-            
-            // Delete all threads in this forum
-            await Thread.deleteMany({ _id: { $in: threadIds } });
-        }
+        // Delete all messages in this chat room
+        await ChatMessage.deleteMany({ roomId: req.params.id });
 
         // Delete the forum
         await Forum.findByIdAndDelete(req.params.id);
@@ -275,100 +244,130 @@ const deleteForum = asyncHandler(async (req, res) => {
         clearCache(`forum_${req.params.id}`);
 
         res.status(200).json({ 
-            message: 'Forum and all associated content deleted successfully',
+            message: 'Chat room and all messages deleted successfully',
             id: req.params.id 
         });
     } catch (error) {
         if (error.name === 'CastError') {
             res.status(404);
-            throw new Error('Forum not found');
+            throw new Error('Chat room not found');
         }
         throw error;
     }
 });
 
-const deleteThread = asyncHandler(async (req, res) => {
-    try {
-        const thread = await Thread.findById(req.params.threadId);
+/**
+ * @desc    Search chat rooms
+ * @route   GET /api/forums/search
+ * @access  Public
+ */
+const searchForums = asyncHandler(async (req, res) => {
+    const { q, tags } = req.query;
 
-        if (!thread) {
-            res.status(404);
-            throw new Error('Thread not found');
-        }
-
-        // Check if user is the author
-        if (thread.author.toString() !== req.user._id.toString()) {
-            res.status(403);
-            throw new Error('Only the thread author can delete this thread');
-        }
-
-        // Delete all posts in this thread
-        await Post.deleteMany({ thread: req.params.threadId });
-
-        // Remove thread from forum's threads array
-        await Forum.findByIdAndUpdate(
-            thread.forum,
-            { $pull: { threads: req.params.threadId } }
-        );
-
-        // Delete the thread
-        await Thread.findByIdAndDelete(req.params.threadId);
-
-        // Clear caches
-        clearCache(`forum_${thread.forum}`);
-        clearCache(`thread_${req.params.threadId}`);
-
-        res.status(200).json({ 
-            message: 'Thread deleted successfully',
-            id: req.params.threadId 
-        });
-    } catch (error) {
-        if (error.name === 'CastError') {
-            res.status(404);
-            throw new Error('Thread not found');
-        }
-        throw error;
+    if (!q && !tags) {
+        return res.json([]);
     }
+
+    const searchQuery = { isActive: true };
+
+    if (q) {
+        searchQuery.$or = [
+            { title: { $regex: q, $options: 'i' } },
+            { description: { $regex: q, $options: 'i' } }
+        ];
+    }
+
+    if (tags) {
+        const tagArray = Array.isArray(tags) ? tags : tags.split(',');
+        searchQuery.tags = { $in: tagArray };
+    }
+
+    const forums = await Forum.find(searchQuery)
+        .populate('user', 'name')
+        .select('title description tags lastActivity')
+        .sort('-lastActivity')
+        .limit(20)
+        .lean();
+
+    res.json(forums);
 });
 
-const getThreads = asyncHandler(async (req, res) => {
-    const { forumId } = req.params;
-    const { page = 1, limit = 20 } = req.query;
-    
-    try {
-        const forum = await Forum.findById(forumId);
-        if (!forum) {
-            res.status(404);
-            throw new Error('Forum not found');
-        }
+/**
+ * @desc    Get user's chat rooms
+ * @route   GET /api/forums/my-rooms
+ * @access  Private
+ */
+const getMyForums = asyncHandler(async (req, res) => {
+    // Get rooms created by user
+    const createdRooms = await Forum.find({ 
+        user: req.user._id,
+        isActive: true 
+    })
+    .populate('user', 'name')
+    .sort('-lastActivity')
+    .lean();
 
-        const threads = await Thread.find({ forum: forumId })
-            .populate('author', 'name email professionalPath')
-            .sort('-createdAt')
-            .limit(limit * 1)
-            .skip((page - 1) * limit)
-            .lean();
+    // Get rooms where user has sent messages (participated)
+    const participatedRoomIds = await ChatMessage.distinct('roomId', {
+        sender: req.user._id
+    });
 
-        const count = await Thread.countDocuments({ forum: forumId });
+    const participatedRooms = await Forum.find({
+        _id: { $in: participatedRoomIds },
+        user: { $ne: req.user._id }, // Exclude rooms created by user
+        isActive: true
+    })
+    .populate('user', 'name')
+    .sort('-lastActivity')
+    .lean();
 
-        res.json({
-            threads,
-            totalPages: Math.ceil(count / limit),
-            currentPage: page,
-            totalThreads: count
-        });
-    } catch (error) {
-        throw error;
+    res.json({
+        created: createdRooms,
+        participated: participatedRooms
+    });
+});
+
+/**
+ * @desc    Update chat room details
+ * @route   PUT /api/forums/:id
+ * @access  Private (creator only)
+ */
+const updateForum = asyncHandler(async (req, res) => {
+    const { title, description, tags } = req.body;
+
+    const forum = await Forum.findById(req.params.id);
+
+    if (!forum) {
+        res.status(404);
+        throw new Error('Chat room not found');
     }
+
+    // Check if user is the creator
+    if (forum.user.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('Only the chat room creator can update this room');
+    }
+
+    // Update fields
+    if (title) forum.title = title.trim();
+    if (description) forum.description = description.trim();
+    if (tags !== undefined) forum.tags = tags;
+
+    const updatedForum = await forum.save();
+
+    // Clear cache
+    clearCache('forums');
+    clearCache(`forum_${req.params.id}`);
+
+    res.json(updatedForum);
 });
 
 export { 
     getForums, 
     createForum, 
     getForum, 
-    createThread, 
-    createPost,
     deleteForum,
-    deleteThread,
-    getThreads 
+    searchForums,
+    getMyForums,
+    updateForum
 };

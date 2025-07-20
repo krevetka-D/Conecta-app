@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
 import { Card, FAB, Portal, Modal, Button, Chip, TextInput } from 'react-native-paper';
-import { StyleSheet } from 'react-native';
 import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
@@ -9,9 +8,9 @@ import forumService from '../../services/forumService';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
-import { colors, fonts, spacing } from '../../constants/theme';
+import { forumsStyles as createStyles } from '../../styles/screens/forums/ForumScreenStyles';
 
-// Memoized Forum Item Component
+// Updated the renderItem to show last message and unread count
 const ForumItem = React.memo(({ item, onPress, styles }) => (
     <TouchableOpacity
         onPress={() => onPress(item)}
@@ -21,26 +20,37 @@ const ForumItem = React.memo(({ item, onPress, styles }) => (
             <Card.Content>
                 <View style={styles.forumHeader}>
                     <View style={styles.forumInfo}>
-                        <Text style={styles.forumTitle}>{item.title}</Text>
-                        <Text style={styles.forumDescription}>{item.description}</Text>
-                        {item.user && (
-                            <View style={styles.forumMeta}>
-                                <View style={styles.metaItem}>
-                                    <Icon name="account" size={14} color={colors.textSecondary} />
-                                    <Text style={styles.metaText}>
-                                        Created by {item.user.name || 'Unknown'}
-                                    </Text>
-                                </View>
-                                {item.threads && (
-                                    <View style={styles.metaItem}>
-                                        <Icon name="forum" size={14} color={colors.textSecondary} />
-                                        <Text style={styles.metaText}>
-                                            {item.threads.length} threads
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
+                        <View style={styles.titleRow}>
+                            <Text style={styles.forumTitle}>{item.title}</Text>
+                            {item.unreadCount > 0 && (
+                                <Badge style={styles.unreadBadge}>{item.unreadCount}</Badge>
+                            )}
+                        </View>
+                        
+                        {item.lastMessage ? (
+                            <Text style={styles.lastMessage} numberOfLines={1}>
+                                <Text style={styles.lastMessageSender}>
+                                    {item.lastMessage.sender.name}:
+                                </Text>
+                                {' '}{item.lastMessage.content}
+                            </Text>
+                        ) : (
+                            <Text style={styles.forumDescription}>{item.description}</Text>
                         )}
+                        
+                        <View style={styles.forumMeta}>
+                            {item.lastMessage && (
+                                <Text style={styles.lastMessageTime}>
+                                    {formatRelativeTime(item.lastMessage.createdAt)}
+                                </Text>
+                            )}
+                            <View style={styles.metaItem}>
+                                <Icon name="account-group" size={14} color={colors.textSecondary} />
+                                <Text style={styles.metaText}>
+                                    {item.onlineCount || 0} online
+                                </Text>
+                            </View>
+                        </View>
                     </View>
                     <Icon name="chevron-right" size={24} color={colors.textSecondary} />
                 </View>
@@ -48,6 +58,7 @@ const ForumItem = React.memo(({ item, onPress, styles }) => (
         </Card>
     </TouchableOpacity>
 ));
+
 
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
@@ -92,13 +103,13 @@ const ForumScreen = ({ navigation }) => {
         loadForums();
     }, [loadForums]);
 
-    // Optimize navigation handler
+    // changed to Navigate to chat room instead of forum detail
     const handleForumPress = useCallback((forum) => {
-        navigation.navigate('ForumDetail', {
-            forumId: forum._id,
-            forumTitle: forum.title
-        });
-    }, [navigation]);
+    navigation.navigate('ChatRoom', {
+        roomId: forum._id,
+        roomTitle: forum.title
+    });
+}, [navigation]);
 
     // Fixed: Direct state updates without side effects
     const handleTitleChange = useCallback((text) => {
@@ -160,15 +171,15 @@ const ForumScreen = ({ navigation }) => {
     // Optimize keyExtractor
     const keyExtractor = useCallback((item) => item._id, []);
 
-    // Optimize list header
+    // changed for transition from forums to real-time
     const ListHeaderComponent = useMemo(() => (
-        <View style={styles.header}>
-            <Text style={styles.headerTitle}>Community Forums</Text>
-            <Text style={styles.headerSubtitle}>
-                Connect, discuss, and share experiences
-            </Text>
-        </View>
-    ), [styles]);
+    <View style={styles.header}>
+        <Text style={styles.headerTitle}>Chat Rooms</Text>
+        <Text style={styles.headerSubtitle}>
+            Join conversations and connect in real-time
+        </Text>
+    </View>
+), [styles]);
 
     // Optimize empty component
     const ListEmptyComponent = useMemo(() => (
@@ -219,7 +230,7 @@ const ForumScreen = ({ navigation }) => {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={handleRefresh}
-                            tintColor={colors.primary}
+                            tintColor={theme.colors.primary}
                         />
                     }
                     showsVerticalScrollIndicator={false}
@@ -254,7 +265,7 @@ const ForumScreen = ({ navigation }) => {
                             style={styles.input}
                             error={!!formErrors.title}
                             disabled={submitting}
-                            theme={{ colors: { primary: colors.primary } }}
+                            theme={{ colors: { primary: theme.colors.primary } }}
                             maxLength={100}
                         />
                         {formErrors.title && (
@@ -271,7 +282,7 @@ const ForumScreen = ({ navigation }) => {
                             style={styles.input}
                             error={!!formErrors.description}
                             disabled={submitting}
-                            theme={{ colors: { primary: colors.primary } }}
+                            theme={{ colors: { primary: theme.colors.primary } }}
                             maxLength={500}
                         />
                         {formErrors.description && (
@@ -304,153 +315,4 @@ const ForumScreen = ({ navigation }) => {
     );
 };
 
-
-
-// Fixed styles component
-const createStyles = (theme) => {
-    // Ensure theme is defined with default values
-    const safeTheme = {
-        colors: {
-            background: '#F3F4F6',
-            surface: '#FFFFFF',
-            text: '#111827',
-            textSecondary: '#6B7280',
-            textTertiary: '#9CA3AF',
-            primary: '#1E3A8A',
-            card: '#FFFFFF',
-            backdrop: '#E5E7EB',
-            error: '#EF4444',
-            onPrimary: '#FFFFFF',
-            ...theme?.colors
-        },
-        spacing: {
-            xs: 4,
-            s: 8,
-            m: 16,
-            l: 20,
-            xl: 30,
-            ...theme?.spacing
-        },
-        roundness: theme?.roundness || 8,
-        fonts: {
-            regular: 'System',
-            medium: 'System',
-            bold: 'System',
-            ...theme?.fonts
-        }
-    };
-
-    return StyleSheet.create({
-        safeArea: {
-            flex: 1,
-            backgroundColor: safeTheme.colors.background,
-        },
-        container: {
-            flex: 1,
-            backgroundColor: safeTheme.colors.background,
-        },
-        listContent: {
-            padding: safeTheme.spacing.m,
-        },
-        header: {
-            marginBottom: safeTheme.spacing.l,
-            alignItems: 'center',
-        },
-        headerTitle: {
-            fontSize: 28,
-            fontWeight: 'bold',
-            color: safeTheme.colors.text,
-            marginBottom: safeTheme.spacing.xs,
-        },
-        headerSubtitle: {
-            fontSize: 16,
-            color: safeTheme.colors.textSecondary,
-            textAlign: 'center',
-        },
-        categoryHeader: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: safeTheme.spacing.m,
-            marginTop: safeTheme.spacing.m,
-        },
-        categoryTitle: {
-            fontSize: 20,
-            fontWeight: 'bold',
-            marginLeft: safeTheme.spacing.s,
-            color: safeTheme.colors.primary,
-        },
-        
-        forumCard: {
-            marginBottom: safeTheme.spacing.m,
-            backgroundColor: safeTheme.colors.card,
-            borderRadius: safeTheme.roundness,
-        },
-        forumHeader: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-        },
-        forumInfo: {
-            flex: 1,
-        },
-        forumTitle: {
-            fontSize: 18,
-            fontWeight: 'bold',
-            color: safeTheme.colors.text,
-        },
-        forumDescription: {
-            fontSize: 14,
-            color: safeTheme.colors.textSecondary,
-            marginTop: safeTheme.spacing.xs,
-        },
-        forumMeta: {
-            flexDirection: 'row',
-            marginTop: safeTheme.spacing.m,
-        },
-        metaItem: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginRight: safeTheme.spacing.l,
-        },
-        metaText: {
-            marginLeft: safeTheme.spacing.xs,
-            fontSize: 12,
-            color: safeTheme.colors.textSecondary,
-        },
-        fab: {
-            position: 'absolute',
-            margin: 16,
-            right: 0,
-            bottom: 0,
-            backgroundColor: safeTheme.colors.primary,
-        },
-        modal: {
-            backgroundColor: safeTheme.colors.background,
-            padding: safeTheme.spacing.l,
-            margin: safeTheme.spacing.l,
-            borderRadius: safeTheme.roundness,
-        },
-        modalTitle: {
-            fontSize: 20,
-            fontWeight: 'bold',
-            marginBottom: safeTheme.spacing.l,
-            textAlign: 'center',
-        },
-        input: {
-            marginBottom: safeTheme.spacing.m,
-        },
-        errorText: {
-            color: safeTheme.colors.error,
-            marginBottom: safeTheme.spacing.m,
-            marginTop: -safeTheme.spacing.s,
-        },
-        modalButtons: {
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            marginTop: safeTheme.spacing.m,
-        },
-        modalButton: {
-            marginLeft: safeTheme.spacing.m,
-        },
-    });
-};
+export default React.memo(ForumScreen);
