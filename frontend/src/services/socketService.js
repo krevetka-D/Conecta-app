@@ -1,6 +1,7 @@
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../config/network';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { USE_WEBSOCKET, devLog } from '../config/development';
 
 class SocketService {
     constructor() {
@@ -15,8 +16,14 @@ class SocketService {
     }
 
     async connect(userId) {
+        // Skip socket connection in development if disabled
+        if (!USE_WEBSOCKET) {
+            devLog('Socket', 'WebSocket disabled in development mode');
+            return Promise.resolve();
+        }
+
         if (this.socket?.connected || this.isConnecting) {
-            console.log('Socket already connected or connecting');
+            devLog('Socket', 'Socket already connected or connecting');
             return Promise.resolve();
         }
 
@@ -33,7 +40,7 @@ class SocketService {
             if (__DEV__) {
                 // In development, use the same host as API but without /api
                 socketUrl = API_BASE_URL.replace('/api', '');
-                console.log('Connecting to socket at:', socketUrl);
+                devLog('Socket', 'Connecting to socket at:', socketUrl);
             } else {
                 // In production
                 socketUrl = 'wss://api.conectaalicante.com';

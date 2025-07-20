@@ -17,8 +17,20 @@ const mockRooms = [
         _id: '2',
         title: 'Freelancer Tips',
         description: 'Share tips and experiences as a freelancer',
-        lastMessage: null,
+        lastMessage: {
+            content: 'Great tips on getting your NIE!',
+            sender: { name: 'Alex' },
+            createdAt: new Date(Date.now() - 1800000).toISOString()
+        },
         onlineCount: 3,
+        unreadCount: 2
+    },
+    {
+        _id: '3',
+        title: 'Entrepreneur Network',
+        description: 'Connect with other entrepreneurs in Alicante',
+        lastMessage: null,
+        onlineCount: 8,
         unreadCount: 0
     }
 ];
@@ -34,6 +46,64 @@ mockMessages.set('1', [
         },
         roomId: '1',
         createdAt: new Date(Date.now() - 3600000).toISOString(),
+        type: 'text'
+    },
+    {
+        _id: 'msg2',
+        content: 'Hey everyone! Just moved to Alicante from London. Any tips for a new freelancer?',
+        sender: {
+            _id: 'user1',
+            name: 'Sarah'
+        },
+        roomId: '1',
+        createdAt: new Date(Date.now() - 3000000).toISOString(),
+        type: 'text'
+    },
+    {
+        _id: 'msg3',
+        content: 'Welcome Sarah! First thing - get your NIE sorted. You\'ll need it for everything.',
+        sender: {
+            _id: 'user2',
+            name: 'Miguel'
+        },
+        roomId: '1',
+        createdAt: new Date(Date.now() - 2400000).toISOString(),
+        type: 'text'
+    },
+    {
+        _id: 'msg4',
+        content: 'Also, join the local coworking spaces. Great way to network!',
+        sender: {
+            _id: 'user3',
+            name: 'Emma'
+        },
+        roomId: '1',
+        createdAt: new Date(Date.now() - 1800000).toISOString(),
+        type: 'text'
+    }
+]);
+
+mockMessages.set('2', [
+    {
+        _id: 'msg10',
+        content: 'Has anyone here gone through the autonomo registration process recently?',
+        sender: {
+            _id: 'user4',
+            name: 'John'
+        },
+        roomId: '2',
+        createdAt: new Date(Date.now() - 7200000).toISOString(),
+        type: 'text'
+    },
+    {
+        _id: 'msg11',
+        content: 'Yes! Just did it last month. Happy to share my experience.',
+        sender: {
+            _id: 'user5',
+            name: 'Ana'
+        },
+        roomId: '2',
+        createdAt: new Date(Date.now() - 5400000).toISOString(),
         type: 'text'
     }
 ]);

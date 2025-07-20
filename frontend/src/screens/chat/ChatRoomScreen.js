@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
@@ -23,7 +22,7 @@ import chatService from '../../services/chatService';
 import { showErrorAlert } from '../../utils/alerts';
 import { chatRoomStyles } from '../../styles/screens/chat/ChatRoomStyles';
 
-const ChatRoomScreen = ({ route, navigation }) => {
+const ForumDetailScreen = ({ route, navigation }) => {
     const theme = useTheme();
     const styles = chatRoomStyles(theme);
     const { user } = useAuth();
@@ -73,7 +72,24 @@ const ChatRoomScreen = ({ route, navigation }) => {
         try {
             setConnectionError(false);
             
-            // Connect socket if not connected
+            // In development with mock mode, skip socket connection
+            if (__DEV__ && !socketService.isConnected()) {
+                console.log('Development mode: Skipping socket connection, using mock data');
+                setConnectionError(false);
+                
+                // Load initial messages from API/Mock
+                try {
+                    const initialMessages = await chatService.getRoomMessages(roomId);
+                    setMessages(initialMessages || []);
+                } catch (error) {
+                    console.error('Failed to load messages:', error);
+                }
+                
+                setLoading(false);
+                return;
+            }
+            
+            // Production mode or when socket is needed
             if (!socketService.isConnected()) {
                 console.log('Attempting to connect socket...');
                 try {
@@ -99,13 +115,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
                 setMessages(initialMessages || []);
             } catch (error) {
                 console.error('Failed to load messages:', error);
-                showErrorAlert('Error', 'Failed to load messages');
             }
 
             setLoading(false);
         } catch (error) {
             console.error('Failed to initialize chat:', error);
-            showErrorAlert('Error', 'Failed to connect to chat');
             setLoading(false);
             setConnectionError(true);
         }

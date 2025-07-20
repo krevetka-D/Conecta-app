@@ -1,9 +1,6 @@
-
 import apiClient from './api/client';
 import mockChatService from './mockChatService';
-
-// Flag to use mock service in development when backend is unavailable
-const USE_MOCK = __DEV__ && false; // Set to true to use mock service
+import { USE_MOCK, devLog } from '../config/development';
 
 // Cache for chat data
 const chatCache = {
@@ -20,6 +17,7 @@ const chatService = {
     getChatRooms: async (forceRefresh = false) => {
         // Use mock service if enabled
         if (USE_MOCK) {
+            devLog('Chat', 'Using mock chat rooms');
             return mockChatService.getRooms();
         }
 
@@ -98,7 +96,6 @@ const chatService = {
             return [];
         }
     },
-
 
     // Search messages with debouncing handled by the component
     searchMessages: async (query, roomId = null) => {
