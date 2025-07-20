@@ -1,14 +1,12 @@
-
 import express from 'express';
 import { 
     getForums, 
     createForum, 
     getForum, 
     deleteForum,
-    createThread, 
-    deleteThread,
-    createPost,
-    getThreads 
+    searchForums,
+    getMyForums,
+    updateForum
 } from '../controllers/forumController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { cacheMiddleware } from '../middleware/cacheMiddleware.js';
@@ -26,32 +24,16 @@ router.route('/')
         createForum
     );
 
+// Search route
+router.get('/search', searchForums);
+
+// User's forums route (must be before /:id to avoid conflicts)
+router.get('/my-rooms', protect, getMyForums);
+
 // Forum detail routes
 router.route('/:id')
     .get(cacheMiddleware('short'), getForum)
+    .put(protect, updateForum)
     .delete(protect, deleteForum);
-
-// Thread routes with pagination
-router.route('/:id/threads')
-    .get(cacheMiddleware('short'), getThreads)
-    .post(
-        protect,
-        forumValidationRules.createThread,
-        handleValidationErrors,
-        createThread
-    );
-
-// Post routes
-router.route('/threads/:threadId/posts')
-    .post(
-        protect,
-        forumValidationRules.createPost,
-        handleValidationErrors,
-        createPost
-    );
-
-// Thread management
-router.route('/threads/:threadId')
-    .delete(protect, deleteThread);
 
 export default router;

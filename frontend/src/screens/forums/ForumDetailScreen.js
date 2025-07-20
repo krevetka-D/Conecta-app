@@ -21,7 +21,7 @@ import chatService from '../../services/chatService';
 import { showErrorAlert } from '../../utils/alerts';
 import { chatRoomStyles } from '../../styles/screens/chat/ChatRoomStyles';
 
-const ChatRoomScreen = ({ route, navigation }) => {
+const ForumDetailScreen = ({ route, navigation }) => {
     const theme = useTheme();
     const styles = chatRoomStyles(theme);
     const { user } = useAuth();
@@ -144,6 +144,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
     }, []);
 
     const handleUserJoined = useCallback(({ userId }) => {
+
         // Could show a system message
         console.log('User joined:', userId);
     }, []);
@@ -329,4 +330,4 @@ const ChatRoomScreen = ({ route, navigation }) => {
     );
 };
 
-export default React.memo(ChatRoomScreen);
+export default React.memo(ForumDetailScreen);

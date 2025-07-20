@@ -3,7 +3,6 @@ import BudgetEntry from '../models/BudgetEntry.js';
 import ChecklistItem from '../models/ChecklistItem.js';
 import Event from '../models/Event.js';
 import Forum from '../models/Forum.js';
-import Thread from '../models/Thread.js';
 import { cacheMiddleware } from '../middleware/cacheMiddleware.js';
 
 /**

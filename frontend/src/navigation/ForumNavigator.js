@@ -10,7 +10,7 @@ const Stack = createStackNavigator();
 
 const ForumNavigator = () => {
     return (
-        <Stack.Navigator
+      <Stack.Navigator
             screenOptions={{
                 headerStyle: {
                     backgroundColor: colors.primary,
@@ -27,10 +27,10 @@ const ForumNavigator = () => {
                 options={{ headerShown: false }}
             />
             <Stack.Screen 
-                name="ForumDetail" 
+                name="ChatRoom" 
                 component={ForumDetailScreen}
                 options={({ route }) => ({ 
-                    title: route.params?.forumTitle || 'Forum' 
+                    title: route.params?.roomTitle || 'Chat Room' 
                 })}
             />
             <Stack.Screen 
@@ -40,7 +40,7 @@ const ForumNavigator = () => {
                     title: route.params?.threadTitle || 'Thread' 
                 })}
             />
-        </Stack.Navigator>
+        </Stack.Navigator>  
     );
 };
 
