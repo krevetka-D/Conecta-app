@@ -41,6 +41,18 @@ export const registerStyles = StyleSheet.create({
         marginTop: 24,
         marginBottom: 20,
     },
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 24,
+        gap: spacing.md,
+    },
+    backButton: {
+        flex: 1,
+    },
+    nextButton: {
+        flex: 2,
+    },
     linkContainer: {
         alignItems: 'center',
     },
@@ -116,6 +128,45 @@ export const registerStyles = StyleSheet.create({
         marginLeft: spacing.sm,
     },
     pathCardDescription: {
+        fontSize: fonts.sizes.sm,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        lineHeight: fonts.sizes.sm * fonts.lineHeights.normal,
+    },
+    
+    // Checklist Selection Styles
+    checklistContainer: {
+        maxHeight: 400,
+        marginBottom: spacing.md,
+    },
+    checklistCard: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.sm,
+        padding: spacing.md,
+        ...shadows.sm,
+    },
+    checklistCardSelected: {
+        borderColor: colors.primary,
+        backgroundColor: colors.primaryLight + '10',
+    },
+    checklistCardContent: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    checklistTextContainer: {
+        flex: 1,
+        marginLeft: spacing.sm,
+    },
+    checklistTitle: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+        marginBottom: spacing.xs / 2,
+    },
+    checklistDescription: {
         fontSize: fonts.sizes.sm,
         fontFamily: fonts.families.regular,
         color: colors.textSecondary,

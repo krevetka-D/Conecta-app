@@ -1,4 +1,4 @@
-
+// frontend/src/services/authService.js
 import apiClient, { setAuthToken } from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +27,6 @@ const authService = {
         return response;
     },
 
-    // ADD this missing method
     getToken: async () => {
         try {
             return await AsyncStorage.getItem('userToken');
@@ -37,7 +36,6 @@ const authService = {
         }
     },
 
-    // ADD this missing method
     getCurrentUser: async () => {
         const response = await apiClient.get(API_ENDPOINTS.AUTH.ME);
         return response;
@@ -52,6 +50,20 @@ const authService = {
         const response = await apiClient.put(API_ENDPOINTS.AUTH.UPDATE_ONBOARDING, {
             professionalPath,
             pinnedModules,
+        });
+        return response;
+    },
+
+    updateOnboardingPath: async (professionalPath) => {
+        const response = await apiClient.put('/api/users/professional-path', {
+            professionalPath
+        });
+        return response;
+    },
+
+    completeOnboarding: async (checklistItems) => {
+        const response = await apiClient.put('/api/users/complete-onboarding', {
+            completedChecklistItems: checklistItems
         });
         return response;
     },

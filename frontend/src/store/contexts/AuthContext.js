@@ -3,7 +3,9 @@ import React, { createContext, useState, useEffect, useContext, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
 import budgetService from '../../services/budgetService';
+import checklistService from '../../services/checklistService';
 import apiClient from '../../services/api/client';
+import socketService from '../../services/socketService';
 
 const AuthContext = createContext(null);
 
@@ -42,6 +44,13 @@ export const AuthProvider = ({ children }) => {
                             setUser(currentUser);
                             // Update stored user data with fresh data
                             await AsyncStorage.setItem('user', JSON.stringify(currentUser));
+                            
+                            // Connect socket service if user is authenticated
+                            if (currentUser._id) {
+                                socketService.connect(currentUser._id).catch(err => {
+                                    console.log('Socket connection failed, continuing without realtime features');
+                                });
+                            }
                         } else {
                             throw new Error('Invalid user data');
                         }
@@ -71,6 +80,7 @@ export const AuthProvider = ({ children }) => {
             authService.setAuthToken(null);
             delete apiClient.defaults.headers.common['Authorization'];
             budgetService.clearCategoriesCache();
+            socketService.disconnect();
         } catch (error) {
             console.error('Error clearing auth data:', error);
         }
@@ -97,6 +107,13 @@ export const AuthProvider = ({ children }) => {
                 ['user', JSON.stringify(data.user)]
             ]);
 
+            // Connect socket service
+            if (data.user._id) {
+                socketService.connect(data.user._id).catch(err => {
+                    console.log('Socket connection failed, continuing without realtime features');
+                });
+            }
+
             return data;
         } catch (error) {
             console.error('Login failed:', error);
@@ -121,13 +138,35 @@ export const AuthProvider = ({ children }) => {
             authService.setAuthToken(data.token);
             apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
-            setUser(data.user);
+            // Update user with onboarding status
+            const updatedUser = {
+                ...data.user,
+                onboardingStep: professionalPath ? 'CHECKLIST_SELECTION' : 'PATH_SELECTION'
+            };
+
+            setUser(updatedUser);
             setToken(data.token);
 
             await AsyncStorage.multiSet([
                 ['userToken', data.token],
-                ['user', JSON.stringify(data.user)]
+                ['user', JSON.stringify(updatedUser)]
             ]);
+
+            // Connect socket service
+            if (data.user._id) {
+                socketService.connect(data.user._id).catch(err => {
+                    console.log('Socket connection failed, continuing without realtime features');
+                });
+            }
+
+            // If professional path was selected during registration, initialize checklist
+            if (professionalPath) {
+                try {
+                    await checklistService.initializeChecklist(professionalPath);
+                } catch (error) {
+                    console.error('Failed to initialize checklist:', error);
+                }
+            }
 
             return data;
         } catch (error) {
@@ -190,33 +229,43 @@ export const AuthProvider = ({ children }) => {
                 throw new Error('No user found');
             }
 
-            const updatedUser = { ...user, professionalPath };
+            const response = await authService.updateOnboardingPath(professionalPath);
+            const updatedUser = { 
+                ...user, 
+                professionalPath,
+                onboardingStep: response.onboardingStep || 'CHECKLIST_SELECTION'
+            };
+            
             setUser(updatedUser);
             await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
             
             // Clear categories cache when professional path changes
             budgetService.clearCategoriesCache();
+            
+            // Initialize checklist for the selected path
+            try {
+                await checklistService.initializeChecklist(professionalPath);
+            } catch (error) {
+                console.error('Failed to initialize checklist:', error);
+            }
         } catch (error) {
             console.error('Failed to update onboarding path:', error);
             throw error;
         }
     }, [user]);
 
-    const completeOnboarding = useCallback(async (pinnedModules = []) => {
+    const completeOnboarding = useCallback(async (checklistItems = []) => {
         try {
-            const professionalPath = user?.professionalPath;
-            if (!professionalPath) {
-                throw new Error('Professional path not selected');
-            }
-
             setIsRefreshing(true);
-            const data = await authService.updateOnboarding(professionalPath, pinnedModules);
-
+            
+            // Complete onboarding with selected checklist items
+            const response = await authService.completeOnboarding(checklistItems);
+            
             const updatedUser = {
                 ...user,
-                ...data,
-                hasCompletedOnboarding: true,
-                pinnedModules
+                ...response,
+                onboardingStep: 'COMPLETED',
+                hasCompletedOnboarding: true
             };
 
             setUser(updatedUser);
@@ -247,6 +296,17 @@ export const AuthProvider = ({ children }) => {
         }
     }, [user]);
 
+    // Update user online status
+    const updateOnlineStatus = useCallback(async (isOnline) => {
+        try {
+            if (user && socketService.isConnected()) {
+                socketService.emit('update_status', { isOnline });
+            }
+        } catch (error) {
+            console.error('Failed to update online status:', error);
+        }
+    }, [user]);
+
     // Memoize the context value to prevent unnecessary re-renders
     const value = useMemo(() => ({
         user,
@@ -259,10 +319,11 @@ export const AuthProvider = ({ children }) => {
         updateOnboardingPath,
         completeOnboarding,
         updateUser,
+        updateOnlineStatus,
         refreshToken,
         isAuthenticated: !!user && !!token,
-        isOnboardingCompleted: user?.hasCompletedOnboarding || false,
-    }), [user, token, loading, isRefreshing, login, register, logout, updateOnboardingPath, completeOnboarding, updateUser, refreshToken]);
+        isOnboardingCompleted: user?.onboardingStep === 'COMPLETED' || user?.hasCompletedOnboarding || false,
+    }), [user, token, loading, isRefreshing, login, register, logout, updateOnboardingPath, completeOnboarding, updateUser, updateOnlineStatus, refreshToken]);
 
     return (
         <AuthContext.Provider value={value}>

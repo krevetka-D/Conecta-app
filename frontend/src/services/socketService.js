@@ -18,12 +18,15 @@ class SocketService {
         this.heartbeatInterval = null;
         this.connectionTimeout = null;
         this.userId = null;
+        this.userStatusListeners = new Map();
     }
 
     async connect(userId) {
-        // Skip socket connection in development if disabled
-        if (!USE_WEBSOCKET) {
-            devLog('Socket', 'WebSocket disabled in development configuration');
+        // Always attempt connection in production, skip only in development if disabled
+        const shouldConnect = __DEV__ ? USE_WEBSOCKET : true;
+        
+        if (!shouldConnect) {
+            devLog('Socket', 'WebSocket disabled in configuration');
             return Promise.resolve();
         }
 
@@ -60,6 +63,7 @@ class SocketService {
                 reconnectionDelayMax: 5000,
                 timeout: 20000,
                 autoConnect: false,
+                forceNew: true,
                 
                 // Platform-specific options
                 ...(Platform.OS === 'android' && {
@@ -70,7 +74,8 @@ class SocketService {
                 // Query parameters
                 query: {
                     platform: Platform.OS,
-                    version: '1.0.0'
+                    version: '1.0.0',
+                    userId: userId
                 }
             });
 
@@ -82,12 +87,12 @@ class SocketService {
             return new Promise((resolve, reject) => {
                 this.connectionTimeout = setTimeout(() => {
                     this.isConnecting = false;
-                    if (this.socket) {
+                    if (this.socket && !this.socket.connected) {
                         this.socket.disconnect();
                     }
                     devLog('Socket', 'Connection timeout - continuing without socket');
                     resolve(); // Resolve instead of reject to allow app to continue
-                }, 10000); // Reduced timeout to 10 seconds
+                }, 15000);
 
                 this.socket.once('connect', () => {
                     clearTimeout(this.connectionTimeout);
@@ -100,6 +105,9 @@ class SocketService {
                     
                     // Authenticate
                     this.authenticate(userId);
+                    
+                    // Update user status to online
+                    this.updateUserStatus(true);
                     
                     resolve();
                 });
@@ -119,21 +127,20 @@ class SocketService {
     }
 
     getSocketUrl() {
+        // Remove /api suffix from base URL
+        const baseUrl = API_BASE_URL.replace('/api', '');
+        
         if (__DEV__) {
             // Development URLs
             if (Platform.OS === 'ios') {
-                return 'http://localhost:5001';
+                return baseUrl.replace('localhost', 'localhost');
             } else if (Platform.OS === 'android') {
-                return 'http://10.0.2.2:5001';
-            } else {
-                // Web or physical device
-                const baseUrl = API_BASE_URL.replace('/api', '');
-                return baseUrl;
+                return baseUrl.replace('localhost', '10.0.2.2');
             }
-        } else {
-            // Production URL
-            return 'https://api.conectaalicante.com';
         }
+        
+        // Production or web
+        return baseUrl.replace('http:', 'ws:').replace('https:', 'wss:');
     }
 
     setupEventHandlers() {
@@ -142,6 +149,7 @@ class SocketService {
         // Connection events
         this.socket.on('connect', () => {
             devLog('Socket', `Connected with ID: ${this.socket.id}`);
+            this.updateUserStatus(true);
             this.flushMessageQueue();
         });
 
@@ -149,11 +157,12 @@ class SocketService {
             devLog('Socket', `Disconnected: ${reason}`);
             this.stopHeartbeat();
             this.isAuthenticated = false;
+            this.updateUserStatus(false);
             
             if (reason === 'io server disconnect') {
                 // Server disconnected us, try to reconnect
                 setTimeout(() => {
-                    if (this.userId && USE_WEBSOCKET) {
+                    if (this.userId) {
                         this.connect(this.userId);
                     }
                 }, 1000);
@@ -163,6 +172,7 @@ class SocketService {
         this.socket.on('reconnect', (attemptNumber) => {
             devLog('Socket', `Reconnected after ${attemptNumber} attempts`);
             this.authenticate(this.userId);
+            this.updateUserStatus(true);
             this.flushMessageQueue();
         });
 
@@ -180,6 +190,9 @@ class SocketService {
             devLog('Socket', 'Authenticated successfully');
             this.isAuthenticated = true;
             this.emit('authenticated', data);
+            
+            // Update online status after authentication
+            this.updateUserStatus(true);
         });
 
         this.socket.on('auth_error', (data) => {
@@ -189,6 +202,17 @@ class SocketService {
 
         this.socket.on('heartbeat_ack', () => {
             // Heartbeat acknowledged
+        });
+
+        // User status events
+        this.socket.on('user_status_update', (data) => {
+            devLog('Socket', `User status update: ${data.userId} is ${data.isOnline ? 'online' : 'offline'}`);
+            this.handleUserStatusUpdate(data);
+        });
+
+        this.socket.on('users_online', (data) => {
+            devLog('Socket', `Online users: ${data.users.length}`);
+            this.handleOnlineUsersList(data.users);
         });
     }
 
@@ -215,6 +239,41 @@ class SocketService {
         }
     }
 
+    updateUserStatus(isOnline) {
+        if (this.socket?.connected && this.isAuthenticated) {
+            devLog('Socket', `Updating user status to ${isOnline ? 'online' : 'offline'}`);
+            this.socket.emit('update_status', { isOnline });
+        }
+    }
+
+    handleUserStatusUpdate(data) {
+        // Notify all listeners about user status change
+        this.userStatusListeners.forEach((callback) => {
+            callback(data);
+        });
+    }
+
+    handleOnlineUsersList(users) {
+        // Notify all listeners about online users list
+        this.emit('online_users', users);
+    }
+
+    subscribeToUserStatus(userId, callback) {
+        const listenerId = `${userId}_${Date.now()}`;
+        this.userStatusListeners.set(listenerId, callback);
+        
+        // Request current status
+        if (this.socket?.connected && this.isAuthenticated) {
+            this.socket.emit('get_user_status', { userId });
+        }
+        
+        return listenerId;
+    }
+
+    unsubscribeFromUserStatus(listenerId) {
+        this.userStatusListeners.delete(listenerId);
+    }
+
     flushMessageQueue() {
         while (this.messageQueue.length > 0 && this.socket?.connected) {
             const { event, data } = this.messageQueue.shift();
@@ -225,8 +284,8 @@ class SocketService {
     emit(event, data) {
         if (this.socket?.connected && this.isAuthenticated) {
             this.socket.emit(event, data);
-        } else if (USE_WEBSOCKET) {
-            // Only queue messages if WebSocket is enabled
+        } else {
+            // Queue messages when not connected
             this.messageQueue.push({ event, data });
             devLog('Socket', `Message queued: ${event}`);
         }
@@ -328,7 +387,7 @@ class SocketService {
     // Get online status for a user
     getUserOnlineStatus(userId) {
         if (this.isConnected()) {
-            this.emit('get_user_status', userId);
+            this.emit('get_user_status', { userId });
         }
     }
 
@@ -348,6 +407,9 @@ class SocketService {
         }
         
         if (this.socket) {
+            // Update status to offline before disconnecting
+            this.updateUserStatus(false);
+            
             // Remove all listeners
             this.listeners.forEach((callbacks, event) => {
                 callbacks.forEach(callback => {
@@ -355,6 +417,7 @@ class SocketService {
                 });
             });
             this.listeners.clear();
+            this.userStatusListeners.clear();
 
             // Clear message queue
             this.messageQueue = [];
@@ -379,7 +442,7 @@ class SocketService {
 
     // Retry connection with exponential backoff
     async retryConnection() {
-        if (!USE_WEBSOCKET || this.isConnecting || this.socket?.connected) {
+        if (this.isConnecting || this.socket?.connected) {
             return;
         }
 
@@ -391,7 +454,7 @@ class SocketService {
         devLog('Socket', `Retrying connection in ${backoffDelay}ms`);
         
         setTimeout(async () => {
-            if (this.userId && USE_WEBSOCKET) {
+            if (this.userId) {
                 try {
                     await this.connect(this.userId);
                 } catch (error) {

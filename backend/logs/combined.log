@@ -530,3 +530,8 @@
 {"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-21 23:12:09"}
 {"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-21 23:13:09"}
 {"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-21 23:14:09"}
+{"level":"info","message":"Socket connected: vZgYwZ82KuzurRaBAAAB","service":"conecta-alicante","timestamp":"2025-07-21 23:37:12"}
+{"level":"info","message":"Socket disconnected: vZgYwZ82KuzurRaBAAAB, reason: client namespace disconnect","service":"conecta-alicante","timestamp":"2025-07-21 23:37:45"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-21 23:37:45"}
+{"level":"info","message":"Socket connected: vzRAOnvUJqAF_5MdAAAD","service":"conecta-alicante","timestamp":"2025-07-21 23:38:36"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-21 23:38:45"}
