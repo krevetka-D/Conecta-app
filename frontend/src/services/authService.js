@@ -63,7 +63,7 @@ const authService = {
 
     completeOnboarding: async (checklistItems) => {
         const response = await apiClient.put('/api/users/complete-onboarding', {
-            completedChecklistItems: checklistItems
+            selectedChecklistItems: checklistItems
         });
         return response;
     },

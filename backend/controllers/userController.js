@@ -115,15 +115,26 @@ export const completeOnboarding = asyncHandler(async (req, res) => {
         throw new Error('Professional path must be selected first');
     }
 
-    // Create checklist items for the user
+    // Create checklist items for the user based on selectedChecklistItems
     if (selectedChecklistItems && selectedChecklistItems.length > 0) {
-        const checklistItemsToCreate = selectedChecklistItems.map(itemKey => ({
-            user: user._id,
-            itemKey,
-            isCompleted: false
-        }));
+        // First, check if user already has checklist items (to avoid duplicates)
+        const existingItems = await ChecklistItem.find({ user: user._id });
+        
+        if (existingItems.length === 0) {
+            // Create new checklist items
+            const checklistItemsToCreate = selectedChecklistItems.map(itemKey => ({
+                user: user._id,
+                itemKey,
+                isCompleted: false
+            }));
 
-        await ChecklistItem.insertMany(checklistItemsToCreate);
+            try {
+                await ChecklistItem.insertMany(checklistItemsToCreate);
+            } catch (error) {
+                console.error('Error creating checklist items:', error);
+                // Continue with onboarding even if checklist creation fails
+            }
+        }
     }
 
     // Update user

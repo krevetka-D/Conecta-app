@@ -32,7 +32,7 @@ const RegisterScreen = ({ navigation }) => {
     const [currentStep, setCurrentStep] = useState(1); // 1: Basic Info, 2: Path Selection, 3: Checklist Selection
     const [selectedPath, setSelectedPath] = useState('');
     const [selectedChecklistItems, setSelectedChecklistItems] = useState([]);
-    const { register } = useAuth();
+    const { register, updateOnboardingPath, completeOnboarding } = useAuth();
 
     const { values, errors, handleChange, handleBlur, validateForm, setErrors } = useForm({
         initialValues: {
