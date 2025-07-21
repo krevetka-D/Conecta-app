@@ -110,18 +110,19 @@ const RegisterScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            // Create user object with professional path and checklist items
+            // Create user object with professional path
             const userData = {
                 name: values.name,
                 email: values.email,
                 password: values.password,
                 professionalPath: selectedPath,
-                onboardingStep: 'COMPLETED',
-                checklistItems: selectedChecklistItems,
             };
             
+            // Register the user
             await register(userData.name, userData.email, userData.password, userData.professionalPath);
-            // Navigation will be handled by AuthContext after successful registration
+            
+            // The auth context will handle navigation after successful registration
+            // Selected checklist items are stored in state and will be used in PrioritySelectionScreen
         } catch (error) {
             showErrorAlert('Registration Failed', error.message);
         } finally {

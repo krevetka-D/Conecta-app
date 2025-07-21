@@ -39,18 +39,20 @@ const PrioritySelectionScreen = ({ route }) => {
         console.log('[PrioritySelectionScreen] selectedPriorities state updated:', selectedPriorities);
     }, [selectedPriorities]);
 
-
-    const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
+const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
         ? [
-            { id: 'autonomo_checklist', title: "Register as 'Autónomo'" },
-            { id: 'tax_guides', title: 'Understand my tax obligations' },
-            { id: 'coworking_finder', title: 'Find a coworking space' },
+            { id: 'OBTAIN_NIE', title: "Obtain your NIE" },
+            { id: 'REGISTER_AUTONOMO', title: "Register as 'Autónomo'" },
+            { id: 'UNDERSTAND_TAXES', title: 'Understand Tax Obligations' },
+            { id: 'OPEN_BANK_ACCOUNT', title: 'Open Spanish Bank Account' },
         ]
         : [
-            { id: 'company_formation', title: 'Form a company (S.L.)' },
-            { id: 'funding_guide', title: 'Find investors or grants' },
-            { id: 'legal_help', title: 'Get legal assistance' },
+            { id: 'OBTAIN_NIE', title: "Obtain your NIE" },
+            { id: 'FORM_SL_COMPANY', title: 'Form an S.L. Company' },
+            { id: 'GET_COMPANY_NIF', title: 'Get Company NIF' },
+            { id: 'RESEARCH_FUNDING', title: 'Research Funding Options' },
         ];
+   
 
     const togglePriority = (priorityId) => {
         // --- DEBUG LOG ---

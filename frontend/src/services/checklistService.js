@@ -13,17 +13,18 @@ const checklistService = {
         return response;
     },
 
-    initializeChecklist: async (professionalPath) => {
+         initializeChecklist: async (professionalPath) => {
         try {
-            const response = await apiClient.post('/checklist/initialize', { 
-                professionalPath 
-            });
+            // The backend doesn't have a separate initialize endpoint
+            // Just return the checklist which will be empty initially
+            const response = await apiClient.get(API_ENDPOINTS.CHECKLIST.LIST);
             return response;
         } catch (error) {
             console.error('Failed to initialize checklist:', error);
             throw error;
         }
     },
+
 
     selectChecklistItems: async (itemKeys) => {
         try {

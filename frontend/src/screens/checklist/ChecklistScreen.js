@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
@@ -213,9 +211,15 @@ const ChecklistScreen = ({ navigation }) => {
 
     // Use useMemo for calculations that depend on state/props
     const { items, completedCount, progress } = useMemo(() => {
-        const items = user?.professionalPath === 'FREELANCER'
+        // Get all available items for the professional path
+        const allItems = user?.professionalPath === 'FREELANCER'
             ? CHECKLIST_ITEMS.FREELANCER
             : CHECKLIST_ITEMS.ENTREPRENEUR;
+
+        // Filter to show only the items that were selected during registration
+        // The checklistData from backend should contain only the selected items
+        const selectedItemKeys = checklistData.map(item => item.itemKey);
+        const items = allItems.filter(item => selectedItemKeys.includes(item.key));
 
         const completedCount = checklistData.filter(item => item.isCompleted).length;
         const progress = items.length > 0 ? completedCount / items.length : 0;
@@ -232,6 +236,23 @@ const ChecklistScreen = ({ navigation }) => {
 
     if (loading) {
         return <LoadingSpinner fullScreen text="Loading your checklist..." />;
+    }
+
+    // If no items selected during registration
+    if (items.length === 0) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.container}>
+                    <View style={styles.emptyContainer}>
+                        <Icon name="clipboard-check-outline" size={64} color={colors.textSecondary} />
+                        <Text style={styles.emptyTitle}>No checklist items</Text>
+                        <Text style={styles.emptyText}>
+                            You haven't selected any checklist items during registration.
+                        </Text>
+                    </View>
+                </View>
+            </SafeAreaView>
+        );
     }
 
     return (

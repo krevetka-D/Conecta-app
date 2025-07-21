@@ -3,7 +3,6 @@ import React, { createContext, useState, useEffect, useContext, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
 import budgetService from '../../services/budgetService';
-import checklistService from '../../services/checklistService';
 import apiClient from '../../services/api/client';
 import socketService from '../../services/socketService';
 
@@ -159,15 +158,6 @@ export const AuthProvider = ({ children }) => {
                 });
             }
 
-            // If professional path was selected during registration, initialize checklist
-            if (professionalPath) {
-                try {
-                    await checklistService.initializeChecklist(professionalPath);
-                } catch (error) {
-                    console.error('Failed to initialize checklist:', error);
-                }
-            }
-
             return data;
         } catch (error) {
             console.error('Registration failed:', error);
@@ -241,13 +231,6 @@ export const AuthProvider = ({ children }) => {
             
             // Clear categories cache when professional path changes
             budgetService.clearCategoriesCache();
-            
-            // Initialize checklist for the selected path
-            try {
-                await checklistService.initializeChecklist(professionalPath);
-            } catch (error) {
-                console.error('Failed to initialize checklist:', error);
-            }
         } catch (error) {
             console.error('Failed to update onboarding path:', error);
             throw error;
