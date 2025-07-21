@@ -1,5 +1,7 @@
 // frontend/src/screens/forums/ForumDetailScreen.js
 import { Menu, Divider } from 'react-native-paper';
+import { SCREEN_NAMES } from '../../constants/routes';
+import personalChatService from '../../services/personalChatService';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,

@@ -18,6 +18,7 @@ import forumRoutes from './routes/forumRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import configRoutes from './routes/configRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -82,6 +83,7 @@ app.use('/api/forums', forumRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
