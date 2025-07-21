@@ -1,4 +1,4 @@
-
+// frontend/src/services/api/interceptors.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showErrorAlert } from '../../utils/alerts';
 import { ERROR_MESSAGES } from '../../constants/messages';
@@ -74,19 +74,25 @@ export const setupInterceptors = (apiClient) => {
                 });
             }
 
-            // Return only the data
-            return response.data;
+            // IMPORTANT: Return the full response object, not just data
+            // This allows services to handle both response and response.data
+            return response;
         },
         async (error) => {
             const originalRequest = error.config;
 
             if (__DEV__) {
-                console.error('API Response Error:', error);
+                console.error('API Response Error:', {
+                    url: originalRequest?.url,
+                    status: error.response?.status,
+                    data: error.response?.data,
+                    message: error.message
+                });
             }
 
             // Handle network errors
             if (!error.response) {
-                showErrorAlert('Network Error', ERROR_MESSAGES.NETWORK_ERROR);
+                // Don't show alert for every network error, just return the error
                 return Promise.reject(new Error(ERROR_MESSAGES.NETWORK_ERROR));
             }
 
@@ -151,7 +157,8 @@ export const setupInterceptors = (apiClient) => {
             switch (status) {
                 case 400:
                     // Bad request - often validation errors
-                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.VALIDATION_ERROR));
+                    // For registration, this might be "user already exists"
+                    return Promise.reject(new Error(data?.message || data?.error || ERROR_MESSAGES.VALIDATION_ERROR));
                     
                 case 403:
                     // Forbidden
@@ -161,6 +168,10 @@ export const setupInterceptors = (apiClient) => {
                     // Not found
                     return Promise.reject(new Error(data?.message || 'Resource not found'));
 
+                case 409:
+                    // Conflict - often used for duplicate resources
+                    return Promise.reject(new Error(data?.message || 'Resource already exists'));
+
                 case 422:
                     // Validation error
                     return Promise.reject(new Error(data?.message || ERROR_MESSAGES.VALIDATION_ERROR));
@@ -168,13 +179,12 @@ export const setupInterceptors = (apiClient) => {
                 case 500:
                 case 502:
                 case 503:
-                    // Server error
-                    showErrorAlert('Server Error', 'The server is currently unavailable. Please try again later.');
+                    // Server error - don't show alert here, let the service handle it
                     return Promise.reject(new Error(data?.message || 'Server error. Please try again later.'));
 
                 default:
                     // Generic error - use backend message if available
-                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.GENERIC_ERROR));
+                    return Promise.reject(new Error(data?.message || data?.error || ERROR_MESSAGES.GENERIC_ERROR));
             }
         }
     );

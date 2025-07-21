@@ -1,5 +1,5 @@
-
-import React, { useState, useCallback, useMemo } from 'react';
+// frontend/src/screens/auth/LoginScreen.js
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
     View,
     Text,
@@ -20,14 +20,17 @@ import { loginStyles as styles } from '../../styles/screens/auth/LoginScreenStyl
 import { colors } from '../../constants/theme';
 import { SCREEN_NAMES } from '../../constants/routes';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation, route }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
 
-    const { values, errors, handleChange, handleBlur, validateForm } = useForm({
+    // Get email from navigation params if coming from registration
+    const emailFromParams = route.params?.email || '';
+
+    const { values, errors, handleChange, handleBlur, validateForm, setValues } = useForm({
         initialValues: {
-            email: '',
+            email: emailFromParams,
             password: '',
         },
         validationRules: {
@@ -43,6 +46,13 @@ const LoginScreen = ({ navigation }) => {
             },
         },
     });
+
+    // Update email if navigated with params
+    useEffect(() => {
+        if (emailFromParams) {
+            setValues(prev => ({ ...prev, email: emailFromParams }));
+        }
+    }, [emailFromParams, setValues]);
 
     const togglePasswordVisibility = useCallback(() => {
         setShowPassword(prev => !prev);
@@ -60,15 +70,39 @@ const LoginScreen = ({ navigation }) => {
             console.error('Login error:', error);
             
             // Handle specific error messages
-            if (error.message.includes('Invalid email or password')) {
+            const errorMessage = error.message?.toLowerCase() || '';
+            
+            if (errorMessage.includes('invalid') || errorMessage.includes('incorrect')) {
                 showErrorAlert(
                     'Login Failed', 
                     'The email or password you entered is incorrect. Please try again.'
                 );
-            } else if (error.message.includes('Network')) {
+            } else if (errorMessage.includes('not found') || errorMessage.includes('doesn\'t exist')) {
+                Alert.alert(
+                    'Account Not Found',
+                    'No account found with this email address. Would you like to create one?',
+                    [
+                        {
+                            text: 'Cancel',
+                            style: 'cancel'
+                        },
+                        {
+                            text: 'Sign Up',
+                            onPress: () => navigation.navigate(SCREEN_NAMES.REGISTER, {
+                                email: values.email.trim().toLowerCase()
+                            })
+                        }
+                    ]
+                );
+            } else if (errorMessage.includes('network')) {
                 showErrorAlert(
                     'Network Error', 
                     'Please check your internet connection and try again.'
+                );
+            } else if (errorMessage.includes('many attempts') || errorMessage.includes('locked')) {
+                showErrorAlert(
+                    'Account Locked', 
+                    'Too many failed login attempts. Please try again later or reset your password.'
                 );
             } else {
                 showErrorAlert(
@@ -79,19 +113,29 @@ const LoginScreen = ({ navigation }) => {
         } finally {
             setLoading(false);
         }
-    }, [values, validateForm, login]);
+    }, [values, validateForm, login, navigation]);
 
     const navigateToRegister = useCallback(() => {
-        navigation.navigate(SCREEN_NAMES.REGISTER);
-    }, [navigation]);
+        navigation.navigate(SCREEN_NAMES.REGISTER, {
+            email: values.email.trim().toLowerCase()
+        });
+    }, [navigation, values.email]);
 
     const showTestCredentials = useCallback(() => {
         Alert.alert(
             'Test Credentials',
             'Email: test@example.com\nPassword: test123\n\nNote: You need to run the createTestUser script in the backend first.',
-            [{ text: 'OK' }]
+            [
+                { 
+                    text: 'Copy Email',
+                    onPress: () => {
+                        setValues(prev => ({ ...prev, email: 'test@example.com' }));
+                    }
+                },
+                { text: 'OK' }
+            ]
         );
-    }, []);
+    }, [setValues]);
 
     const inputTheme = useMemo(() => ({
         colors: { primary: colors.primary }
