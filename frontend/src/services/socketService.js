@@ -268,6 +268,40 @@ class SocketService {
     markMessagesAsRead(roomId, messageIds) {
         this.emit('markAsRead', { roomId, messageIds });
     }
+    // Personal messaging methods
+sendPersonalMessage(data) {
+    this.emit('private_message', data);
+}
+
+markPersonalMessageAsRead(messageIds, conversationId) {
+    this.emit('mark_personal_messages_read', { messageIds, conversationId });
+}
+
+// Update typing to support both room and personal messages
+typingPersonal(recipientId, isTyping) {
+    this.emit('personal_typing', { recipientId, isTyping });
+}
+
+// Join personal conversation
+joinPersonalConversation(conversationId) {
+    this.emit('join_personal_conversation', conversationId);
+}
+
+// Leave personal conversation
+leavePersonalConversation(conversationId) {
+    this.emit('leave_personal_conversation', conversationId);
+}
+
+// Get online status for a user
+getUserOnlineStatus(userId) {
+    this.emit('get_user_status', userId);
+}
+
+// Block/unblock user
+blockUser(userId, block = true) {
+    this.emit(block ? 'block_user' : 'unblock_user', userId);
+}
+
 
     disconnect() {
         this.stopHeartbeat();
@@ -343,5 +377,6 @@ const socketService = new SocketService();
 if (__DEV__) {
     global.socketService = socketService;
 }
+
 
 export default socketService;

@@ -1,4 +1,4 @@
-
+// frontend/src/constants/routes.js
 export const SCREEN_NAMES = {
     // Auth screens
     WELCOME: 'Welcome',
@@ -12,6 +12,7 @@ export const SCREEN_NAMES = {
 
     // Main tab screens
     DASHBOARD: 'Dashboard',
+    PERSONAL_CHAT: 'PersonalChat',
     BUDGET: 'Budget',
     CHECKLIST: 'Checklist',
     RESOURCES: 'Resources',
@@ -42,14 +43,22 @@ export const SCREEN_NAMES = {
     // Event screens
     EVENTS: 'Events',
     EVENT_DETAIL: 'EventDetail',
+    
+    // Personal Chat screens
+    PERSONAL_CHAT_LIST: 'PersonalChatList',
+    PERSONAL_CHAT_DETAIL: 'PersonalChatDetail',
+    USER_PROFILE: 'UserProfile',
 };
 
 export const TAB_NAMES = {
     DASHBOARD_TAB: 'DashboardTab',
+    PERSONAL_CHAT_TAB: 'PersonalChatTab',
     BUDGET_TAB: 'BudgetTab',
     CHECKLIST_TAB: 'ChecklistTab',
     RESOURCES_TAB: 'ResourcesTab',
     PROFILE_TAB: 'ProfileTab',
+    FORUMS_TAB: 'ForumsTab',
+    EVENTS_TAB: 'EventsTab',
 };
 
 export const NAVIGATOR_NAMES = {
@@ -57,4 +66,5 @@ export const NAVIGATOR_NAMES = {
     ONBOARDING: 'Onboarding',
     MAIN: 'Main',
     MODAL: 'Modal',
+    PERSONAL_CHAT: 'PersonalChatNavigator',
 };

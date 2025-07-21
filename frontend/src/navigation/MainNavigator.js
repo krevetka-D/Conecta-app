@@ -1,3 +1,4 @@
+// frontend/src/navigation/MainNavigator.js
 import React from 'react';
 import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -41,7 +42,7 @@ const SafeScreen = ({ component: Component, screenName, ...props }) => {
 };
 
 // Import screens with error handling
-let DashboardScreen, BudgetScreen, ChecklistScreen, ResourcesScreen, ProfileScreen, ForumNavigator, EventNavigator;
+let DashboardScreen, BudgetScreen, ChecklistScreen, ResourcesScreen, ProfileScreen, ForumNavigator, EventNavigator, PersonalChatNavigator;
 
 try {
     DashboardScreen = require('../screens/main/DashboardScreen').default;
@@ -92,6 +93,13 @@ try {
     EventNavigator = () => <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Events Error</Text></View>;
 }
 
+try {
+    PersonalChatNavigator = require('./PersonalChatNavigator').default;
+} catch (e) {
+    console.error('Failed to load PersonalChatNavigator:', e);
+    PersonalChatNavigator = () => <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Chat Error</Text></View>;
+}
+
 const Tab = createBottomTabNavigator();
 
 const MainNavigator = () => {
@@ -116,22 +124,19 @@ const MainNavigator = () => {
                     let iconName;
                     switch (route.name) {
                         case SCREEN_NAMES.DASHBOARD:
-                            iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
+                            iconName = focused ? 'home' : 'home-outline';
+                            break;
+                        case SCREEN_NAMES.PERSONAL_CHAT:
+                            iconName = focused ? 'message' : 'message-outline';
                             break;
                         case SCREEN_NAMES.BUDGET:
                             iconName = focused ? 'finance' : 'finance';
                             break;
-                        case SCREEN_NAMES.RESOURCES:
-                            iconName = focused ? 'book-open-page-variant' : 'book-open-page-variant-outline';
-                            break;
-                        case SCREEN_NAMES.CHECKLIST:
-                            iconName = focused ? 'clipboard-check' : 'clipboard-check-outline';
-                            break;
-                        case SCREEN_NAMES.PROFILE:
-                            iconName = focused ? 'account-circle' : 'account-circle-outline';
-                            break;
                         case SCREEN_NAMES.FORUMS:
                             iconName = focused ? 'forum' : 'forum-outline';
+                            break;
+                        case SCREEN_NAMES.RESOURCES:
+                            iconName = focused ? 'book-open-page-variant' : 'book-open-page-variant-outline';
                             break;
                         case SCREEN_NAMES.EVENTS:
                             iconName = focused ? 'calendar-month' : 'calendar-month-outline';
@@ -156,47 +161,73 @@ const MainNavigator = () => {
                 },
             })}
         >
+            {/* 1. Home */}
             <Tab.Screen
                 name={SCREEN_NAMES.DASHBOARD}
                 options={{ title: 'Home' }}
             >
                 {(props) => <SafeScreen component={DashboardScreen} screenName="Dashboard" {...props} />}
             </Tab.Screen>
+            
+            {/* 2. Personal Chat */}
+            <Tab.Screen
+                name={SCREEN_NAMES.PERSONAL_CHAT}
+                options={{ title: 'Chat' }}
+            >
+                {(props) => <SafeScreen component={PersonalChatNavigator} screenName="PersonalChat" {...props} />}
+            </Tab.Screen>
+            
+            {/* 3. Budget */}
             <Tab.Screen
                 name={SCREEN_NAMES.BUDGET}
                 options={{ title: 'Budget' }}
             >
                 {(props) => <SafeScreen component={BudgetScreen} screenName="Budget" {...props} />}
             </Tab.Screen>
+            
+            {/* 4. Chat Groups (Forums) */}
+            <Tab.Screen
+                name={SCREEN_NAMES.FORUMS}
+                options={{ title: 'Groups' }}
+            >
+                {(props) => <SafeScreen component={ForumNavigator} screenName="Forums" {...props} />}
+            </Tab.Screen>
+            
+            {/* 5. Resources */}
             <Tab.Screen
                 name={SCREEN_NAMES.RESOURCES}
                 options={{ title: 'Resources' }}
             >
                 {(props) => <SafeScreen component={ResourcesScreen} screenName="Resources" {...props} />}
             </Tab.Screen>
-            <Tab.Screen
-                name={SCREEN_NAMES.CHECKLIST}
-                options={{ title: 'Checklist' }}
-            >
-                {(props) => <SafeScreen component={ChecklistScreen} screenName="Checklist" {...props} />}
-            </Tab.Screen>
-            <Tab.Screen
-                name={SCREEN_NAMES.PROFILE}
-                options={{ title: 'Profile' }}
-            >
-                {(props) => <SafeScreen component={ProfileScreen} screenName="Profile" {...props} />}
-            </Tab.Screen>
-             <Tab.Screen
-                name={SCREEN_NAMES.FORUMS}
-                options={{ title: 'Forums' }}
-            >
-                {(props) => <SafeScreen component={ForumNavigator} screenName="Forums" {...props} />}
-            </Tab.Screen>
+            
+            {/* 6. Events */}
             <Tab.Screen
                 name={SCREEN_NAMES.EVENTS}
                 options={{ title: 'Events' }}
             >
                 {(props) => <SafeScreen component={EventNavigator} screenName="Events" {...props} />}
+            </Tab.Screen>
+
+            {/* Hidden screens */}
+            <Tab.Screen
+                name={SCREEN_NAMES.CHECKLIST}
+                options={{ 
+                    title: 'Checklist',
+                    tabBarButton: () => null 
+                }}
+            >
+                {(props) => <SafeScreen component={ChecklistScreen} screenName="Checklist" {...props} />}
+            </Tab.Screen>
+            
+            <Tab.Screen
+                name={SCREEN_NAMES.PROFILE}
+                options={{ 
+                    title: 'Profile',
+                    tabBarButton: () => null 
+                }}
+            >
+                {(props) => <SafeScreen component={ProfileScreen} screenName="Profile" {...props} />}
             </Tab.Screen>
         </Tab.Navigator>
     );

@@ -109,4 +109,15 @@ export const forumDetailStyles = (theme) => StyleSheet.create({
     modalButton: {
         marginLeft: theme.spacing.m,
     },
+    menuContent: {
+        backgroundColor: colors.surface,
+        borderRadius: 8,
+        elevation: 3,
+    },
+    senderName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.primary,
+        marginBottom: 4,
+    },
 });

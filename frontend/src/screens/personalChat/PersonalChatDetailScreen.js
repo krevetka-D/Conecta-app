@@ -1,0 +1,358 @@
+// frontend/src/screens/personalChat/PersonalChatDetailScreen.js
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+    View,
+    Text,
+    FlatList,
+    TextInput,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+} from 'react-native';
+import { Avatar } from 'react-native-paper';
+import Icon from '../../components/common/Icon.js';
+import { format } from 'date-fns';
+
+import { useAuth } from '../../store/contexts/AuthContext';
+import { colors, spacing, fonts } from '../../constants/theme';
+import personalChatService from '../../services/personalChatService';
+import socketService from '../../services/socketService';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { showErrorAlert } from '../../utils/alerts';
+import { SCREEN_NAMES } from '../../constants/routes';
+
+const PersonalChatDetailScreen = ({ route, navigation }) => {
+    const { user } = useAuth();
+    const { userId, userName, conversationId } = route.params;
+    
+    const [messages, setMessages] = useState([]);
+    const [inputText, setInputText] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    
+    const flatListRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
+
+    useEffect(() => {
+        // Set navigation options
+        navigation.setOptions({
+            headerRight: () => (
+                <TouchableOpacity
+                    onPress={() => navigation.navigate(SCREEN_NAMES.USER_PROFILE, { userId, userName })}
+                    style={{ marginRight: 15 }}
+                >
+                    <Icon name="account-circle-outline" size={24} color={colors.textInverse} />
+                </TouchableOpacity>
+            ),
+        });
+
+        loadMessages();
+        setupSocketListeners();
+
+        return () => {
+            cleanupSocketListeners();
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        };
+    }, [userId]);
+
+    const loadMessages = async () => {
+        try {
+            const data = await personalChatService.getMessages(userId);
+            setMessages(data.reverse());
+            
+            // Mark messages as read
+            if (conversationId) {
+                await personalChatService.markAsRead(conversationId);
+            }
+        } catch (error) {
+            console.error('Failed to load messages:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const setupSocketListeners = () => {
+        // Listen for new messages from this user
+        socketService.on('private_message', handleNewMessage);
+        socketService.on('user_typing', handleUserTyping);
+        socketService.on('message_read', handleMessageRead);
+    };
+
+    const cleanupSocketListeners = () => {
+        socketService.off('private_message', handleNewMessage);
+        socketService.off('user_typing', handleUserTyping);
+        socketService.off('message_read', handleMessageRead);
+    };
+
+    const handleNewMessage = useCallback((message) => {
+        if (message.sender === userId || message.recipient === userId) {
+            setMessages(prev => [...prev, message]);
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [userId]);
+
+    const handleUserTyping = useCallback(({ userId: typingUserId, isTyping: typing }) => {
+        if (typingUserId === userId) {
+            setIsTyping(typing);
+        }
+    }, [userId]);
+
+    const handleMessageRead = useCallback(({ messageIds }) => {
+        setMessages(prev => 
+            prev.map(msg => 
+                messageIds.includes(msg._id) 
+                    ? { ...msg, read: true } 
+                    : msg
+            )
+        );
+    }, []);
+
+    const sendMessage = async () => {
+        if (!inputText.trim() || sending) return;
+
+        const messageText = inputText.trim();
+        setInputText('');
+        setSending(true);
+
+        try {
+            await personalChatService.sendMessage(userId, messageText);
+            
+            // Optimistically add message to UI
+            const optimisticMessage = {
+                _id: `temp-${Date.now()}`,
+                content: messageText,
+                sender: user._id,
+                recipient: userId,
+                createdAt: new Date().toISOString(),
+                read: false,
+            };
+            
+            setMessages(prev => [...prev, optimisticMessage]);
+            
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            showErrorAlert('Error', 'Failed to send message');
+            setInputText(messageText);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleTyping = (text) => {
+        setInputText(text);
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        if (text.trim() && socketService.isConnected()) {
+            socketService.emit('typing', { recipientId: userId, isTyping: true });
+            
+            typingTimeoutRef.current = setTimeout(() => {
+                socketService.emit('typing', { recipientId: userId, isTyping: false });
+            }, 3000);
+        } else if (socketService.isConnected()) {
+            socketService.emit('typing', { recipientId: userId, isTyping: false });
+        }
+    };
+
+    const renderMessage = ({ item, index }) => {
+        const isOwnMessage = item.sender === user._id;
+        const showTimestamp = index === 0 || 
+            new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
+
+        return (
+            <>
+                {showTimestamp && (
+                    <View style={styles.timestampContainer}>
+                        <Text style={styles.timestamp}>
+                            {format(new Date(item.createdAt), 'HH:mm')}
+                        </Text>
+                    </View>
+                )}
+                
+                <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
+                    <View style={[
+                        styles.messageBubble,
+                        isOwnMessage && styles.ownMessageBubble
+                    ]}>
+                        <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
+                            {item.content}
+                        </Text>
+                        
+                        {isOwnMessage && (
+                            <View style={styles.messageStatus}>
+                                <Icon 
+                                    name={item.read ? "check-all" : "check"} 
+                                    size={16} 
+                                    color={item.read ? "#60A5FA" : "#FFFFFF99"}
+                                />
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </>
+        );
+    };
+
+    if (loading) {
+        return <LoadingSpinner fullScreen text="Loading messages..." />;
+    }
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <KeyboardAvoidingView 
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
+                <FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    renderItem={renderMessage}
+                    keyExtractor={(item) => item._id}
+                    contentContainerStyle={styles.messagesList}
+                    showsVerticalScrollIndicator={false}
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                    ListFooterComponent={
+                        isTyping ? (
+                            <View style={styles.typingIndicator}>
+                                <Text style={styles.typingText}>{userName} is typing...</Text>
+                            </View>
+                        ) : null
+                    }
+                />
+
+                <View style={styles.inputContainer}>
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={styles.input}
+                            value={inputText}
+                            onChangeText={handleTyping}
+                            placeholder="Type a message"
+                            placeholderTextColor={colors.textSecondary}
+                            multiline
+                            maxLength={1000}
+                            onSubmitEditing={sendMessage}
+                            blurOnSubmit={false}
+                        />
+                        
+                        <TouchableOpacity
+                            onPress={sendMessage}
+                            disabled={!inputText.trim() || sending}
+                            style={[styles.sendButton, (!inputText.trim() || sending) && styles.sendButtonDisabled]}
+                        >
+                            <Icon 
+                                name="send" 
+                                size={24} 
+                                color={inputText.trim() && !sending ? colors.primary : colors.disabled} 
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    messagesList: {
+        padding: spacing.md,
+        paddingBottom: spacing.xs,
+    },
+    timestampContainer: {
+        alignItems: 'center',
+        marginVertical: spacing.md,
+    },
+    timestamp: {
+        fontSize: fonts.sizes.sm,
+        color: colors.textSecondary,
+        backgroundColor: colors.surface,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: 12,
+    },
+    messageContainer: {
+        marginBottom: spacing.sm,
+        alignItems: 'flex-start',
+    },
+    ownMessageContainer: {
+        alignItems: 'flex-end',
+    },
+    messageBubble: {
+        maxWidth: '80%',
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+        borderRadius: 18,
+        borderTopLeftRadius: 4,
+    },
+    ownMessageBubble: {
+        backgroundColor: colors.primary,
+        borderTopLeftRadius: 18,
+        borderTopRightRadius: 4,
+    },
+    messageText: {
+        fontSize: fonts.sizes.md,
+        color: colors.text,
+    },
+    ownMessageText: {
+        color: colors.textInverse,
+    },
+    messageStatus: {
+        marginTop: spacing.xs,
+        alignSelf: 'flex-end',
+    },
+    typingIndicator: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+    },
+    typingText: {
+        fontSize: fonts.sizes.sm,
+        color: colors.textSecondary,
+        fontStyle: 'italic',
+    },
+    inputContainer: {
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        backgroundColor: colors.background,
+        borderRadius: 25,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+    },
+    input: {
+        flex: 1,
+        fontSize: fonts.sizes.md,
+        color: colors.text,
+        maxHeight: 100,
+        paddingVertical: spacing.sm,
+    },
+    sendButton: {
+        padding: spacing.sm,
+        marginLeft: spacing.sm,
+    },
+    sendButtonDisabled: {
+        opacity: 0.5,
+    },
+});
+
+export default React.memo(PersonalChatDetailScreen);

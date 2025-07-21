@@ -1,4 +1,5 @@
 // frontend/src/screens/forums/ForumDetailScreen.js
+import { Menu, Divider } from 'react-native-paper';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
@@ -29,6 +30,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
     const { user } = useAuth();
     const { roomId, roomTitle } = route.params;
 
+    const [menuVisible, setMenuVisible] = useState({});
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
@@ -86,6 +88,27 @@ const ForumDetailScreen = ({ route, navigation }) => {
             socketService.off('reconnecting', handleConnectionChange);
         };
     }, []);
+
+    const handleStartChat = async (senderId, senderName) => {
+    try {
+        // Start or get existing conversation
+        const conversation = await personalChatService.startConversation(senderId);
+        
+        // Navigate to personal chat
+        navigation.navigate(SCREEN_NAMES.PERSONAL_CHAT, {
+            screen: SCREEN_NAMES.PERSONAL_CHAT_DETAIL,
+            params: {
+                userId: senderId,
+                userName: senderName,
+                conversationId: conversation.conversationId,
+            }
+        });
+    } catch (error) {
+        console.error('Failed to start conversation:', error);
+        showErrorAlert('Error', 'Failed to start conversation');
+    }
+};
+
 
     const initializeChat = async () => {
         try {
@@ -233,70 +256,105 @@ const ForumDetailScreen = ({ route, navigation }) => {
     };
 
     const renderMessage = ({ item, index }) => {
-        const isOwnMessage = item.sender._id === user._id;
-        const showAvatar = index === 0 || messages[index - 1]?.sender._id !== item.sender._id;
-        
-        // Group messages by time (5 minute intervals)
-        const showTimestamp = index === 0 || 
-            new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
+    const isOwnMessage = item.sender._id === user._id;
+    const showAvatar = index === 0 || messages[index - 1]?.sender._id !== item.sender._id;
+    
+    // Group messages by time (5 minute intervals)
+    const showTimestamp = index === 0 || 
+        new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
 
-        if (item.deleted) {
-            return (
-                <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
-                    <Text style={styles.deletedMessage}>Message deleted</Text>
-                </View>
-            );
-        }
-
+    if (item.deleted) {
         return (
-            <>
-                {showTimestamp && (
-                    <View style={styles.timestampContainer}>
-                        <Text style={styles.timestamp}>
-                            {format(new Date(item.createdAt), 'HH:mm')}
-                        </Text>
-                    </View>
+            <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
+                <Text style={styles.deletedMessage}>Message deleted</Text>
+            </View>
+        );
+    }
+
+    return (
+        <>
+            {showTimestamp && (
+                <View style={styles.timestampContainer}>
+                    <Text style={styles.timestamp}>
+                        {format(new Date(item.createdAt), 'HH:mm')}
+                    </Text>
+                </View>
+            )}
+            
+            <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
+                {showAvatar && !isOwnMessage && (
+                    <Menu
+                        visible={menuVisible[item._id] || false}
+                        onDismiss={() => setMenuVisible(prev => ({ ...prev, [item._id]: false }))}
+                        anchor={
+                            <TouchableOpacity
+                                style={styles.avatarContainer}
+                                onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                                onLongPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                            >
+                                <View style={styles.avatar}>
+                                    <Text style={styles.avatarText}>
+                                        {item.sender.name.charAt(0).toUpperCase()}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        }
+                        contentStyle={styles.menuContent}
+                    >
+                        <Menu.Item
+                            onPress={() => {
+                                setMenuVisible(prev => ({ ...prev, [item._id]: false }));
+                                navigation.navigate(SCREEN_NAMES.USER_PROFILE, {
+                                    userId: item.sender._id,
+                                    userName: item.sender.name
+                                });
+                            }}
+                            title="View Profile"
+                            leadingIcon="account"
+                        />
+                        <Divider />
+                        <Menu.Item
+                            onPress={() => {
+                                setMenuVisible(prev => ({ ...prev, [item._id]: false }));
+                                handleStartChat(item.sender._id, item.sender.name);
+                            }}
+                            title="Start Chatting"
+                            leadingIcon="message"
+                        />
+                    </Menu>
                 )}
                 
-                <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
-                    {showAvatar && !isOwnMessage && (
-                        <View style={styles.avatarContainer}>
-                            <View style={styles.avatar}>
-                                <Text style={styles.avatarText}>
-                                    {item.sender.name.charAt(0).toUpperCase()}
-                                </Text>
-                            </View>
-                        </View>
+                <View style={[
+                    styles.messageBubble,
+                    isOwnMessage && styles.ownMessageBubble,
+                    !showAvatar && !isOwnMessage && styles.messageBubbleWithoutAvatar
+                ]}>
+                    {!isOwnMessage && showAvatar && (
+                        <TouchableOpacity
+                            onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                        >
+                            <Text style={styles.senderName}>{item.sender.name}</Text>
+                        </TouchableOpacity>
                     )}
                     
-                    <View style={[
-                        styles.messageBubble,
-                        isOwnMessage && styles.ownMessageBubble,
-                        !showAvatar && !isOwnMessage && styles.messageBubbleWithoutAvatar
-                    ]}>
-                        {!isOwnMessage && showAvatar && (
-                            <Text style={styles.senderName}>{item.sender.name}</Text>
-                        )}
-                        
-                        <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
-                            {item.content}
-                        </Text>
-                        
-                        {isOwnMessage && (
-                            <View style={styles.messageStatus}>
-                                <Icon 
-                                    name={item.readBy?.length > 1 ? "check-all" : "check"} 
-                                    size={16} 
-                                    color={item.readBy?.length > 1 ? "#60A5FA" : "#FFFFFF99"}
-                                />
-                            </View>
-                        )}
-                    </View>
+                    <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
+                        {item.content}
+                    </Text>
+                    
+                    {isOwnMessage && (
+                        <View style={styles.messageStatus}>
+                            <Icon 
+                                name={item.readBy?.length > 1 ? "check-all" : "check"} 
+                                size={16} 
+                                color={item.readBy?.length > 1 ? "#60A5FA" : "#FFFFFF99"}
+                            />
+                        </View>
+                    )}
                 </View>
-            </>
-        );
-    };
-
+            </View>
+        </>
+    );
+};
     const renderTypingIndicator = () => {
         if (typingUsers.length === 0) return null;
 
