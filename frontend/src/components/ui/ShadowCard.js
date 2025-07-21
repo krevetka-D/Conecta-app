@@ -1,3 +1,4 @@
+// frontend/src/components/ui/ShadowCard.js
 import React from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Card } from 'react-native-paper';
@@ -66,12 +67,14 @@ export const PaperShadowCard = React.memo(({
         return (
             <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={style}>
                 <Card elevation={elevation} style={{ borderRadius: borderRadius[borderRadiusSize] }} {...props}>
-                    <View style={[{ 
-                        borderRadius: borderRadius[borderRadiusSize], 
-                        overflow: overflow 
-                    }, contentStyle]}>
-                        {children}
-                    </View>
+                    <Card.Content style={{ padding: 0 }}>
+                        <View style={[{ 
+                            borderRadius: borderRadius[borderRadiusSize], 
+                            overflow: overflow 
+                        }, contentStyle]}>
+                            {children}
+                        </View>
+                    </Card.Content>
                 </Card>
             </TouchableOpacity>
         );
@@ -79,12 +82,14 @@ export const PaperShadowCard = React.memo(({
 
     return (
         <Card elevation={elevation} style={[{ borderRadius: borderRadius[borderRadiusSize] }, style]} {...props}>
-            <View style={[{ 
-                borderRadius: borderRadius[borderRadiusSize], 
-                overflow: overflow 
-            }, contentStyle]}>
-                {children}
-            </View>
+            <Card.Content style={{ padding: 0 }}>
+                <View style={[{ 
+                    borderRadius: borderRadius[borderRadiusSize], 
+                    overflow: overflow 
+                }, contentStyle]}>
+                    {children}
+                </View>
+            </Card.Content>
         </Card>
     );
 });

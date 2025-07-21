@@ -1,7 +1,8 @@
-
+// backend/controllers/userController.js
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
+import { createChecklistForUser } from './checklistController.js';
 
 /**
  * @desc    Register a new user
@@ -39,6 +40,11 @@ export const registerUser = asyncHandler(async (req, res) => {
 
     if (user) {
         const token = generateToken(user._id);
+
+        // Create checklist items if professional path is provided
+        if (professionalPath) {
+            await createChecklistForUser(user._id, professionalPath);
+        }
 
         // Frontend expects 'user' and 'token' at root level
         res.status(201).json({
@@ -133,11 +139,18 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
+        const previousPath = user.professionalPath;
         user.professionalPath = professionalPath;
         user.pinnedModules = pinnedModules || [];
         user.onboardingCompleted = true;
 
         const updatedUser = await user.save();
+
+        // Create checklist items if professional path is set for the first time
+        // or if it has changed
+        if (!previousPath || previousPath !== professionalPath) {
+            await createChecklistForUser(user._id, professionalPath);
+        }
 
         // Return the same format as login/register
         res.status(200).json({
