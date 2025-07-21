@@ -134,7 +134,7 @@ export const budgetStyles = StyleSheet.create({
         right: 0,
         bottom: 0,
         backgroundColor: colors.primary,
-        zIndex: 100,
+        zIndex: 1, // Reduced from 100
         elevation: 8,
     },
     modalContainer: {
@@ -142,8 +142,8 @@ export const budgetStyles = StyleSheet.create({
         margin: spacing.lg,
         borderRadius: borderRadius.lg,
         maxHeight: '85%',
-        zIndex: 9999,
-        elevation: 999,
+        zIndex: 1000, // Increased from 9999
+        elevation: 24, // Increased from 999
         ...Platform.select({
             ios: {
                 shadowColor: colors.shadow,
@@ -152,14 +152,14 @@ export const budgetStyles = StyleSheet.create({
                 shadowRadius: 16,
             },
             android: {
-                elevation: 999,
+                elevation: 24,
             },
         }),
     },
     categoryModalContainer: {
         maxHeight: '50%',
-        zIndex: 10000,
-        elevation: 1000,
+        zIndex: 2000, // Increased from 10000
+        elevation: 25, // Increased from 1000
     },
     modalContent: {
         padding: spacing.lg,
@@ -258,8 +258,8 @@ export const budgetStyles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 99999,
-        elevation: 9999,
+        zIndex: 3000, // Increased significantly
+        elevation: 30, // Increased significantly
     },
     datePickerContainer: {
         position: 'absolute',
@@ -270,7 +270,7 @@ export const budgetStyles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 99999,
+        zIndex: 3000, // Increased significantly
     },
     datePickerContent: {
         backgroundColor: colors.surface,
@@ -286,7 +286,7 @@ export const budgetStyles = StyleSheet.create({
                 shadowRadius: 16,
             },
             android: {
-                elevation: 24,
+                elevation: 30,
             },
         }),
     },
@@ -298,8 +298,8 @@ export const budgetStyles = StyleSheet.create({
     },
     // Modal Overlay Style
     modalOverlay: {
-        zIndex: 9998,
-        elevation: 998,
+        zIndex: 999, // Reduced from 9998
+        elevation: 23, // Reduced from 998
     },
     categoryScrollView: {
         maxHeight: 300,

@@ -8,6 +8,7 @@ import {
     SafeAreaView,
     Platform,
     StyleSheet,
+    Modal as RNModal,
 } from 'react-native';
 import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button, Provider } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
@@ -270,7 +271,6 @@ const BudgetScreen = ({ navigation }) => {
                     visible={modalVisible} 
                     onDismiss={() => { setModalVisible(false); resetForm(); }} 
                     contentContainerStyle={styles.modalContainer}
-                    style={styles.modalOverlay}
                 >
                     <View style={styles.modalContent}>
                         <ScrollView showsVerticalScrollIndicator={false}>
@@ -345,45 +345,41 @@ const BudgetScreen = ({ navigation }) => {
                 </Modal>
             </Portal>
 
-            {/* Date Picker Modal for better visibility */}
-            {showDatePicker && (
-                <Portal>
-                    <View style={styles.datePickerOverlay}>
-                        <View style={styles.datePickerContainer}>
-                            <View style={styles.datePickerContent}>
-                                <DateTimePicker 
-                                    value={formData.entryDate} 
-                                    mode="date" 
-                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'} 
-                                    onChange={handleDateChange} 
-                                    maximumDate={new Date()} 
-                                    style={styles.datePicker}
-                                />
-                                {Platform.OS === 'ios' && (
-                                    <Button 
-                                        mode="contained" 
-                                        onPress={() => setShowDatePicker(false)}
-                                        style={styles.datePickerDoneButton}
-                                    >
-                                        Done
-                                    </Button>
-                                )}
-                            </View>
-                        </View>
-                    </View>
-                </Portal>
-            )}
-
-            <Portal>
-                <Modal 
-                    visible={showCategoryPicker} 
-                    onDismiss={() => setShowCategoryPicker(false)} 
-                    contentContainerStyle={[styles.modalContainer, styles.categoryModalContainer]}
-                    style={styles.modalOverlay}
+            {/* Use React Native's Modal for Category Picker - This will appear on top */}
+            <RNModal
+                visible={showCategoryPicker}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowCategoryPicker(false)}
+            >
+                <TouchableOpacity 
+                    style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                    activeOpacity={1}
+                    onPress={() => setShowCategoryPicker(false)}
                 >
-                    <View style={styles.modalContent}>
+                    <TouchableOpacity 
+                        activeOpacity={1}
+                        style={{
+                            backgroundColor: colors.surface,
+                            borderRadius: 16,
+                            padding: 20,
+                            width: '90%',
+                            maxHeight: '70%',
+                            elevation: 1000,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                        }}
+                        onPress={(e) => e.stopPropagation()}
+                    >
                         <Text style={styles.modalTitle}>Select Category</Text>
-                        <ScrollView style={styles.categoryScrollView}>
+                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
                             {(categories[formData.type.toLowerCase()] || []).map((category) => (
                                 <TouchableOpacity 
                                     key={category} 
@@ -400,9 +396,62 @@ const BudgetScreen = ({ navigation }) => {
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
+                        <TouchableOpacity 
+                            style={{
+                                marginTop: 16,
+                                paddingVertical: 12,
+                                alignItems: 'center',
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                            }}
+                            onPress={() => setShowCategoryPicker(false)}
+                        >
+                            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>Close</Text>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </RNModal>
+
+            {/* Date Picker Modal */}
+            {showDatePicker && Platform.OS === 'ios' && (
+                <RNModal
+                    visible={showDatePicker}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setShowDatePicker(false)}
+                >
+                    <View style={styles.datePickerOverlay}>
+                        <View style={styles.datePickerContent}>
+                            <DateTimePicker 
+                                value={formData.entryDate} 
+                                mode="date" 
+                                display="spinner" 
+                                onChange={handleDateChange} 
+                                maximumDate={new Date()} 
+                                style={styles.datePicker}
+                            />
+                            <Button 
+                                mode="contained" 
+                                onPress={() => setShowDatePicker(false)}
+                                style={styles.datePickerDoneButton}
+                            >
+                                Done
+                            </Button>
+                        </View>
                     </View>
-                </Modal>
-            </Portal>
+                </RNModal>
+            )}
+
+            {/* Android Date Picker */}
+            {showDatePicker && Platform.OS === 'android' && (
+                <DateTimePicker 
+                    value={formData.entryDate} 
+                    mode="date" 
+                    display="default" 
+                    onChange={handleDateChange} 
+                    maximumDate={new Date()} 
+                />
+            )}
         </Provider>
     );
 };
