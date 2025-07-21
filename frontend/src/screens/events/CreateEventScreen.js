@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
     View,
@@ -34,7 +33,7 @@ const CreateEventScreen = ({ navigation }) => {
         title: '',
         description: '',
         date: new Date(),
-        time: '19:00',
+        time: new Date(),
         location: {
             name: '',
             address: '',
@@ -77,9 +76,6 @@ const CreateEventScreen = ({ navigation }) => {
         if (!formData.location.name.trim()) {
             errors.locationName = 'Location name is required';
         }
-        if (!formData.time.trim()) {
-            errors.time = 'Time is required';
-        }
         
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
@@ -90,8 +86,14 @@ const CreateEventScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
+            // Format time from Date object to string
+            const hours = formData.time.getHours();
+            const minutes = formData.time.getMinutes();
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
             const eventData = {
                 ...formData,
+                time: timeString,
                 maxAttendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
             };
             
@@ -111,6 +113,21 @@ const CreateEventScreen = ({ navigation }) => {
         if (selectedDate) {
             setFormData({ ...formData, date: selectedDate });
         }
+    };
+
+    const handleTimeChange = (event, selectedTime) => {
+        setShowTimePicker(false);
+        if (selectedTime) {
+            setFormData({ ...formData, time: selectedTime });
+        }
+    };
+
+    const formatTime = (date) => {
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
     };
 
     const handleAddTag = () => {
@@ -180,18 +197,13 @@ const CreateEventScreen = ({ navigation }) => {
                     <Text style={styles.dateTimeText}>{formatDate(formData.date)}</Text>
                 </TouchableOpacity>
 
-                <TextInput
-                    label="Time (e.g., 19:00)"
-                    value={formData.time}
-                    onChangeText={(text) => setFormData({ ...formData, time: text })}
-                    mode="outlined"
-                    style={styles.input}
-                    error={!!formErrors.time}
-                    theme={{ colors: { primary: theme.colors.primary } }}
-                />
-                {formErrors.time && (
-                    <Text style={styles.errorText}>{formErrors.time}</Text>
-                )}
+                <TouchableOpacity
+                    style={styles.dateTimeSelector}
+                    onPress={() => setShowTimePicker(true)}
+                >
+                    <Icon name="clock-outline" size={24} color={theme.colors.primary} />
+                    <Text style={styles.dateTimeText}>{formatTime(formData.time)}</Text>
+                </TouchableOpacity>
 
                 <Text style={styles.sectionTitle}>Location</Text>
 
@@ -327,6 +339,16 @@ const CreateEventScreen = ({ navigation }) => {
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={handleDateChange}
                     minimumDate={new Date()}
+                />
+            )}
+
+            {showTimePicker && (
+                <DateTimePicker
+                    value={formData.time}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleTimeChange}
+                    is24Hour={false}
                 />
             )}
 

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -22,15 +20,14 @@ import { resourcesStyles as styles } from '../../styles/screens/content/Resource
 
 const ResourcesScreen = ({ navigation }) => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('guides');
+    const [activeTab, setActiveTab] = useState('myGuides');
     const [searchQuery, setSearchQuery] = useState('');
     const [guides, setGuides] = useState([]);
-    const [directory, setDirectory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     // Mock data for demonstration
-    const mockGuides = [
+    const mockMyGuides = [
         {
             _id: '1',
             title: 'Complete NIE Application Guide',
@@ -49,6 +46,10 @@ const ResourcesScreen = ({ navigation }) => {
             icon: 'calculator',
             isNew: false,
         },
+    ];
+
+    const mockAllGuides = [
+        ...mockMyGuides,
         {
             _id: '3',
             title: 'Opening a Business Bank Account',
@@ -58,84 +59,54 @@ const ResourcesScreen = ({ navigation }) => {
             icon: 'bank',
             isNew: false,
         },
-    ];
-
-    const mockDirectory = [
         {
-            _id: '1',
-            name: 'García & Associates',
-            category: 'GESTOR',
-            description: 'Specialized in helping expats with tax and legal matters',
-            rating: 4.8,
-            isRecommended: true,
-            contactInfo: {
-                phone: '+34 965 123 456',
-                email: 'info@garciaassociates.es',
-                website: 'www.garciaassociates.es',
-            },
+            _id: '4',
+            title: 'Networking in Alicante',
+            description: 'Top events and communities for professionals',
+            category: 'Networking',
+            readTime: '12 min',
+            icon: 'account-group',
+            isNew: true,
         },
         {
-            _id: '2',
-            name: 'Alicante Legal Solutions',
-            category: 'LAWYER',
-            description: 'Expert lawyers for company formation and contracts',
-            rating: 4.6,
-            isRecommended: true,
-            contactInfo: {
-                phone: '+34 965 234 567',
-                email: 'contact@alicantelegal.es',
-                website: 'www.alicantelegal.es',
-            },
+            _id: '5',
+            title: 'Finding Office Space',
+            description: 'Coworking spaces and office rentals in Alicante',
+            category: 'Workspace',
+            readTime: '10 min',
+            icon: 'office-building',
+            isNew: false,
         },
     ];
 
     const loadGuides = useCallback(async () => {
         try {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            setGuides(mockGuides);
+            if (activeTab === 'myGuides') {
+                setGuides(mockMyGuides);
+            } else {
+                setGuides(mockAllGuides);
+            }
         } catch (error) {
             console.error('Failed to load guides:', error);
             if (!refreshing) {
                 showErrorAlert('Error', ERROR_MESSAGES.CONTENT_LOAD_FAILED);
             }
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
         }
-    }, [refreshing, user?.professionalPath]);
-
-    const loadDirectory = useCallback(async () => {
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setDirectory(mockDirectory);
-        } catch (error) {
-            console.error('Failed to load directory:', error);
-            if (!refreshing) {
-                showErrorAlert('Error', ERROR_MESSAGES.CONTENT_LOAD_FAILED);
-            }
-        }
-    }, [refreshing]);
+    }, [activeTab, refreshing, user?.professionalPath]);
 
     useEffect(() => {
-        const loadData = async () => {
-            setLoading(true);
-            if (activeTab === 'guides') {
-                await loadGuides();
-            } else {
-                await loadDirectory();
-            }
-            setLoading(false);
-        };
-
-        loadData();
-    }, [activeTab, loadGuides, loadDirectory]);
+        setLoading(true);
+        loadGuides();
+    }, [activeTab, loadGuides]);
 
     const handleRefresh = useCallback(async () => {
         setRefreshing(true);
-        if (activeTab === 'guides') {
-            await loadGuides();
-        } else {
-            await loadDirectory();
-        }
-        setRefreshing(false);
-    }, [activeTab, loadGuides, loadDirectory]);
+        await loadGuides();
+    }, [loadGuides]);
 
     const handleSearch = useCallback((query) => {
         setSearchQuery(query);
@@ -151,22 +122,6 @@ const ResourcesScreen = ({ navigation }) => {
             'Coming Soon',
             `The guide "${guide.title}" is being prepared and will be available soon!`
         );
-    }, []);
-
-    const handleContactPress = useCallback((contact, type) => {
-        let message = '';
-        switch (type) {
-            case 'phone':
-                message = `Call ${contact.phone}?`;
-                break;
-            case 'email':
-                message = `Email ${contact.email}?`;
-                break;
-            case 'website':
-                message = `Visit ${contact.website}?`;
-                break;
-        }
-        showErrorAlert('Contact', message);
     }, []);
 
     const renderGuideItem = ({ item }) => (
@@ -217,115 +172,14 @@ const ResourcesScreen = ({ navigation }) => {
         </TouchableOpacity>
     );
 
-    const renderDirectoryItem = ({ item }) => {
-        const categoryIcons = {
-            GESTOR: 'calculator-variant',
-            LAWYER: 'scale-balance',
-            REAL_ESTATE: 'home-city',
-            TRANSLATOR: 'translate',
-        };
-
-        const categoryColors = {
-            GESTOR: '#10B981',
-            LAWYER: '#3B82F6',
-            REAL_ESTATE: '#F59E0B',
-            TRANSLATOR: '#8B5CF6',
-        };
-
-        return (
-            <Card style={styles.directoryCard}>
-                <Card.Content>
-                    <View style={styles.directoryHeader}>
-                        <View style={[
-                            styles.directoryIconContainer,
-                            { backgroundColor: (categoryColors[item.category] || colors.primary) + '20' }
-                        ]}>
-                            <Icon
-                                name={categoryIcons[item.category] || 'briefcase'}
-                                size={24}
-                                color={categoryColors[item.category] || colors.primary}
-                            />
-                        </View>
-                        <View style={styles.directoryTitleContainer}>
-                            <Text style={styles.directoryName}>{item.name}</Text>
-                            <View style={styles.directoryBadges}>
-                                <Text style={styles.directoryCategory}>
-                                    {item.category.replace('_', ' ')}
-                                </Text>
-                                {item.isRecommended && (
-                                    <Chip
-                                        style={styles.recommendedChip}
-                                        textStyle={styles.recommendedText}
-                                        icon="star"
-                                    >
-                                        Recommended
-                                    </Chip>
-                                )}
-                            </View>
-                        </View>
-                        {item.rating && (
-                            <View style={styles.ratingContainer}>
-                                <Icon name="star" size={16} color={colors.warning} />
-                                <Text style={styles.ratingText}>{item.rating}</Text>
-                            </View>
-                        )}
-                    </View>
-
-                    <Text style={styles.directoryDescription}>{item.description}</Text>
-
-                    <View style={styles.contactInfo}>
-                        {item.contactInfo.phone && (
-                            <TouchableOpacity
-                                style={styles.contactButton}
-                                onPress={() => handleContactPress(item.contactInfo, 'phone')}
-                            >
-                                <Icon name="phone" size={18} color={colors.primary} />
-                                <Text style={styles.contactText}>{item.contactInfo.phone}</Text>
-                            </TouchableOpacity>
-                        )}
-                        {item.contactInfo.email && (
-                            <TouchableOpacity
-                                style={styles.contactButton}
-                                onPress={() => handleContactPress(item.contactInfo, 'email')}
-                            >
-                                <Icon name="email" size={18} color={colors.primary} />
-                                <Text style={styles.contactText} numberOfLines={1}>
-                                    {item.contactInfo.email}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                        {item.contactInfo.website && (
-                            <TouchableOpacity
-                                style={styles.contactButton}
-                                onPress={() => handleContactPress(item.contactInfo, 'website')}
-                            >
-                                <Icon name="web" size={18} color={colors.primary} />
-                                <Text style={styles.contactText} numberOfLines={1}>
-                                    {item.contactInfo.website}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </Card.Content>
-            </Card>
-        );
-    };
-
     const getFilteredData = () => {
-        const data = activeTab === 'guides' ? guides : directory;
-        if (!searchQuery) return data;
+        if (!searchQuery) return guides;
 
-        return data.filter(item => {
+        return guides.filter(item => {
             const searchLower = searchQuery.toLowerCase();
-            if (activeTab === 'guides') {
-                return item.title.toLowerCase().includes(searchLower) ||
-                    item.description.toLowerCase().includes(searchLower) ||
-                    item.category.toLowerCase().includes(searchLower);
-            } else {
-                return item.name.toLowerCase().includes(searchLower) ||
-                    item.category.toLowerCase().includes(searchLower) ||
-                    item.description.toLowerCase().includes(searchLower);
-            }
+            return item.title.toLowerCase().includes(searchLower) ||
+                item.description.toLowerCase().includes(searchLower) ||
+                item.category.toLowerCase().includes(searchLower);
         });
     };
 
@@ -341,21 +195,21 @@ const ResourcesScreen = ({ navigation }) => {
             );
         }
 
-        if (activeTab === 'guides') {
+        if (activeTab === 'myGuides') {
             return (
                 <EmptyState
                     icon="book-open-variant-outline"
-                    title="Guides coming soon!"
-                    message="We're working hard to create comprehensive guides to help you navigate life in Alicante. Check back soon!"
+                    title="No guides saved yet!"
+                    message="Browse all guides and save the ones relevant to you."
                     style={styles.emptyState}
                 />
             );
         } else {
             return (
                 <EmptyState
-                    icon="account-group-outline"
-                    title="Service directory coming soon!"
-                    message="We're building a curated list of trusted professionals to help with your business needs."
+                    icon="book-open-variant-outline"
+                    title="Guides coming soon!"
+                    message="We're working hard to create comprehensive guides to help you navigate life in Alicante. Check back soon!"
                     style={styles.emptyState}
                 />
             );
@@ -368,7 +222,7 @@ const ResourcesScreen = ({ navigation }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <Searchbar
-                    placeholder={`Search ${activeTab === 'guides' ? 'guides' : 'services'}...`}
+                    placeholder="Search guides..."
                     onChangeText={handleSearch}
                     value={searchQuery}
                     style={styles.searchBar}
@@ -379,40 +233,40 @@ const ResourcesScreen = ({ navigation }) => {
 
                 <View style={styles.tabContainer}>
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'guides' && styles.activeTab]}
-                        onPress={() => handleTabChange('guides')}
+                        style={[styles.tab, activeTab === 'myGuides' && styles.activeTab]}
+                        onPress={() => handleTabChange('myGuides')}
+                        activeOpacity={0.7}
+                    >
+                        <Icon
+                            name="bookmark"
+                            size={20}
+                            color={activeTab === 'myGuides' ? colors.primary : colors.textSecondary}
+                            style={styles.tabIcon}
+                        />
+                        <Text style={[
+                            styles.tabText,
+                            activeTab === 'myGuides' && styles.activeTabText
+                        ]}>
+                            My Guides
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'allGuides' && styles.activeTab]}
+                        onPress={() => handleTabChange('allGuides')}
                         activeOpacity={0.7}
                     >
                         <Icon
                             name="book-open-variant"
                             size={20}
-                            color={activeTab === 'guides' ? colors.primary : colors.textSecondary}
+                            color={activeTab === 'allGuides' ? colors.primary : colors.textSecondary}
                             style={styles.tabIcon}
                         />
                         <Text style={[
                             styles.tabText,
-                            activeTab === 'guides' && styles.activeTabText
+                            activeTab === 'allGuides' && styles.activeTabText
                         ]}>
-                            Guides
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'directory' && styles.activeTab]}
-                        onPress={() => handleTabChange('directory')}
-                        activeOpacity={0.7}
-                    >
-                        <Icon
-                            name="account-group"
-                            size={20}
-                            color={activeTab === 'directory' ? colors.primary : colors.textSecondary}
-                            style={styles.tabIcon}
-                        />
-                        <Text style={[
-                            styles.tabText,
-                            activeTab === 'directory' && styles.activeTabText
-                        ]}>
-                            Service Directory
+                            All Guides
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -422,7 +276,7 @@ const ResourcesScreen = ({ navigation }) => {
                 ) : (
                     <FlatList
                         data={filteredData}
-                        renderItem={activeTab === 'guides' ? renderGuideItem : renderDirectoryItem}
+                        renderItem={renderGuideItem}
                         keyExtractor={(item) => item._id}
                         contentContainerStyle={[
                             styles.listContent,

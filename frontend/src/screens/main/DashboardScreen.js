@@ -58,23 +58,13 @@ const createStyles = (theme) => {
         scrollView: {
             padding: safeTheme.spacing.m,
         },
-        welcomeSection: {
+        headerSection: {
             flexDirection: 'row',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
             paddingHorizontal: 20,
             paddingTop: 20,
             paddingBottom: 10,
-        },
-        welcomeText: {
-            fontSize: 16,
-            color: safeTheme.colors.textSecondary,
-        },
-        userName: {
-            fontSize: 28,
-            fontWeight: 'bold',
-            color: safeTheme.colors.text,
-            marginTop: 4,
         },
         profileButton: {
             position: 'relative',
@@ -265,7 +255,7 @@ const createStyles = (theme) => {
     });
 };
 
-// Simple date formatting function to replace date-fns
+// Simple date formatting function
 const formatEventDate = (dateString) => {
     try {
         const date = new Date(dateString);
@@ -295,18 +285,15 @@ const DashboardScreen = ({ navigation }) => {
 
     const loadDashboardData = useCallback(async () => {
         try {
-            // Load all dashboard data in parallel
             const [eventsResponse, budgetData, checklistData] = await Promise.all([
                 eventService.getUpcomingEvents(5).catch(() => ({ events: [] })),
                 budgetService.getBudgetSummary('month').catch(() => null),
                 checklistService.getChecklist().catch(() => [])
             ]);
 
-            // Handle the events response structure
             const events = Array.isArray(eventsResponse) ? eventsResponse : 
                           (eventsResponse?.events || []);
 
-            // Calculate checklist progress
             const checklistProgress = checklistData.length > 0 
                 ? Math.round((checklistData.filter(item => item.isCompleted).length / checklistData.length) * 100)
                 : 0;
@@ -394,12 +381,8 @@ const DashboardScreen = ({ navigation }) => {
             }
             showsVerticalScrollIndicator={false}
         >
-            {/* Welcome Section */}
-            <View style={styles.welcomeSection}>
-                <View>
-                    <Text style={styles.welcomeText}>Welcome back,</Text>
-                    <Text style={styles.userName}>{user?.name || 'User'}!</Text>
-                </View>
+            {/* Header with only profile button */}
+            <View style={styles.headerSection}>
                 <TouchableOpacity 
                     style={styles.profileButton}
                     onPress={() => navigation.navigate(SCREEN_NAMES.PROFILE)}
@@ -493,7 +476,7 @@ const DashboardScreen = ({ navigation }) => {
                             onPress={() => navigation.navigate(SCREEN_NAMES.FORUMS)}
                         >
                             <Icon name="forum" size={48} color={theme?.colors?.primary || '#1E3A8A'} />
-                            <Text style={styles.quickActionText}>Forums</Text>
+                            <Text style={styles.quickActionText}>Groups</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity 

@@ -1,6 +1,6 @@
 // src/utils/formatting.js
 export const formatCurrency = (amount, currency = 'EUR') => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency,
         minimumFractionDigits: 2,
@@ -24,7 +24,8 @@ export const formatDate = (date, format = 'full') => {
         },
     };
 
-    return new Intl.DateTimeFormat('es-ES', formats[format]).format(dateObj);
+    // Changed to en-US for English formatting
+    return new Intl.DateTimeFormat('en-US', formats[format]).format(dateObj);
 };
 
 export const formatPhoneNumber = (phone) => {
@@ -43,5 +44,3 @@ export const truncateText = (text, maxLength = 50) => {
     if (text.length <= maxLength) return text;
     return `${text.substring(0, maxLength)}...`;
 };
-
-
