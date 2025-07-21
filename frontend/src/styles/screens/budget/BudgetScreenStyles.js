@@ -250,51 +250,43 @@ export const budgetStyles = StyleSheet.create({
     },
     // Date Picker Styles
     datePickerOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 3000, // Increased significantly
-        elevation: 30, // Increased significantly
-    },
-    datePickerContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 3000, // Increased significantly
+        justifyContent: 'flex-end',
     },
     datePickerContent: {
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        ...Platform.select({
-            ios: {
-                width: '90%',
-                maxWidth: 400,
-                shadowColor: colors.shadow,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
-                shadowRadius: 16,
-            },
-            android: {
-                elevation: 30,
-            },
-        }),
+        borderTopLeftRadius: borderRadius.lg,
+        borderTopRightRadius: borderRadius.lg,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+    },
+    datePickerHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    datePickerCancel: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.regular,
+        color: colors.error,
+    },
+    datePickerTitle: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+    },
+    datePickerDone: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+        color: colors.primary,
     },
     datePicker: {
         width: '100%',
-    },
-    datePickerDoneButton: {
-        marginTop: spacing.md,
+        backgroundColor: colors.surface,
     },
     // Modal Overlay Style
     modalOverlay: {

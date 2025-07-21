@@ -40,7 +40,11 @@ const BudgetScreen = ({ navigation }) => {
         category: '',
         amount: '',
         description: '',
-        entryDate: new Date(),
+        entryDate: (() => {
+            const today = new Date();
+            today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+            return today;
+        })(),
     });
 
     const [formErrors, setFormErrors] = useState({});
@@ -141,14 +145,36 @@ const BudgetScreen = ({ navigation }) => {
     };
 
     const resetForm = () => {
-        setFormData({ type: 'EXPENSE', category: '', amount: '', description: '', entryDate: new Date() });
+        // Ensure the initial date is today or earlier
+        const today = new Date();
+        today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+        
+        setFormData({ 
+            type: 'EXPENSE', 
+            category: '', 
+            amount: '', 
+            description: '', 
+            entryDate: today 
+        });
         setFormErrors({});
     };
 
     const handleDateChange = (event, selectedDate) => {
-        setShowDatePicker(false);
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
         if (selectedDate) {
-            setFormData({ ...formData, entryDate: selectedDate });
+            // Ensure the selected date is not in the future
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+            const selected = new Date(selectedDate);
+            
+            if (selected <= today) {
+                setFormData({ ...formData, entryDate: selected });
+            } else {
+                // If future date selected, show error and keep current date
+                showErrorAlert('Invalid Date', 'You cannot select a future date');
+            }
         }
     };
 
@@ -420,25 +446,52 @@ const BudgetScreen = ({ navigation }) => {
                     animationType="slide"
                     onRequestClose={() => setShowDatePicker(false)}
                 >
-                    <View style={styles.datePickerOverlay}>
-                        <View style={styles.datePickerContent}>
+                    <TouchableOpacity 
+                        style={styles.datePickerOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowDatePicker(false)}
+                    >
+                        <TouchableOpacity 
+                            activeOpacity={1}
+                            style={styles.datePickerContent}
+                            onPress={(e) => e.stopPropagation()}
+                        >
+                            <View style={styles.datePickerHeader}>
+                                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                    <Text style={styles.datePickerCancel}>Cancel</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.datePickerTitle}>Select Date</Text>
+                                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                    <Text style={styles.datePickerDone}>Done</Text>
+                                </TouchableOpacity>
+                            </View>
                             <DateTimePicker 
                                 value={formData.entryDate} 
                                 mode="date" 
                                 display="spinner" 
-                                onChange={handleDateChange} 
+                                onChange={(event, selectedDate) => {
+                                    if (selectedDate) {
+                                        // Ensure the selected date is not in the future
+                                        const today = new Date();
+                                        today.setHours(23, 59, 59, 999);
+                                        const selected = new Date(selectedDate);
+                                        
+                                        if (selected <= today) {
+                                            setFormData({ ...formData, entryDate: selected });
+                                        } else {
+                                            // If future date selected, set to today
+                                            showErrorAlert('Invalid Date', 'You cannot select a future date');
+                                            setFormData({ ...formData, entryDate: new Date() });
+                                        }
+                                    }
+                                }} 
                                 maximumDate={new Date()} 
+                                minimumDate={new Date(2020, 0, 1)} // Set a reasonable minimum date
                                 style={styles.datePicker}
+                                themeVariant="light"
                             />
-                            <Button 
-                                mode="contained" 
-                                onPress={() => setShowDatePicker(false)}
-                                style={styles.datePickerDoneButton}
-                            >
-                                Done
-                            </Button>
-                        </View>
-                    </View>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
                 </RNModal>
             )}
 
