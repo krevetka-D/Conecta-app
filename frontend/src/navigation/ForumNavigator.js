@@ -1,3 +1,4 @@
+// frontend/src/navigation/ForumNavigator.js
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import ForumScreen from '../screens/forums/ForumScreen';
@@ -10,7 +11,7 @@ const Stack = createStackNavigator();
 
 const ForumNavigator = () => {
     return (
-      <Stack.Navigator
+        <Stack.Navigator
             screenOptions={{
                 headerStyle: {
                     backgroundColor: colors.primary,
@@ -23,7 +24,7 @@ const ForumNavigator = () => {
         >
             <Stack.Screen 
                 name="ForumsList" 
-                component={ForumScreen}  // This is the correct component name
+                component={ForumScreen}
                 options={{ headerShown: false }}
             />
             <Stack.Screen 

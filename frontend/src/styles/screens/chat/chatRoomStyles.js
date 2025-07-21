@@ -1,15 +1,27 @@
+// frontend/src/styles/screens/chat/ChatRoomStyles.js
 import { StyleSheet } from 'react-native';
 
 export const chatRoomStyles = (theme) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.background,
+    },
+    connectionStatus: {
+        backgroundColor: theme.colors.warning,
+        paddingVertical: 4,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+    },
+    connectionStatusText: {
+        color: theme.colors.background,
+        fontSize: 12,
+        fontWeight: '600',
     },
     messagesList: {
         paddingHorizontal: 10,
@@ -22,8 +34,8 @@ export const chatRoomStyles = (theme) => StyleSheet.create({
     },
     timestamp: {
         fontSize: 12,
-        color: '#999999',
-        backgroundColor: '#1a1a1a',
+        color: theme.colors.textSecondary,
+        backgroundColor: theme.colors.surface,
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 12,
@@ -50,7 +62,7 @@ export const chatRoomStyles = (theme) => StyleSheet.create({
         alignItems: 'center',
     },
     avatarText: {
-        color: '#FFFFFF',
+        color: theme.colors.textInverse,
         fontSize: 14,
         fontWeight: 'bold',
     },
@@ -59,9 +71,9 @@ export const chatRoomStyles = (theme) => StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 18,
-        backgroundColor: '#1a1a1a',
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
-        borderColor: '#2a2a2a',
+        borderColor: theme.colors.border,
     },
     messageBubbleWithoutAvatar: {
         marginLeft: 40,
@@ -78,11 +90,11 @@ export const chatRoomStyles = (theme) => StyleSheet.create({
     },
     messageText: {
         fontSize: 16,
-        color: '#FFFFFF',
+        color: theme.colors.text,
         lineHeight: 20,
     },
     ownMessageText: {
-        color: '#FFFFFF',
+        color: theme.colors.textInverse,
     },
     messageStatus: {
         position: 'absolute',
@@ -91,7 +103,7 @@ export const chatRoomStyles = (theme) => StyleSheet.create({
     },
     deletedMessage: {
         fontStyle: 'italic',
-        color: '#666666',
+        color: theme.colors.textSecondary,
         fontSize: 14,
     },
     typingContainer: {
@@ -109,40 +121,28 @@ export const chatRoomStyles = (theme) => StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#666666',
+        backgroundColor: theme.colors.textSecondary,
         marginHorizontal: 2,
-    },
-    dot1: {
-        animation: 'bounce 1.4s infinite',
-        animationDelay: '0s',
-    },
-    dot2: {
-        animation: 'bounce 1.4s infinite',
-        animationDelay: '0.2s',
-    },
-    dot3: {
-        animation: 'bounce 1.4s infinite',
-        animationDelay: '0.4s',
     },
     typingText: {
         fontSize: 14,
-        color: '#666666',
+        color: theme.colors.textSecondary,
         fontStyle: 'italic',
     },
     inputContainer: {
-        backgroundColor: '#0a0a0a',
+        backgroundColor: theme.colors.surface,
         borderTopWidth: 1,
-        borderTopColor: '#1a1a1a',
+        borderTopColor: theme.colors.border,
         paddingVertical: 8,
         paddingHorizontal: 12,
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        backgroundColor: '#1a1a1a',
+        backgroundColor: theme.colors.background,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: '#2a2a2a',
+        borderColor: theme.colors.border,
         paddingHorizontal: 16,
         paddingVertical: 8,
         minHeight: 44,
@@ -150,7 +150,7 @@ export const chatRoomStyles = (theme) => StyleSheet.create({
     input: {
         flex: 1,
         fontSize: 16,
-        color: '#FFFFFF',
+        color: theme.colors.text,
         maxHeight: 100,
         paddingTop: 0,
         paddingBottom: 0,
