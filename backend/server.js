@@ -3,9 +3,11 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import connectDB from './config/db.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import { setupSocketHandlers } from './socket/socketHandlers.js';
+import User from './models/User.js';
 
 // Import routes
 import userRoutes from './routes/userRoutes.js';
@@ -29,6 +31,7 @@ const corsOptions = {
         const allowedOrigins = [
             'http://localhost:3000',
             'http://localhost:5001',
+            'http://localhost:8081',
             'http://localhost:19000',
             'http://localhost:19001',
             'http://localhost:19002',
@@ -123,22 +126,43 @@ io.use(async (socket, next) => {
         const token = socket.handshake.auth.token;
         
         if (!token) {
+            console.log('Socket auth: No token provided');
+            // Allow connection without auth for development
+            if (process.env.NODE_ENV === 'development') {
+                socket.userId = 'anonymous';
+                return next();
+            }
             return next(new Error('Authentication error: No token provided'));
         }
         
         // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('-password');
-        
-        if (!user) {
-            return next(new Error('Authentication error: User not found'));
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await User.findById(decoded.id).select('-password');
+            
+            if (!user) {
+                console.log('Socket auth: User not found');
+                return next(new Error('Authentication error: User not found'));
+            }
+            
+            socket.userId = user._id.toString();
+            socket.user = user;
+            console.log(`Socket authenticated for user: ${user.name}`);
+            next();
+        } catch (jwtError) {
+            console.error('JWT verification error:', jwtError.message);
+            if (process.env.NODE_ENV === 'development') {
+                socket.userId = 'anonymous';
+                return next();
+            }
+            return next(new Error('Authentication error: Invalid token'));
         }
-        
-        socket.userId = user._id.toString();
-        socket.user = user;
-        next();
     } catch (error) {
         console.error('Socket authentication error:', error);
+        if (process.env.NODE_ENV === 'development') {
+            socket.userId = 'anonymous';
+            return next();
+        }
         next(new Error('Authentication error: Invalid token'));
     }
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
-import { Card, FAB, Portal, Modal, Button, Chip, TextInput, Badge } from 'react-native-paper';
+import { Card, FAB, Portal, Modal, Button, Chip, TextInput, Badge, Provider } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
@@ -77,7 +77,6 @@ const ForumItem = React.memo(({ item, onPress, styles }) => (
     </TouchableOpacity>
 ));
 
-
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
     const { user } = useAuth();
@@ -121,13 +120,13 @@ const ForumScreen = ({ navigation }) => {
         loadForums();
     }, [loadForums]);
 
-    // changed to Navigate to chat room instead of forum detail
+    // Navigate to chat room instead of forum detail
     const handleForumPress = useCallback((forum) => {
-    navigation.navigate('ChatRoom', {
-        roomId: forum._id,
-        roomTitle: forum.title
-    });
-}, [navigation]);
+        navigation.navigate('ChatRoom', {
+            roomId: forum._id,
+            roomTitle: forum.title
+        });
+    }, [navigation]);
 
     // Fixed: Direct state updates without side effects
     const handleTitleChange = useCallback((text) => {
@@ -189,15 +188,15 @@ const ForumScreen = ({ navigation }) => {
     // Optimize keyExtractor
     const keyExtractor = useCallback((item) => item._id, []);
 
-    // changed for transition from forums to real-time
+    // Header component
     const ListHeaderComponent = useMemo(() => (
-    <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chat Rooms</Text>
-        <Text style={styles.headerSubtitle}>
-            Join conversations and connect in real-time
-        </Text>
-    </View>
-), [styles]);
+        <View style={styles.header}>
+            <Text style={styles.headerTitle}>Chat Rooms</Text>
+            <Text style={styles.headerSubtitle}>
+                Join conversations and connect in real-time
+            </Text>
+        </View>
+    ), [styles]);
 
     // Optimize empty component
     const ListEmptyComponent = useMemo(() => (
@@ -231,105 +230,107 @@ const ForumScreen = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                <FlatList
-                    data={forums}
-                    renderItem={({ item }) => (
-                        <ForumItem 
-                            item={item} 
-                            onPress={handleForumPress}
-                            styles={styles}
-                        />
-                    )}
-                    keyExtractor={keyExtractor}
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={handleRefresh}
-                            tintColor={theme.colors.primary}
-                        />
-                    }
-                    showsVerticalScrollIndicator={false}
-                    ListHeaderComponent={ListHeaderComponent}
-                    ListEmptyComponent={ListEmptyComponent}
-                    removeClippedSubviews={true}
-                    maxToRenderPerBatch={10}
-                    updateCellsBatchingPeriod={50}
-                    windowSize={10}
-                    initialNumToRender={10}
-                />
-
-                <FAB
-                    icon="plus"
-                    style={styles.fab}
-                    onPress={() => setModalVisible(true)}
-                />
-
-                <Portal>
-                    <Modal
-                        visible={modalVisible}
-                        onDismiss={handleModalDismiss}
-                        contentContainerStyle={styles.modal}
-                    >
-                        <Text style={styles.modalTitle}>Create New Forum</Text>
-                        
-                        <TextInput
-                            label="Forum Title"
-                            value={formData.title}
-                            onChangeText={handleTitleChange}
-                            mode="outlined"
-                            style={styles.input}
-                            error={!!formErrors.title}
-                            disabled={submitting}
-                            theme={{ colors: { primary: theme.colors.primary } }}
-                            maxLength={100}
-                        />
-                        {formErrors.title && (
-                            <Text style={styles.errorText}>{formErrors.title}</Text>
+        <Provider>
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.container}>
+                    <FlatList
+                        data={forums}
+                        renderItem={({ item }) => (
+                            <ForumItem 
+                                item={item} 
+                                onPress={handleForumPress}
+                                styles={styles}
+                            />
                         )}
-                        
-                        <TextInput
-                            label="Forum Description"
-                            value={formData.description}
-                            onChangeText={handleDescriptionChange}
-                            mode="outlined"
-                            multiline
-                            numberOfLines={4}
-                            style={styles.input}
-                            error={!!formErrors.description}
-                            disabled={submitting}
-                            theme={{ colors: { primary: theme.colors.primary } }}
-                            maxLength={500}
-                        />
-                        {formErrors.description && (
-                            <Text style={styles.errorText}>{formErrors.description}</Text>
-                        )}
-                        
-                        <View style={styles.modalButtons}>
-                            <Button
+                        keyExtractor={keyExtractor}
+                        contentContainerStyle={styles.listContent}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={handleRefresh}
+                                tintColor={theme.colors.primary}
+                            />
+                        }
+                        showsVerticalScrollIndicator={false}
+                        ListHeaderComponent={ListHeaderComponent}
+                        ListEmptyComponent={ListEmptyComponent}
+                        removeClippedSubviews={true}
+                        maxToRenderPerBatch={10}
+                        updateCellsBatchingPeriod={50}
+                        windowSize={10}
+                        initialNumToRender={10}
+                    />
+
+                    <FAB
+                        icon="plus"
+                        style={styles.fab}
+                        onPress={() => setModalVisible(true)}
+                    />
+
+                    <Portal>
+                        <Modal
+                            visible={modalVisible}
+                            onDismiss={handleModalDismiss}
+                            contentContainerStyle={styles.modal}
+                        >
+                            <Text style={styles.modalTitle}>Create New Forum</Text>
+                            
+                            <TextInput
+                                label="Forum Title"
+                                value={formData.title}
+                                onChangeText={handleTitleChange}
                                 mode="outlined"
-                                onPress={handleModalDismiss}
-                                style={styles.modalButton}
+                                style={styles.input}
+                                error={!!formErrors.title}
                                 disabled={submitting}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                mode="contained"
-                                onPress={handleCreateForum}
-                                style={styles.modalButton}
-                                loading={submitting}
+                                theme={{ colors: { primary: theme.colors.primary } }}
+                                maxLength={100}
+                            />
+                            {formErrors.title && (
+                                <Text style={styles.errorText}>{formErrors.title}</Text>
+                            )}
+                            
+                            <TextInput
+                                label="Forum Description"
+                                value={formData.description}
+                                onChangeText={handleDescriptionChange}
+                                mode="outlined"
+                                multiline
+                                numberOfLines={4}
+                                style={styles.input}
+                                error={!!formErrors.description}
                                 disabled={submitting}
-                            >
-                                Create Forum
-                            </Button>
-                        </View>
-                    </Modal>
-                </Portal>
-            </View>
-        </SafeAreaView>
+                                theme={{ colors: { primary: theme.colors.primary } }}
+                                maxLength={500}
+                            />
+                            {formErrors.description && (
+                                <Text style={styles.errorText}>{formErrors.description}</Text>
+                            )}
+                            
+                            <View style={styles.modalButtons}>
+                                <Button
+                                    mode="outlined"
+                                    onPress={handleModalDismiss}
+                                    style={styles.modalButton}
+                                    disabled={submitting}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    mode="contained"
+                                    onPress={handleCreateForum}
+                                    style={styles.modalButton}
+                                    loading={submitting}
+                                    disabled={submitting}
+                                >
+                                    Create Forum
+                                </Button>
+                            </View>
+                        </Modal>
+                    </Portal>
+                </View>
+            </SafeAreaView>
+        </Provider>
     );
 };
 
