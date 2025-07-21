@@ -1,10 +1,13 @@
-
 import express from 'express';
 import {
     loginUser,
     registerUser,
     getMe,
-    updateOnboarding,
+    updateProfessionalPath,
+    completeOnboarding,
+    getOnboardingStatus,
+    updateProfile,
+    logoutUser
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validationRules, handleValidationErrors } from '../middleware/validationMiddleware.js';
@@ -27,12 +30,15 @@ router.post('/login',
 // Private routes - requires a valid token
 router.route('/me').get(protect, getMe);
 
-// Update onboarding - CRITICAL: This was missing
-router.put('/onboarding', protect, updateOnboarding);
+// Onboarding routes
+router.get('/onboarding-status', protect, getOnboardingStatus);
+router.put('/professional-path', protect, updateProfessionalPath);
+router.put('/complete-onboarding', protect, completeOnboarding);
 
-// Logout endpoint (for token invalidation if needed)
-router.post('/logout', protect, (req, res) => {
-    res.json({ message: 'Logged out successfully' });
-});
+// Profile update
+router.put('/profile', protect, updateProfile);
+
+// Logout endpoint
+router.post('/logout', protect, logoutUser);
 
 export default router;

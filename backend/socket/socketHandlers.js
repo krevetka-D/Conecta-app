@@ -10,53 +10,49 @@ export const setupSocketHandlers = (io) => {
     const roomUsers = new Map(); // roomId -> Set of userIds
     
     // Heartbeat mechanism
-    const heartbeatInterval = 30000; // 30 seconds
+    const HEARTBEAT_INTERVAL = 25000; // 25 seconds
+    const HEARTBEAT_TIMEOUT = 60000; // 60 seconds
     const heartbeats = new Map(); // socketId -> lastHeartbeat
     
     // Start heartbeat checker
-    setInterval(() => {
+    const heartbeatChecker = setInterval(() => {
         const now = Date.now();
         for (const [socketId, lastBeat] of heartbeats) {
-            if (now - lastBeat > heartbeatInterval * 2) {
+            if (now - lastBeat > HEARTBEAT_TIMEOUT) {
                 const socket = io.sockets.sockets.get(socketId);
                 if (socket) {
-                    console.log(`Disconnecting inactive socket: ${socketId}`);
+                    logger.info(`Disconnecting inactive socket: ${socketId}`);
                     socket.disconnect(true);
                 }
                 heartbeats.delete(socketId);
             }
         }
-    }, heartbeatInterval);
+    }, HEARTBEAT_INTERVAL);
 
-    io.on('connection', (socket) => {
-        console.log(`Socket connected: ${socket.id}`);
+    // Cleanup on server shutdown
+    process.on('SIGTERM', () => {
+        clearInterval(heartbeatChecker);
+    });
+
+    io.on('connection', async (socket) => {
+        logger.info(`Socket connected: ${socket.id}`);
         
         // Initialize heartbeat
         heartbeats.set(socket.id, Date.now());
         
-        // Send connection acknowledgment
-        socket.emit('connected', {
-            socketId: socket.id,
-            timestamp: new Date().toISOString()
-        });
-
-        // Handle heartbeat
-        socket.on('heartbeat', () => {
-            heartbeats.set(socket.id, Date.now());
-            socket.emit('heartbeat_ack');
-        });
-
-        // Enhanced authentication handler
-        socket.on('authenticate', async (data) => {
+        // Get user from socket middleware
+        const userId = socket.userId;
+        const user = socket.user;
+        
+        if (userId && userId !== 'anonymous') {
             try {
-                const { userId } = data;
+                // Update user online status
+                await User.findByIdAndUpdate(userId, {
+                    isOnline: true,
+                    lastSeen: new Date(),
+                    $addToSet: { socketIds: socket.id }
+                });
                 
-                if (!userId) {
-                    return socket.emit('auth_error', { 
-                        message: 'User ID required for authentication' 
-                    });
-                }
-
                 // Store connection info
                 connections.set(socket.id, { userId, roomIds: new Set() });
                 
@@ -65,43 +61,54 @@ export const setupSocketHandlers = (io) => {
                     userSockets.set(userId, new Set());
                 }
                 userSockets.get(userId).add(socket.id);
-
-                // Update user online status
-                await User.findByIdAndUpdate(userId, { 
-                    isOnline: true,
-                    lastSeen: new Date()
-                });
-
+                
                 // Join user's personal room
                 socket.join(`user_${userId}`);
-
-                socket.emit('authenticated', { 
-                    success: true,
+                
+                // Send connection success
+                socket.emit('connected', {
+                    socketId: socket.id,
                     userId,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    authenticated: true
                 });
-
+                
                 // Notify others about user online
-                socket.broadcast.emit('userOnline', { userId });
-
-                logger.info(`User ${userId} authenticated on socket ${socket.id}`);
-            } catch (error) {
-                logger.error('Authentication error:', error);
-                socket.emit('auth_error', { 
-                    message: 'Authentication failed',
-                    error: error.message 
+                socket.broadcast.emit('userOnline', { 
+                    userId,
+                    name: user?.name 
                 });
+                
+            } catch (error) {
+                logger.error('Error setting up authenticated connection:', error);
             }
+        } else {
+            // Anonymous connection
+            socket.emit('connected', {
+                socketId: socket.id,
+                timestamp: new Date().toISOString(),
+                authenticated: false,
+                message: 'Connected in anonymous mode'
+            });
+        }
+
+        // Handle heartbeat
+        socket.on('heartbeat', () => {
+            heartbeats.set(socket.id, Date.now());
+            socket.emit('heartbeat_ack', {
+                timestamp: new Date().toISOString()
+            });
         });
 
-        // Enhanced room join handler
+        // Handle room join
         socket.on('joinRoom', async (roomId) => {
             try {
                 const connection = connections.get(socket.id);
                 
                 if (!connection) {
                     return socket.emit('error', { 
-                        message: 'Not authenticated',
+                        type: 'JOIN_ROOM_ERROR',
+                        message: 'Authentication required to join rooms',
                         code: 'NOT_AUTHENTICATED'
                     });
                 }
@@ -110,13 +117,24 @@ export const setupSocketHandlers = (io) => {
                 const room = await Forum.findById(roomId);
                 if (!room) {
                     return socket.emit('error', { 
+                        type: 'JOIN_ROOM_ERROR',
                         message: 'Room not found',
                         code: 'ROOM_NOT_FOUND'
                     });
                 }
 
-                // Join the room
+                // Leave previous rooms (optional - depends on your app logic)
+                for (const prevRoomId of connection.roomIds) {
+                    socket.leave(prevRoomId);
+                    const users = roomUsers.get(prevRoomId);
+                    if (users) {
+                        users.delete(connection.userId);
+                    }
+                }
+
+                // Join the new room
                 socket.join(roomId);
+                connection.roomIds.clear();
                 connection.roomIds.add(roomId);
 
                 // Track room users
@@ -125,62 +143,110 @@ export const setupSocketHandlers = (io) => {
                 }
                 roomUsers.get(roomId).add(connection.userId);
 
-                // Load and send recent messages
-                try {
-                    const messages = await ChatMessage.find({ 
+                // Get online users in room
+                const onlineUserIds = Array.from(roomUsers.get(roomId) || []);
+                const onlineUsers = await User.find({ 
+                    _id: { $in: onlineUserIds } 
+                }).select('name email isOnline');
+
+                // Load recent messages
+                const messages = await ChatMessage.find({ 
+                    roomId,
+                    deleted: false 
+                })
+                .populate('sender', 'name email isOnline')
+                .populate({
+                    path: 'replyTo',
+                    select: 'content sender',
+                    populate: { path: 'sender', select: 'name' }
+                })
+                .sort({ createdAt: -1 })
+                .limit(50)
+                .lean();
+
+                // Mark messages as read
+                await ChatMessage.updateMany(
+                    {
                         roomId,
-                        deleted: false 
-                    })
-                    .populate('sender', 'name email')
-                    .populate({
-                        path: 'replyTo',
-                        select: 'content sender',
-                        populate: { path: 'sender', select: 'name' }
-                    })
-                    .sort({ createdAt: -1 })
-                    .limit(50)
-                    .lean();
+                        'readBy.user': { $ne: connection.userId }
+                    },
+                    {
+                        $push: {
+                            readBy: {
+                                user: connection.userId,
+                                readAt: new Date()
+                            }
+                        }
+                    }
+                );
 
-                    socket.emit('roomMessages', messages.reverse());
-                } catch (error) {
-                    logger.error('Error loading messages:', error);
-                    socket.emit('roomMessages', []);
-                }
-
-                // Send room users
-                const users = Array.from(roomUsers.get(roomId) || []);
-                io.to(roomId).emit('roomUsers', users);
+                // Send room data
+                socket.emit('joinedRoom', {
+                    roomId,
+                    success: true,
+                    messages: messages.reverse(),
+                    onlineUsers,
+                    totalUsers: onlineUserIds.length
+                });
 
                 // Notify others
                 socket.to(roomId).emit('userJoinedRoom', {
                     userId: connection.userId,
+                    userName: user?.name,
                     roomId,
                     timestamp: new Date().toISOString()
-                });
-
-                socket.emit('joinedRoom', {
-                    roomId,
-                    success: true
                 });
 
                 logger.info(`User ${connection.userId} joined room ${roomId}`);
             } catch (error) {
                 logger.error('Error joining room:', error);
                 socket.emit('error', { 
+                    type: 'JOIN_ROOM_ERROR',
                     message: 'Failed to join room',
                     error: error.message 
                 });
             }
         });
 
-        // Enhanced message handler
+        // Handle leaving room
+        socket.on('leaveRoom', async (roomId) => {
+            try {
+                const connection = connections.get(socket.id);
+                
+                if (!connection) return;
+
+                socket.leave(roomId);
+                connection.roomIds.delete(roomId);
+
+                const users = roomUsers.get(roomId);
+                if (users) {
+                    users.delete(connection.userId);
+                    if (users.size === 0) {
+                        roomUsers.delete(roomId);
+                    }
+                }
+
+                socket.to(roomId).emit('userLeftRoom', {
+                    userId: connection.userId,
+                    userName: user?.name,
+                    roomId
+                });
+
+                socket.emit('leftRoom', { roomId, success: true });
+            } catch (error) {
+                logger.error('Error leaving room:', error);
+            }
+        });
+
+        // Handle sending message
         socket.on('sendMessage', async (data) => {
             try {
                 const connection = connections.get(socket.id);
                 
                 if (!connection) {
                     return socket.emit('error', { 
-                        message: 'Not authenticated',
+                        type: 'MESSAGE_ERROR',
+                        message: 'Authentication required to send messages',
                         code: 'NOT_AUTHENTICATED'
                     });
                 }
@@ -190,8 +256,18 @@ export const setupSocketHandlers = (io) => {
                 // Validate input
                 if (!roomId || !content?.trim()) {
                     return socket.emit('error', { 
+                        type: 'MESSAGE_ERROR',
                         message: 'Invalid message data',
                         code: 'INVALID_DATA'
+                    });
+                }
+
+                // Verify user is in room
+                if (!connection.roomIds.has(roomId)) {
+                    return socket.emit('error', { 
+                        type: 'MESSAGE_ERROR',
+                        message: 'You must join the room first',
+                        code: 'NOT_IN_ROOM'
                     });
                 }
 
@@ -208,7 +284,7 @@ export const setupSocketHandlers = (io) => {
 
                 // Populate for response
                 const populatedMessage = await ChatMessage.findById(message._id)
-                    .populate('sender', 'name email')
+                    .populate('sender', 'name email isOnline')
                     .populate({
                         path: 'replyTo',
                         select: 'content sender',
@@ -220,23 +296,40 @@ export const setupSocketHandlers = (io) => {
                 io.to(roomId).emit('newMessage', populatedMessage);
 
                 // Update forum activity
-                Forum.findByIdAndUpdate(roomId, {
+                await Forum.findByIdAndUpdate(roomId, {
                     lastActivity: new Date()
-                }).exec().catch(err => logger.error('Error updating forum activity:', err));
+                });
 
                 // Send acknowledgment
                 socket.emit('messageSent', {
                     messageId: message._id,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    success: true
                 });
 
             } catch (error) {
                 logger.error('Error sending message:', error);
                 socket.emit('error', { 
+                    type: 'MESSAGE_ERROR',
                     message: 'Failed to send message',
                     error: error.message 
                 });
             }
+        });
+
+        // Handle typing indicators
+        socket.on('typing', (data) => {
+            const connection = connections.get(socket.id);
+            if (!connection) return;
+
+            const { roomId, isTyping } = data;
+            
+            socket.to(roomId).emit('userTyping', {
+                userId: connection.userId,
+                userName: user?.name,
+                isTyping,
+                roomId
+            });
         });
 
         // Handle disconnection
@@ -248,35 +341,48 @@ export const setupSocketHandlers = (io) => {
             if (connection) {
                 const { userId, roomIds } = connection;
                 
-                // Remove from user sockets
-                const sockets = userSockets.get(userId);
-                if (sockets) {
-                    sockets.delete(socket.id);
-                    
-                    // If user has no more sockets, mark as offline
-                    if (sockets.size === 0) {
-                        userSockets.delete(userId);
-                        
-                        // Update user status
-                        await User.findByIdAndUpdate(userId, {
-                            isOnline: false,
-                            lastSeen: new Date()
-                        });
-                        
-                        // Notify others
-                        socket.broadcast.emit('userOffline', { userId });
+                try {
+                    // Remove socket from user
+                    const userDoc = await User.findById(userId);
+                    if (userDoc) {
+                        await userDoc.removeSocketId(socket.id);
                     }
-                }
-                
-                // Remove from rooms
-                for (const roomId of roomIds) {
-                    const users = roomUsers.get(roomId);
-                    if (users) {
-                        users.delete(userId);
-                        if (users.size === 0) {
-                            roomUsers.delete(roomId);
+                    
+                    // Remove from user sockets
+                    const sockets = userSockets.get(userId);
+                    if (sockets) {
+                        sockets.delete(socket.id);
+                        
+                        if (sockets.size === 0) {
+                            userSockets.delete(userId);
+                            
+                            // Notify others user is offline
+                            socket.broadcast.emit('userOffline', { 
+                                userId,
+                                name: userDoc?.name 
+                            });
                         }
                     }
+                    
+                    // Remove from rooms
+                    for (const roomId of roomIds) {
+                        const users = roomUsers.get(roomId);
+                        if (users) {
+                            users.delete(userId);
+                            if (users.size === 0) {
+                                roomUsers.delete(roomId);
+                            } else {
+                                // Notify room members
+                                socket.to(roomId).emit('userLeftRoom', {
+                                    userId,
+                                    userName: userDoc?.name,
+                                    roomId
+                                });
+                            }
+                        }
+                    }
+                } catch (error) {
+                    logger.error('Error handling disconnect:', error);
                 }
                 
                 connections.delete(socket.id);
@@ -290,4 +396,19 @@ export const setupSocketHandlers = (io) => {
             logger.error(`Socket error for ${socket.id}:`, error);
         });
     });
+
+    // Periodic cleanup of stale data
+    setInterval(() => {
+        const now = Date.now();
+        
+        // Clean up old heartbeats
+        for (const [socketId, lastBeat] of heartbeats) {
+            if (now - lastBeat > HEARTBEAT_TIMEOUT * 2) {
+                heartbeats.delete(socketId);
+            }
+        }
+        
+        // Log stats
+        logger.info(`Socket stats - Connections: ${connections.size}, Users: ${userSockets.size}, Rooms with users: ${roomUsers.size}`);
+    }, 60000); // Every minute
 };

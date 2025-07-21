@@ -3,7 +3,9 @@ import {
     getRoomMessages,
     getChatRooms,
     searchMessages,
-    sendMessage
+    sendMessage,
+    markMessagesAsRead,
+    getRoomParticipants
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -16,7 +18,8 @@ router.use(protect);
 router.get('/rooms', getChatRooms);
 router.get('/rooms/:roomId/messages', getRoomMessages);
 router.post('/rooms/:roomId/messages', sendMessage); // Add missing POST route
-
+router.post('/rooms/:roomId/read', markMessagesAsRead);
+router.get('/rooms/:roomId/participants', getRoomParticipants);
 // Search
 router.get('/search', searchMessages);
 

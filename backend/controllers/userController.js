@@ -1,8 +1,8 @@
-
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
-import { createChecklistForUser } from './checklistController.js';
+import ChecklistItem from '../models/ChecklistItem.js';
+import { CHECKLIST_ITEMS } from '../config/constants.js';
 
 /**
  * @desc    Register a new user
@@ -10,17 +10,11 @@ import { createChecklistForUser } from './checklistController.js';
  * @access  Public
  */
 export const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, password, professionalPath } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
         res.status(400);
         throw new Error('Please provide all required fields');
-    }
-
-    // Validate professional path
-    if (professionalPath && !['FREELANCER', 'ENTREPRENEUR'].includes(professionalPath)) {
-        res.status(400);
-        throw new Error('Invalid professional path');
     }
 
     const userExists = await User.findOne({ email });
@@ -34,27 +28,24 @@ export const registerUser = asyncHandler(async (req, res) => {
         name,
         email,
         password,
-        professionalPath: professionalPath || undefined,
-        onboardingCompleted: !!professionalPath,
+        // Don't set professionalPath yet - user will select it after registration
+        professionalPath: undefined,
+        onboardingCompleted: false,
+        onboardingStep: 'SELECT_PATH' // New field to track onboarding progress
     });
 
     if (user) {
         const token = generateToken(user._id);
 
-        // Create checklist items if professional path is provided
-        if (professionalPath) {
-            await createChecklistForUser(user._id, professionalPath);
-        }
-
-        // Frontend expects 'user' and 'token' at root level
         res.status(201).json({
             user: {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 professionalPath: user.professionalPath,
-                hasCompletedOnboarding: user.onboardingCompleted,
-                pinnedModules: user.pinnedModules || [],
+                hasCompletedOnboarding: false,
+                onboardingStep: user.onboardingStep,
+                pinnedModules: [],
             },
             token: token,
         });
@@ -62,6 +53,121 @@ export const registerUser = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error('Invalid user data');
     }
+});
+
+/**
+ * @desc    Update user's professional path
+ * @route   PUT /api/users/professional-path
+ * @access  Private
+ */
+export const updateProfessionalPath = asyncHandler(async (req, res) => {
+    const { professionalPath } = req.body;
+
+    if (!professionalPath || !['FREELANCER', 'ENTREPRENEUR'].includes(professionalPath)) {
+        res.status(400);
+        throw new Error('Invalid professional path');
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    user.professionalPath = professionalPath;
+    user.onboardingStep = 'SELECT_CHECKLIST_ITEMS';
+    await user.save();
+
+    // Get available checklist items for the selected path
+    const checklistItemsForPath = CHECKLIST_ITEMS[professionalPath] || [];
+
+    res.status(200).json({
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            professionalPath: user.professionalPath,
+            hasCompletedOnboarding: false,
+            onboardingStep: user.onboardingStep,
+        },
+        availableChecklistItems: checklistItemsForPath
+    });
+});
+
+/**
+ * @desc    Complete onboarding with selected checklist items
+ * @route   PUT /api/users/complete-onboarding
+ * @access  Private
+ */
+export const completeOnboarding = asyncHandler(async (req, res) => {
+    const { selectedChecklistItems, pinnedModules } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    if (!user.professionalPath) {
+        res.status(400);
+        throw new Error('Professional path must be selected first');
+    }
+
+    // Create checklist items for the user
+    if (selectedChecklistItems && selectedChecklistItems.length > 0) {
+        const checklistItemsToCreate = selectedChecklistItems.map(itemKey => ({
+            user: user._id,
+            itemKey,
+            isCompleted: false
+        }));
+
+        await ChecklistItem.insertMany(checklistItemsToCreate);
+    }
+
+    // Update user
+    user.pinnedModules = pinnedModules || [];
+    user.onboardingCompleted = true;
+    user.onboardingStep = 'COMPLETED';
+    await user.save();
+
+    res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        professionalPath: user.professionalPath,
+        hasCompletedOnboarding: true,
+        onboardingStep: user.onboardingStep,
+        pinnedModules: user.pinnedModules,
+    });
+});
+
+/**
+ * @desc    Get onboarding status
+ * @route   GET /api/users/onboarding-status
+ * @access  Private
+ */
+export const getOnboardingStatus = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select('-password');
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    let response = {
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingStep: user.onboardingStep || 'SELECT_PATH',
+        professionalPath: user.professionalPath
+    };
+
+    // If user has selected path but not completed onboarding, send checklist items
+    if (user.professionalPath && !user.onboardingCompleted) {
+        response.availableChecklistItems = CHECKLIST_ITEMS[user.professionalPath] || [];
+    }
+
+    res.status(200).json(response);
 });
 
 /**
@@ -77,7 +183,11 @@ export const loginUser = asyncHandler(async (req, res) => {
     if (user && (await user.matchPassword(password))) {
         const token = generateToken(user._id);
 
-        // Frontend expects 'user' and 'token' at root level
+        // Update last login and online status
+        user.lastLogin = new Date();
+        user.isOnline = true;
+        await user.save();
+
         res.json({
             user: {
                 _id: user._id,
@@ -85,6 +195,7 @@ export const loginUser = asyncHandler(async (req, res) => {
                 email: user.email,
                 professionalPath: user.professionalPath,
                 hasCompletedOnboarding: user.onboardingCompleted,
+                onboardingStep: user.onboardingStep || (user.onboardingCompleted ? 'COMPLETED' : 'SELECT_PATH'),
                 pinnedModules: user.pinnedModules || [],
             },
             token: token,
@@ -93,6 +204,23 @@ export const loginUser = asyncHandler(async (req, res) => {
         res.status(401);
         throw new Error('Invalid email or password');
     }
+});
+
+/**
+ * @desc    Logout user
+ * @route   POST /api/users/logout
+ * @access  Private
+ */
+export const logoutUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    
+    if (user) {
+        user.isOnline = false;
+        user.lastSeen = new Date();
+        await user.save();
+    }
+
+    res.json({ message: 'Logged out successfully' });
 });
 
 /**
@@ -110,56 +238,10 @@ export const getMe = asyncHandler(async (req, res) => {
             email: user.email,
             professionalPath: user.professionalPath,
             hasCompletedOnboarding: user.onboardingCompleted,
+            onboardingStep: user.onboardingStep || (user.onboardingCompleted ? 'COMPLETED' : 'SELECT_PATH'),
             pinnedModules: user.pinnedModules || [],
-        });
-    } else {
-        res.status(404);
-        throw new Error('User not found');
-    }
-});
-
-/**
- * @desc    Update user onboarding information
- * @route   PUT /api/users/onboarding
- * @access  Private
- */
-export const updateOnboarding = asyncHandler(async (req, res) => {
-    const { professionalPath, pinnedModules } = req.body;
-
-    if (!professionalPath) {
-        res.status(400);
-        throw new Error('Professional path is required');
-    }
-
-    if (!['FREELANCER', 'ENTREPRENEUR'].includes(professionalPath)) {
-        res.status(400);
-        throw new Error('Invalid professional path');
-    }
-
-    const user = await User.findById(req.user._id);
-
-    if (user) {
-        const previousPath = user.professionalPath;
-        user.professionalPath = professionalPath;
-        user.pinnedModules = pinnedModules || [];
-        user.onboardingCompleted = true;
-
-        const updatedUser = await user.save();
-
-        // Create checklist items if professional path is set for the first time
-        // or if it has changed
-        if (!previousPath || previousPath !== professionalPath) {
-            await createChecklistForUser(user._id, professionalPath);
-        }
-
-        // Return the same format as login/register
-        res.status(200).json({
-            _id: updatedUser._id,
-            name: updatedUser.name,
-            email: updatedUser.email,
-            professionalPath: updatedUser.professionalPath,
-            hasCompletedOnboarding: updatedUser.onboardingCompleted,
-            pinnedModules: updatedUser.pinnedModules,
+            isOnline: user.isOnline,
+            lastSeen: user.lastSeen
         });
     } else {
         res.status(404);
@@ -179,7 +261,6 @@ export const updateProfile = asyncHandler(async (req, res) => {
         user.name = req.body.name || user.name;
         user.email = req.body.email || user.email;
 
-        // Only update password if provided
         if (req.body.password) {
             user.password = req.body.password;
         }
