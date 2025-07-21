@@ -1,4 +1,4 @@
-// frontend/src/styles/screens/forums/ForumScreenStyles.js
+
 import { StyleSheet } from 'react-native';
 import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 

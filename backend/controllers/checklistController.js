@@ -1,4 +1,4 @@
-// backend/controllers/checklistController.js
+
 import asyncHandler from 'express-async-handler';
 import ChecklistItem from '../models/ChecklistItem.js';
 import User from '../models/User.js';

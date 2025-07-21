@@ -1,4 +1,4 @@
-// frontend/src/components/common/OptimizedList.js
+
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { 
     FlatList, 
