@@ -1,156 +1,74 @@
 import apiClient from './api/client';
+import socketService from './socketService';
 import mockChatService from './mockChatService';
 import { USE_MOCK, devLog } from '../config/development';
 
-// Cache for chat data
-const chatCache = {
-    rooms: null,
-    roomsTimestamp: null,
-    messages: new Map(), // roomId -> messages
-    messagesTimestamp: new Map(), // roomId -> timestamp
-};
-
-const CACHE_DURATION = 60000; // 1 minute
-
 const chatService = {
-    // Get chat rooms with caching
-    getChatRooms: async (forceRefresh = false) => {
-        // Use mock service if enabled
+    // Initialize chat connection
+    async initializeChat(userId) {
         if (USE_MOCK) {
-            devLog('Chat', 'Using mock chat rooms');
-            return mockChatService.getRooms();
-        }
-
-        const now = Date.now();
-        
-        if (!forceRefresh && 
-            chatCache.rooms && 
-            chatCache.roomsTimestamp && 
-            (now - chatCache.roomsTimestamp < CACHE_DURATION)) {
-            return chatCache.rooms;
+            devLog('Chat', 'Using mock chat service');
+            return Promise.resolve();
         }
 
         try {
-            const response = await apiClient.get('/forums');
-            chatCache.rooms = response;
-            chatCache.roomsTimestamp = now;
-            return response;
+            // Try to connect socket
+            await socketService.connect(userId);
+            return true;
         } catch (error) {
-            console.error('Error fetching chat rooms:', error);
-            // Return cached data if available
-            if (chatCache.rooms) {
-                return chatCache.rooms;
-            }
-            // Return mock data in development if API fails
-            if (__DEV__) {
-                console.log('Using mock chat rooms due to API error');
-                return mockChatService.getRooms();
-            }
-            throw error;
+            console.error('Failed to initialize chat:', error);
+            // Continue without socket - API fallback will be used
+            return false;
         }
     },
 
-    // Get room messages with caching and pagination
-    getRoomMessages: async (roomId, options = {}) => {
-        // Use mock service if enabled
+    // Get room messages with fallback
+    async getRoomMessages(roomId, options = {}) {
         if (USE_MOCK) {
             return mockChatService.getRoomMessages(roomId);
         }
 
-        const { forceRefresh = false, limit = 50, before = null } = options;
-        const now = Date.now();
-        const cacheKey = `${roomId}_${limit}_${before || 'latest'}`;
-        
-        // Check cache first
-        if (!forceRefresh && 
-            chatCache.messages.has(cacheKey) && 
-            chatCache.messagesTimestamp.has(cacheKey) &&
-            (now - chatCache.messagesTimestamp.get(cacheKey) < CACHE_DURATION)) {
-            return chatCache.messages.get(cacheKey);
-        }
-
         try {
-            const params = { limit };
-            if (before) {
-                params.before = before;
-            }
+            const params = {
+                limit: options.limit || 50,
+                ...(options.before && { before: options.before })
+            };
 
             const response = await apiClient.get(`/chat/rooms/${roomId}/messages`, { params });
-            
-            // Update cache
-            chatCache.messages.set(cacheKey, response);
-            chatCache.messagesTimestamp.set(cacheKey, now);
-            
-            return response;
+            return response || [];
         } catch (error) {
             console.error('Error fetching messages:', error);
-            // Return cached data if available
-            if (chatCache.messages.has(cacheKey)) {
-                return chatCache.messages.get(cacheKey);
-            }
-            // Return mock data in development if API fails
+            
+            // Fallback to mock data in development
             if (__DEV__) {
                 console.log('Using mock messages due to API error');
                 return mockChatService.getRoomMessages(roomId);
             }
+            
             return [];
         }
     },
 
-    // Search messages with debouncing handled by the component
-    searchMessages: async (query, roomId = null) => {
-        try {
-            const params = { q: query };
-            if (roomId) {
-                params.roomId = roomId;
-            }
-            
-            const response = await apiClient.get('/chat/search', { params });
-            return response;
-        } catch (error) {
-            console.error('Error searching messages:', error);
-            return [];
+    // Send message with fallback
+    async sendMessage(roomId, content, type = 'text', attachments = []) {
+        // Try socket first if connected
+        if (socketService.isConnected()) {
+            socketService.sendMessage({
+                roomId,
+                content,
+                type,
+                attachments
+            });
+            return;
         }
-    },
 
-    // Mark messages as read
-    markMessagesAsRead: async (roomId, messageIds = null) => {
-        try {
-            const data = messageIds ? { messageIds } : {};
-            const response = await apiClient.post(`/chat/rooms/${roomId}/read`, data);
-            
-            // Clear message cache for this room as read status changed
-            for (const [key] of chatCache.messages) {
-                if (key.startsWith(roomId)) {
-                    chatCache.messages.delete(key);
-                    chatCache.messagesTimestamp.delete(key);
-                }
-            }
-            
-            return response;
-        } catch (error) {
-            console.error('Error marking messages as read:', error);
-            throw error;
-        }
-    },
-
-    // Send a message (handled via socket, this is for fallback/offline support)
-    sendMessage: async (roomId, content, type = 'text', attachments = []) => {
+        // Fallback to API
         try {
             const response = await apiClient.post(`/chat/rooms/${roomId}/messages`, {
                 content,
                 type,
                 attachments
             });
-            
-            // Clear message cache for this room
-            for (const [key] of chatCache.messages) {
-                if (key.startsWith(roomId)) {
-                    chatCache.messages.delete(key);
-                    chatCache.messagesTimestamp.delete(key);
-                }
-            }
-            
             return response;
         } catch (error) {
             console.error('Error sending message:', error);
@@ -158,60 +76,31 @@ const chatService = {
         }
     },
 
-    // Delete a message
-    deleteMessage: async (messageId) => {
-        try {
-            const response = await apiClient.delete(`/chat/messages/${messageId}`);
-            
-            // Clear all message caches as we don't know which room it belongs to
-            chatCache.messages.clear();
-            chatCache.messagesTimestamp.clear();
-            
-            return response;
-        } catch (error) {
-            console.error('Error deleting message:', error);
-            throw error;
+    // Join room with error handling
+    async joinRoom(roomId) {
+        if (socketService.isConnected()) {
+            socketService.joinRoom(roomId);
+        }
+        
+        // Always return messages regardless of socket status
+        return this.getRoomMessages(roomId);
+    },
+
+    // Leave room
+    leaveRoom(roomId) {
+        if (socketService.isConnected()) {
+            socketService.leaveRoom(roomId);
         }
     },
 
-    // Clear cache for a specific room
-    clearRoomCache: (roomId) => {
-        for (const [key] of chatCache.messages) {
-            if (key.startsWith(roomId)) {
-                chatCache.messages.delete(key);
-                chatCache.messagesTimestamp.delete(key);
-            }
-        }
+    // Check connection status
+    isConnected() {
+        return socketService.isConnected();
     },
 
-    // Clear all cache
-    clearAllCache: () => {
-        chatCache.rooms = null;
-        chatCache.roomsTimestamp = null;
-        chatCache.messages.clear();
-        chatCache.messagesTimestamp.clear();
-    },
-
-    // Get unread message count
-    getUnreadCount: async () => {
-        try {
-            const response = await apiClient.get('/chat/unread-count');
-            return response.count || 0;
-        } catch (error) {
-            console.error('Error fetching unread count:', error);
-            return 0;
-        }
-    },
-
-    // Get room participants
-    getRoomParticipants: async (roomId) => {
-        try {
-            const response = await apiClient.get(`/chat/rooms/${roomId}/participants`);
-            return response;
-        } catch (error) {
-            console.error('Error fetching room participants:', error);
-            return [];
-        }
+    // Cleanup
+    disconnect() {
+        socketService.disconnect();
     }
 };
 

@@ -1,149 +1,123 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import mongoSanitize from 'express-mongo-sanitize';
-import rateLimit from 'express-rate-limit';
-import morgan from 'morgan';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import jwt from 'jsonwebtoken';
-
 import connectDB from './config/db.js';
-import { notFound, errorHandler } from './middleware/errorMiddleware.js';
+import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import { setupSocketHandlers } from './socket/socketHandlers.js';
 
-// Import your existing routes
+// Import routes
 import userRoutes from './routes/userRoutes.js';
 import budgetRoutes from './routes/budgetRoutes.js';
 import checklistRoutes from './routes/checklistRoutes.js';
-import dashboardRoutes from './routes/dashboardRoutes.js';
-import configRoutes from './routes/configRoutes.js';
+import contentRoutes from './routes/contentRoutes.js';
 import forumRoutes from './routes/forumRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
-import chatRoutes from './routes/chatRoutes.js'; // New chat routes
-
-import { performanceMonitor, payloadSizeLimiter } from './middleware/performanceMiddleware.js';
+import configRoutes from './routes/configRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 dotenv.config();
-
-const app = express();
-
-// Create HTTP server
-const httpServer = createServer(app);
-
-// Connect to MongoDB
 connectDB();
 
-// Trust proxy for rate limiting to work behind reverse proxies
-app.set('trust proxy', 1);
+const app = express();
+const httpServer = createServer(app);
 
-// Security middleware
-app.use(helmet({
-    // Allow WebSocket connections
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            connectSrc: ["'self'", "ws:", "wss:"],
-        },
-    },
-}));
-
-// CORS configuration
+// Enhanced CORS configuration
 const corsOptions = {
     origin: function (origin, callback) {
-        const allowedOrigins = process.env.NODE_ENV === 'production'
-            ? [process.env.FRONTEND_URL]
-            : ['http://localhost:8081', 'http://192.168.1.129:8081', 'http://localhost:19006', 'http://localhost:3000'];
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:5001',
+            'http://localhost:19000',
+            'http://localhost:19001',
+            'http://localhost:19002',
+            'exp://localhost:19000',
+            /^exp:\/\/\d+\.\d+\.\d+\.\d+:\d+$/,
+            /^http:\/\/\d+\.\d+\.\d+\.\d+:\d+$/
+        ];
         
-        // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // Allow requests with no origin (mobile apps)
+        if (!origin) return callback(null, true);
+        
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (allowed instanceof RegExp) {
+                return allowed.test(origin);
+            }
+            return allowed === origin;
+        });
+        
+        if (isAllowed) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            console.log('Blocked by CORS:', origin);
+            callback(null, true); // In dev, allow all origins
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['X-Total-Count']
 };
 
 app.use(cors(corsOptions));
-app.use(compression());
-app.use(mongoSanitize());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    next();
 });
 
-// Apply rate limiting to API routes only
-app.use('/api/', limiter);
-
-// Socket.IO rate limiting
-const socketLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 60, // limit each IP to 60 socket events per minute
-    message: 'Too many socket requests from this IP, please try again later.',
-});
-
-// Logging (disable in production)
-if (process.env.NODE_ENV !== 'production') {
-    app.use(morgan('dev'));
-}
-
-// Body parser
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Performance monitoring
-app.use(performanceMonitor);
-app.use(payloadSizeLimiter());
-
-// --- Mount your API routes here ---
+// Routes
 app.use('/api/users', userRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/checklist', checklistRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/config', configRoutes);
+app.use('/api/content', contentRoutes);
 app.use('/api/forums', forumRoutes);
 app.use('/api/events', eventRoutes);
-app.use('/api/chat', chatRoutes); // New chat routes
+app.use('/api/config', configRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({
-        status: 'OK',
+        status: 'ok',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        socketStatus: io ? 'Connected' : 'Disconnected',
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV
     });
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
-    res.json({ 
-        message: 'Conecta Alicante API is running',
-        version: '2.0.0', // Updated for chat feature
-        features: ['forums', 'events', 'budget', 'checklist', 'chat']
-    });
-});
+// Error handlers
+app.use(notFound);
+app.use(errorHandler);
 
-// --- Socket.IO Setup ---
+// Socket.IO configuration with enhanced error handling
 const io = new Server(httpServer, {
     cors: corsOptions,
+    transports: ['websocket', 'polling'],
     pingTimeout: 60000,
     pingInterval: 25000,
-    transports: ['websocket', 'polling'],
-    allowEIO3: true, // Allow different Socket.IO versions
+    connectTimeout: 45000,
+    allowEIO3: true,
+    maxHttpBufferSize: 1e8, // 100 MB
+    path: '/socket.io/',
+    serveClient: false,
+    cookie: false,
+    
+    // Additional options for stability
+    allowUpgrades: true,
+    perMessageDeflate: {
+        threshold: 1024
+    },
+    httpCompression: {
+        threshold: 1024
+    }
 });
 
-// Socket.IO authentication middleware
+// Socket authentication middleware
 io.use(async (socket, next) => {
     try {
         const token = socket.handshake.auth.token;
@@ -151,26 +125,20 @@ io.use(async (socket, next) => {
         if (!token) {
             return next(new Error('Authentication error: No token provided'));
         }
-
-        // Verify JWT token
+        
+        // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
         
-        // You could also fetch the user from database here
-        socket.userId = decoded.id;
-        socket.decoded = decoded;
+        if (!user) {
+            return next(new Error('Authentication error: User not found'));
+        }
         
-        // Apply rate limiting to socket connections
-        const clientIp = socket.request.connection.remoteAddress;
-        req = { ip: clientIp };
-        
-        socketLimiter(req, {}, (err) => {
-            if (err) {
-                return next(new Error('Too many socket connections'));
-            }
-            next();
-        });
-    } catch (err) {
-        console.error('Socket authentication error:', err);
+        socket.userId = user._id.toString();
+        socket.user = user;
+        next();
+    } catch (error) {
+        console.error('Socket authentication error:', error);
         next(new Error('Authentication error: Invalid token'));
     }
 });
@@ -178,82 +146,24 @@ io.use(async (socket, next) => {
 // Setup socket handlers
 setupSocketHandlers(io);
 
-// Log socket connections in development
-if (process.env.NODE_ENV !== 'production') {
-    io.on('connection', (socket) => {
-        console.log(`Socket connected: ${socket.id} (User: ${socket.userId})`);
-        
-        socket.on('disconnect', (reason) => {
-            console.log(`Socket disconnected: ${socket.id} (Reason: ${reason})`);
-        });
+// Global error handler for unhandled promises
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    // Graceful shutdown
+    httpServer.close(() => {
+        process.exit(1);
     });
-}
+});
 
-// --- Error Handling Middleware should be last ---
-app.use(notFound);
-app.use(errorHandler);
-
-// Start server
 const PORT = process.env.PORT || 5001;
+
 httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-    console.log(`🔌 Socket.IO is enabled`);
-    console.log(`📍 API Base URL: http://localhost:${PORT}/api`);
-    console.log(`🌐 WebSocket URL: ws://localhost:${PORT}`);
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    console.log(`Socket.IO server ready`);
 });
 
-// Graceful shutdown
-const gracefulShutdown = async (signal) => {
-    console.log(`\n${signal} received. Starting graceful shutdown...`);
-    
-    // Close Socket.IO connections
-    io.close(() => {
-        console.log('Socket.IO connections closed');
-    });
-    
-    // Close HTTP server
-    httpServer.close(() => {
-        console.log('HTTP server closed');
-        
-        // Close database connection
-        mongoose.connection.close(false, () => {
-            console.log('MongoDB connection closed');
-            process.exit(0);
-        });
-    });
-
-    // Force close after 10 seconds
-    setTimeout(() => {
-        console.error('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-    }, 10000);
-};
-
-// Handle shutdown signals
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-    console.error(`Unhandled Promise Rejection: ${err.message}`);
-    console.error(err.stack);
-    
-    // Close server & exit process
-    httpServer.close(() => {
-        process.exit(1);
-    });
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-    console.error(`Uncaught Exception: ${err.message}`);
-    console.error(err.stack);
-    
-    // Close server & exit process
-    httpServer.close(() => {
-        process.exit(1);
-    });
-});
-
-// Export for testing purposes
-export { app, httpServer, io };
+export { io };
