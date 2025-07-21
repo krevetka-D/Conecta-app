@@ -126,12 +126,39 @@ const RegisterScreen = ({ navigation }) => {
             };
             
             // Register the user
-            await register(userData.name, userData.email, userData.password, userData.professionalPath);
+            const result = await register(userData.name, userData.email, userData.password, userData.professionalPath);
             
-            // Store selected checklist items in AsyncStorage for later use
-            await AsyncStorage.setItem('pendingChecklistItems', JSON.stringify(selectedChecklistItems));
+            // Check if registration requires login
+            if (result && result.requiresLogin) {
+                console.log('Registration successful, redirecting to login');
+                
+                // Store selected checklist items for after login
+                await AsyncStorage.setItem('pendingChecklistItems', JSON.stringify(selectedChecklistItems));
+                
+                // Show success message and navigate to login
+                Alert.alert(
+                    'Registration Successful',
+                    'Your account has been created successfully. Please login to continue.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => navigation.navigate(SCREEN_NAMES.LOGIN, {
+                                email: trimmedEmail
+                            })
+                        }
+                    ]
+                );
+                
+                return;
+            }
             
-            // The auth context will handle navigation after successful registration
+            // If we have a token, registration is complete
+            if (result && result.token) {
+                // Store selected checklist items in AsyncStorage for later use
+                await AsyncStorage.setItem('pendingChecklistItems', JSON.stringify(selectedChecklistItems));
+                
+                // The auth context will handle navigation after successful registration
+            }
         } catch (error) {
             console.error('Registration error details:', error);
             

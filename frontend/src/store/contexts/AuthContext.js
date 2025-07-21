@@ -129,6 +129,21 @@ export const AuthProvider = ({ children }) => {
             setIsRefreshing(true);
             const data = await authService.register(name, email, password, professionalPath);
 
+            // Check if registration requires login (no token returned)
+            if (data.requiresLogin) {
+                console.log('Registration successful, but login required');
+                // Clear any existing auth data
+                await clearAuthData();
+                
+                // Return success with a flag indicating login is needed
+                return {
+                    success: true,
+                    requiresLogin: true,
+                    user: data.user,
+                    message: 'Registration successful. Please login to continue.'
+                };
+            }
+
             if (!data.token || !data.user) {
                 throw new Error('Invalid response from server');
             }

@@ -51,11 +51,10 @@ const authService = {
             
             const response = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, payload);
             
-            // The interceptor now returns the full response object
-            const data = response.data;
+            // The interceptor now returns response.data directly
+            const data = response;
             
             console.log('Register response data:', data);
-            console.log('Register response status:', response.status);
             
             // Validate response structure
             if (!data) {
@@ -64,44 +63,41 @@ const authService = {
             
             // Backend might return user data directly without token for registration
             // Check multiple possible response formats
-            if (response.status === 201 || response.status === 200) {
-                // Success - but structure might vary
-                
-                // Format 1: { token, user }
-                if (data.token && data.user) {
-                    return {
-                        token: data.token,
-                        user: data.user
-                    };
-                }
-                
-                // Format 2: { accessToken, user }
-                if (data.accessToken && data.user) {
-                    return {
-                        token: data.accessToken,
-                        user: data.user
-                    };
-                }
-                
-                // Format 3: User object directly (need to login separately)
-                if (data._id && data.email) {
-                    console.log('Registration successful, but no token returned. User needs to login.');
-                    // Return user data without token - the auth context should handle this
-                    return {
-                        token: null,
-                        user: data,
-                        requiresLogin: true
-                    };
-                }
-                
-                // Format 4: { success: true, data: { user } }
-                if (data.success && data.data) {
-                    return {
-                        token: data.data.token || null,
-                        user: data.data.user || data.data,
-                        requiresLogin: !data.data.token
-                    };
-                }
+            
+            // Format 1: { token, user }
+            if (data.token && data.user) {
+                return {
+                    token: data.token,
+                    user: data.user
+                };
+            }
+            
+            // Format 2: { accessToken, user }
+            if (data.accessToken && data.user) {
+                return {
+                    token: data.accessToken,
+                    user: data.user
+                };
+            }
+            
+            // Format 3: User object directly (need to login separately)
+            if (data._id && data.email) {
+                console.log('Registration successful, but no token returned. User needs to login.');
+                // Return user data without token - the auth context should handle this
+                return {
+                    token: null,
+                    user: data,
+                    requiresLogin: true
+                };
+            }
+            
+            // Format 4: { success: true, data: { user } }
+            if (data.success && data.data) {
+                return {
+                    token: data.data.token || null,
+                    user: data.data.user || data.data,
+                    requiresLogin: !data.data.token
+                };
             }
             
             // If we get here, the response format is unexpected

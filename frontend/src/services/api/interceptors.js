@@ -74,9 +74,9 @@ export const setupInterceptors = (apiClient) => {
                 });
             }
 
-            // IMPORTANT: Return the full response object, not just data
-            // This allows services to handle both response and response.data
-            return response;
+            // IMPORTANT: Return only the data from the response
+            // This simplifies the response handling in services
+            return response.data;
         },
         async (error) => {
             const originalRequest = error.config;

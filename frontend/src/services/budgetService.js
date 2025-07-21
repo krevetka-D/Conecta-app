@@ -12,19 +12,20 @@ let entriesCache = null;
 let entriesCacheTimestamp = null;
 
 const budgetService = {
-    getBudgetEntries: async (filters = {}) => {
+    
+getBudgetEntries: async (filters = {}) => {
         try {
             const response = await apiClient.get(API_ENDPOINTS.BUDGET.LIST, {
                 params: filters
             });
-            // Ensure we always return an array
+            // Response is now the data directly from interceptor
             return Array.isArray(response) ? response : response?.entries || [];
         } catch (error) {
             console.error('Error fetching budget entries:', error);
             throw error;
         }
     },
-
+    
     createBudgetEntry: async (entry) => {
         try {
             const response = await apiClient.post(API_ENDPOINTS.BUDGET.CREATE, entry);

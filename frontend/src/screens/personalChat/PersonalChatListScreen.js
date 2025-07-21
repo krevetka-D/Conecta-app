@@ -138,9 +138,11 @@ const PersonalChatListScreen = ({ navigation }) => {
         );
     };
 
-    const filteredConversations = conversations.filter(conv => 
-        conv.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredConversations = conversations && Array.isArray(conversations) 
+        ? conversations.filter(conv => 
+            conv.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        : [];
 
     if (loading) {
         return <LoadingSpinner fullScreen text="Loading conversations..." />;
