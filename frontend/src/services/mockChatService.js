@@ -39,7 +39,7 @@ const mockRooms = [
 mockMessages.set('1', [
     {
         _id: 'msg1',
-        content: 'Welcome to the general discussion room!',
+        content: 'Welcome to the general discussion group!',
         sender: {
             _id: 'system',
             name: 'System'
@@ -109,13 +109,13 @@ mockMessages.set('2', [
 ]);
 
 export const mockChatService = {
-    // Get chat rooms
+    // Get chat groups
     getRooms: async () => {
         await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
         return mockRooms;
     },
 
-    // Get messages for a room
+    // Get messages for a group
     getRoomMessages: async (roomId) => {
         await new Promise(resolve => setTimeout(resolve, 300));
         return mockMessages.get(roomId) || [];
@@ -142,7 +142,7 @@ export const mockChatService = {
         roomMessages.push(newMessage);
         mockMessages.set(roomId, roomMessages);
 
-        // Update last message in room
+        // Update last message in group
         const room = mockRooms.find(r => r._id === roomId);
         if (room) {
             room.lastMessage = {
@@ -155,13 +155,13 @@ export const mockChatService = {
         return newMessage;
     },
 
-    // Join a room (mock)
+    // Join a group (mock)
     joinRoom: async (roomId) => {
         await new Promise(resolve => setTimeout(resolve, 100));
         return { success: true };
     },
 
-    // Leave a room (mock)
+    // Leave a group (mock)
     leaveRoom: async (roomId) => {
         await new Promise(resolve => setTimeout(resolve, 100));
         return { success: true };

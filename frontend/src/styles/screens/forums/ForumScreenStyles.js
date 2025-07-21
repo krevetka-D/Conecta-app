@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors, spacing, borderRadius, shadows, fonts } from '../../../constants/theme';
 
 export const forumsStyles = (theme) => {
@@ -50,7 +50,7 @@ export const forumsStyles = (theme) => {
             color: safeTheme.colors.textSecondary,
         },
         listContent: {
-            paddingBottom: safeTheme.spacing.xl,
+            paddingBottom: safeTheme.spacing.xl + 60, // Extra padding for FAB
         },
         forumCard: {
             marginHorizontal: safeTheme.spacing.md,
@@ -92,6 +92,7 @@ export const forumsStyles = (theme) => {
             borderRadius: 10,
             alignItems: 'center',
             justifyContent: 'center',
+            paddingHorizontal: 6,
         },
         unreadBadgeText: {
             color: '#FFFFFF',
@@ -133,15 +134,27 @@ export const forumsStyles = (theme) => {
         fab: {
             position: 'absolute',
             right: safeTheme.spacing.md,
-            bottom: safeTheme.spacing.xl,
+            bottom: safeTheme.spacing.md,
             backgroundColor: safeTheme.colors.primary,
+            elevation: 6,
         },
         modal: {
             backgroundColor: safeTheme.colors.surface,
-            margin: safeTheme.spacing.lg,
+            marginHorizontal: safeTheme.spacing.lg,
             borderRadius: borderRadius.lg,
             padding: safeTheme.spacing.lg,
             maxHeight: '80%',
+            ...Platform.select({
+                ios: {
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                },
+                android: {
+                    elevation: 8,
+                },
+            }),
         },
         modalTitle: {
             fontSize: 20,
@@ -152,18 +165,20 @@ export const forumsStyles = (theme) => {
         },
         input: {
             marginBottom: safeTheme.spacing.md,
+            backgroundColor: safeTheme.colors.surface,
         },
         errorText: {
             fontSize: 12,
             color: safeTheme.colors.error,
             marginTop: -safeTheme.spacing.sm,
             marginBottom: safeTheme.spacing.md,
+            marginLeft: safeTheme.spacing.xs,
         },
         modalButtons: {
             flexDirection: 'row',
             justifyContent: 'space-between',
             gap: safeTheme.spacing.md,
-            marginTop: safeTheme.spacing.md,
+            marginTop: safeTheme.spacing.lg,
         },
         modalButton: {
             flex: 1,
