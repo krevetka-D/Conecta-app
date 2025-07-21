@@ -34,6 +34,7 @@ const chatService = {
                 ...(options.before && { before: options.before })
             };
 
+            // Fixed: Use correct endpoint structure
             const response = await apiClient.get(`/chat/rooms/${roomId}/messages`, { params });
             return response || [];
         } catch (error) {
@@ -64,6 +65,7 @@ const chatService = {
 
         // Fallback to API
         try {
+            // Fixed: Use correct endpoint structure
             const response = await apiClient.post(`/chat/rooms/${roomId}/messages`, {
                 content,
                 type,
@@ -73,6 +75,28 @@ const chatService = {
         } catch (error) {
             console.error('Error sending message:', error);
             throw error;
+        }
+    },
+
+    // Get chat rooms
+    async getChatRooms() {
+        if (USE_MOCK) {
+            return mockChatService.getRooms();
+        }
+
+        try {
+            const response = await apiClient.get('/chat/rooms');
+            return response || [];
+        } catch (error) {
+            console.error('Error fetching chat rooms:', error);
+            
+            // Fallback to mock data in development
+            if (__DEV__) {
+                console.log('Using mock rooms due to API error');
+                return mockChatService.getRooms();
+            }
+            
+            return [];
         }
     },
 

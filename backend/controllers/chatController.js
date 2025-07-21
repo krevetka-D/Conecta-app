@@ -44,6 +44,56 @@ export const getRoomMessages = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Send a message to a room
+ * @route   POST /api/chat/rooms/:roomId/messages
+ * @access  Private
+ */
+export const sendMessage = asyncHandler(async (req, res) => {
+    const { roomId } = req.params;
+    const { content, type = 'text', attachments = [] } = req.body;
+
+    // Validate input
+    if (!content?.trim()) {
+        res.status(400);
+        throw new Error('Message content is required');
+    }
+
+    // Verify room exists
+    const room = await Forum.findById(roomId);
+    if (!room) {
+        res.status(404);
+        throw new Error('Room not found');
+    }
+
+    // Create message
+    const message = await ChatMessage.create({
+        roomId,
+        sender: req.user._id,
+        content: content.trim(),
+        type,
+        attachments,
+        readBy: [{ user: req.user._id, readAt: new Date() }]
+    });
+
+    // Populate for response
+    const populatedMessage = await ChatMessage.findById(message._id)
+        .populate('sender', 'name email')
+        .populate({
+            path: 'replyTo',
+            select: 'content sender',
+            populate: { path: 'sender', select: 'name' }
+        })
+        .lean();
+
+    // Update forum activity
+    await Forum.findByIdAndUpdate(roomId, {
+        lastActivity: new Date()
+    });
+
+    res.status(201).json(populatedMessage);
+});
+
+/**
  * @desc    Get chat rooms (forums) for user
  * @route   GET /api/chat/rooms
  * @access  Private
@@ -59,11 +109,16 @@ export const getChatRooms = asyncHandler(async (req, res) => {
         forums.map(async (forum) => {
             const unreadCount = await ChatMessage.countDocuments({
                 roomId: forum._id,
-                'readBy.user': { $ne: req.user._id }
+                'readBy.user': { $ne: req.user._id },
+                sender: { $ne: req.user._id },
+                deleted: false
             });
 
             // Get last message
-            const lastMessage = await ChatMessage.findOne({ roomId: forum._id })
+            const lastMessage = await ChatMessage.findOne({ 
+                roomId: forum._id,
+                deleted: false 
+            })
                 .populate('sender', 'name')
                 .sort('-createdAt')
                 .lean();
@@ -112,6 +167,7 @@ export const searchMessages = asyncHandler(async (req, res) => {
 
 export default {
     getRoomMessages,
+    sendMessage,
     getChatRooms,
     searchMessages
 };

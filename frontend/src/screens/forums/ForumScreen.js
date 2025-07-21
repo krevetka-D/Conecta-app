@@ -13,69 +13,94 @@ import { colors } from '../../constants/theme';
 
 // Add formatRelativeTime helper function
 const formatRelativeTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now - date;
-    const diffInMinutes = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    if (diffInMinutes < 1) return 'just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
+    if (!dateString) return '';
     
-    return date.toLocaleDateString();
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMs = now - date;
+        const diffInMinutes = Math.floor(diffInMs / 60000);
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        const diffInDays = Math.floor(diffInHours / 24);
+
+        if (diffInMinutes < 1) return 'just now';
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+        if (diffInHours < 24) return `${diffInHours}h ago`;
+        if (diffInDays < 7) return `${diffInDays}d ago`;
+        
+        return date.toLocaleDateString();
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return '';
+    }
 };
 
 // Updated the renderItem to show last message and unread count
-const ForumItem = React.memo(({ item, onPress, styles }) => (
-    <TouchableOpacity
-        onPress={() => onPress(item)}
-        activeOpacity={0.7}
-    >
-        <Card style={styles.forumCard}>
-            <Card.Content>
-                <View style={styles.forumHeader}>
-                    <View style={styles.forumInfo}>
-                        <View style={styles.titleRow}>
-                            <Text style={styles.forumTitle}>{item.title}</Text>
-                            {item.unreadCount > 0 && (
-                                <Badge style={styles.unreadBadge}>{item.unreadCount}</Badge>
+const ForumItem = React.memo(({ item, onPress, styles }) => {
+    // Ensure all data exists before rendering
+    if (!item || !item._id || !item.title) {
+        return null;
+    }
+
+    const unreadCount = item.unreadCount || 0;
+    const onlineCount = item.onlineCount || 0;
+
+    return (
+        <TouchableOpacity
+            onPress={() => onPress(item)}
+            activeOpacity={0.7}
+        >
+            <Card style={styles.forumCard}>
+                <Card.Content>
+                    <View style={styles.forumHeader}>
+                        <View style={styles.forumInfo}>
+                            <View style={styles.titleRow}>
+                                <Text style={styles.forumTitle} numberOfLines={2}>
+                                    {item.title}
+                                </Text>
+                                {unreadCount > 0 && (
+                                    <Badge style={styles.unreadBadge}>
+                                        <Text style={styles.unreadBadgeText}>
+                                            {unreadCount > 99 ? '99+' : unreadCount.toString()}
+                                        </Text>
+                                    </Badge>
+                                )}
+                            </View>
+                            
+                            {item.lastMessage ? (
+                                <Text style={styles.lastMessage} numberOfLines={1}>
+                                    <Text style={styles.lastMessageSender}>
+                                        {item.lastMessage.sender?.name || 'Unknown'}:
+                                    </Text>
+                                    <Text> {item.lastMessage.content || ''}</Text>
+                                </Text>
+                            ) : (
+                                <Text style={styles.forumDescription} numberOfLines={2}>
+                                    {item.description || ''}
+                                </Text>
                             )}
-                        </View>
-                        
-                        {item.lastMessage ? (
-                            <Text style={styles.lastMessage} numberOfLines={1}>
-                                <Text style={styles.lastMessageSender}>
-                                    {item.lastMessage.sender.name}:
-                                </Text>
-                                {' '}{item.lastMessage.content}
-                            </Text>
-                        ) : (
-                            <Text style={styles.forumDescription}>{item.description}</Text>
-                        )}
-                        
-                        <View style={styles.forumMeta}>
-                            {item.lastMessage && (
-                                <Text style={styles.lastMessageTime}>
-                                    {formatRelativeTime(item.lastMessage.createdAt)}
-                                </Text>
-                            )}
-                            <View style={styles.metaItem}>
-                                <Icon name="account-group" size={14} color={colors.textSecondary} />
-                                <Text style={styles.metaText}>
-                                    {item.onlineCount || 0} online
-                                </Text>
+                            
+                            <View style={styles.forumMeta}>
+                                {item.lastMessage && item.lastMessage.createdAt && (
+                                    <Text style={styles.lastMessageTime}>
+                                        {formatRelativeTime(item.lastMessage.createdAt)}
+                                    </Text>
+                                )}
+                                <View style={styles.metaItem}>
+                                    <Icon name="account-group" size={14} color={colors.textSecondary} />
+                                    <Text style={styles.metaText}>
+                                        {onlineCount} online
+                                    </Text>
+                                </View>
                             </View>
                         </View>
+                        <Icon name="chevron-right" size={24} color={colors.textSecondary} />
                     </View>
-                    <Icon name="chevron-right" size={24} color={colors.textSecondary} />
-                </View>
-            </Card.Content>
-        </Card>
-    </TouchableOpacity>
-));
+                </Card.Content>
+            </Card>
+        </TouchableOpacity>
+    );
+});
 
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
@@ -100,7 +125,15 @@ const ForumScreen = ({ navigation }) => {
     const loadForums = useCallback(async () => {
         try {
             const data = await forumService.getForums();
-            setForums(data || []);
+            // Ensure data is always an array and properly formatted
+            const safeData = Array.isArray(data) ? data : [];
+            const validForums = safeData.filter(forum => 
+                forum && 
+                typeof forum === 'object' && 
+                forum._id && 
+                forum.title
+            );
+            setForums(validForums);
         } catch (error) {
             console.error('Failed to load forums:', error);
             setForums([]);
@@ -122,6 +155,11 @@ const ForumScreen = ({ navigation }) => {
 
     // Navigate to chat room instead of forum detail
     const handleForumPress = useCallback((forum) => {
+        if (!forum || !forum._id || !forum.title) {
+            console.error('Invalid forum data:', forum);
+            return;
+        }
+
         navigation.navigate('ChatRoom', {
             roomId: forum._id,
             roomTitle: forum.title
@@ -130,14 +168,14 @@ const ForumScreen = ({ navigation }) => {
 
     // Fixed: Direct state updates without side effects
     const handleTitleChange = useCallback((text) => {
-        setFormData(prev => ({ ...prev, title: text }));
+        setFormData(prev => ({ ...prev, title: text || '' }));
         if (formErrors.title) {
             setFormErrors(prev => ({ ...prev, title: null }));
         }
     }, [formErrors.title]);
 
     const handleDescriptionChange = useCallback((text) => {
-        setFormData(prev => ({ ...prev, description: text }));
+        setFormData(prev => ({ ...prev, description: text || '' }));
         if (formErrors.description) {
             setFormErrors(prev => ({ ...prev, description: null }));
         }
@@ -146,8 +184,8 @@ const ForumScreen = ({ navigation }) => {
     // Optimize validation
     const validateForm = useCallback(() => {
         const errors = {};
-        const trimmedTitle = formData.title.trim();
-        const trimmedDescription = formData.description.trim();
+        const trimmedTitle = (formData.title || '').trim();
+        const trimmedDescription = (formData.description || '').trim();
         
         if (!trimmedTitle) {
             errors.title = 'Forum title is required';
@@ -171,7 +209,10 @@ const ForumScreen = ({ navigation }) => {
 
         setSubmitting(true);
         try {
-            await forumService.createForum(formData.title.trim(), formData.description.trim());
+            const title = (formData.title || '').trim();
+            const description = (formData.description || '').trim();
+            
+            await forumService.createForum(title, description);
             showSuccessAlert('Success', 'Forum created successfully!');
             setModalVisible(false);
             setFormData({ title: '', description: '', tags: [] });
@@ -186,7 +227,26 @@ const ForumScreen = ({ navigation }) => {
     }, [formData.title, formData.description, validateForm, loadForums]);
 
     // Optimize keyExtractor
-    const keyExtractor = useCallback((item) => item._id, []);
+    const keyExtractor = useCallback((item) => {
+        if (!item || !item._id) {
+            console.warn('Invalid item in forums list:', item);
+            return String(Math.random());
+        }
+        return item._id;
+    }, []);
+
+    // Optimize renderItem
+    const renderItem = useCallback(({ item }) => {
+        if (!item) return null;
+        
+        return (
+            <ForumItem 
+                item={item} 
+                onPress={handleForumPress}
+                styles={styles}
+            />
+        );
+    }, [handleForumPress, styles]);
 
     // Header component
     const ListHeaderComponent = useMemo(() => (
@@ -210,7 +270,7 @@ const ForumScreen = ({ navigation }) => {
                     onPress={() => setModalVisible(true)}
                     icon="plus"
                 >
-                    Create Forum
+                    <Text>Create Forum</Text>
                 </Button>
             }
         />
@@ -235,13 +295,7 @@ const ForumScreen = ({ navigation }) => {
                 <View style={styles.container}>
                     <FlatList
                         data={forums}
-                        renderItem={({ item }) => (
-                            <ForumItem 
-                                item={item} 
-                                onPress={handleForumPress}
-                                styles={styles}
-                            />
-                        )}
+                        renderItem={renderItem}
                         keyExtractor={keyExtractor}
                         contentContainerStyle={styles.listContent}
                         refreshControl={
@@ -259,6 +313,10 @@ const ForumScreen = ({ navigation }) => {
                         updateCellsBatchingPeriod={50}
                         windowSize={10}
                         initialNumToRender={10}
+                        // Add error boundary for list items
+                        onError={(error) => {
+                            console.error('FlatList error:', error);
+                        }}
                     />
 
                     <FAB
@@ -277,7 +335,7 @@ const ForumScreen = ({ navigation }) => {
                             
                             <TextInput
                                 label="Forum Title"
-                                value={formData.title}
+                                value={formData.title || ''}
                                 onChangeText={handleTitleChange}
                                 mode="outlined"
                                 style={styles.input}
@@ -292,7 +350,7 @@ const ForumScreen = ({ navigation }) => {
                             
                             <TextInput
                                 label="Forum Description"
-                                value={formData.description}
+                                value={formData.description || ''}
                                 onChangeText={handleDescriptionChange}
                                 mode="outlined"
                                 multiline
@@ -314,7 +372,7 @@ const ForumScreen = ({ navigation }) => {
                                     style={styles.modalButton}
                                     disabled={submitting}
                                 >
-                                    Cancel
+                                    <Text>Cancel</Text>
                                 </Button>
                                 <Button
                                     mode="contained"
@@ -323,7 +381,7 @@ const ForumScreen = ({ navigation }) => {
                                     loading={submitting}
                                     disabled={submitting}
                                 >
-                                    Create Forum
+                                    <Text>Create Forum</Text>
                                 </Button>
                             </View>
                         </Modal>

@@ -245,11 +245,15 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
         backgroundColor: colors.surface,
         borderRadius: 12,
-        // Remove overflow: 'hidden' to prevent shadow clipping
+        elevation: 2,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     cardContentWrapper: {
         borderRadius: 12,
-        overflow: 'hidden', // Apply overflow to inner wrapper instead
+        overflow: 'hidden',
     },
     eventHeader: {
         flexDirection: 'row',

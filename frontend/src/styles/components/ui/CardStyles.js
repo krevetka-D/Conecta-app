@@ -1,59 +1,49 @@
-// src/styles/components/ui/CardStyles.js
 import { StyleSheet } from 'react-native';
-import { colors, fonts } from '../../../constants/theme';
+import { colors, shadows, borderRadius, spacing } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({
     base: {
         backgroundColor: colors.surface,
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 5,
+        borderRadius: borderRadius.md,
+        ...shadows.md,
     },
+    content: {
+        borderRadius: borderRadius.md,
+        // overflow will be set dynamically
+    },
+    
+    // Variants
     elevated: {
-        elevation: 5,
-        shadowOpacity: 0.1,
+        ...shadows.lg,
     },
+    outlined: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        elevation: 0,
+        shadowOpacity: 0,
+    },
+    flat: {
+        elevation: 0,
+        shadowOpacity: 0,
+        backgroundColor: 'transparent',
+    },
+    
+    // Padding variants
     paddingSmall: {
-        padding: 8,
+        padding: spacing.sm,
     },
     paddingMedium: {
-        padding: 16,
+        padding: spacing.md,
     },
     paddingLarge: {
-        padding: 24,
+        padding: spacing.lg,
     },
+    paddingNone: {
+        padding: 0,
+    },
+    
+    // States
     disabled: {
-        opacity: 0.5,
-    },
-    card: {
-        backgroundColor: colors.surface,
-        borderRadius: 12,
-        padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 5,
-        marginBottom: 16,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    cardTitle: {
-        fontSize: fonts.sizes.lg,
-        fontFamily: fonts.families.semiBold,
-        color: colors.text,
-    },
-    cardContent: {
-        fontSize: fonts.sizes.md,
-        fontFamily: fonts.families.regular,
-        color: colors.textSecondary,
-        lineHeight: 22,
+        opacity: 0.6,
     },
 });

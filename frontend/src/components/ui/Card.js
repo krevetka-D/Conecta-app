@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { styles } from '../../styles/components/ui/CardStyles';
@@ -9,8 +8,10 @@ export const Card = React.memo(({
                                     variant = 'elevated',
                                     padding = 'medium',
                                     style,
+                                    contentStyle,
                                     activeOpacity = 0.8,
                                     disabled = false,
+                                    overflow = 'hidden',
                                     ...props
                                 }) => {
     const Component = onPress ? TouchableOpacity : View;
@@ -23,6 +24,12 @@ export const Card = React.memo(({
         style,
     ];
 
+    const innerContentStyle = [
+        styles.content,
+        { overflow },
+        contentStyle,
+    ];
+
     const componentProps = onPress ? {
         onPress,
         activeOpacity,
@@ -32,7 +39,9 @@ export const Card = React.memo(({
 
     return (
         <Component style={cardStyle} {...componentProps}>
-            {children}
+            <View style={innerContentStyle}>
+                {children}
+            </View>
         </Component>
     );
 });

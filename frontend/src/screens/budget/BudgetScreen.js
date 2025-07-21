@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -9,20 +7,20 @@ import {
     RefreshControl,
     SafeAreaView,
     Platform,
+    StyleSheet,
 } from 'react-native';
 import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useAuth } from '../../store/contexts/AuthContext';
-import { colors } from '../../constants/theme';
+import { colors, spacing, borderRadius, shadows } from '../../constants/theme';
 import budgetService from '../../services/budgetService';
 import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../../utils/formatting';
-import { budgetStyles as styles } from '../../styles/screens/budget/BudgetScreenStyles';
 import { OptimizedInput } from '../../components/ui/OptimizedInput';
 
 const BudgetScreen = ({ navigation }) => {
@@ -158,6 +156,30 @@ const BudgetScreen = ({ navigation }) => {
         return { income, expenses, balance: income - expenses };
     };
 
+    const renderEntryCard = ({ item }) => (
+        <View style={styles.entryCardContainer}>
+            <View style={styles.entryCardContent}>
+                <Card style={styles.entryCard}>
+                    <Card.Content>
+                        <View style={styles.entryHeader}>
+                            <View style={styles.entryInfo}>
+                                <Text style={styles.entryCategory}>{item.category}</Text>
+                                {item.description && <Text style={styles.entryDescription}>{item.description}</Text>}
+                                <Text style={styles.entryDate}>{formatDate(item.entryDate)}</Text>
+                            </View>
+                            <Text style={[styles.entryAmount, item.type === 'INCOME' ? styles.incomeAmount : styles.expenseAmount]}>
+                                {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
+                            </Text>
+                        </View>
+                    </Card.Content>
+                    <Card.Actions>
+                        <Button onPress={() => handleDelete(item._id)} textColor={colors.error}>Delete</Button>
+                    </Card.Actions>
+                </Card>
+            </View>
+        </View>
+    );
+
     if (loading && !refreshing) {
         return <LoadingSpinner fullScreen text="Loading your budget..." />;
     }
@@ -173,22 +195,38 @@ const BudgetScreen = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.summaryContainer}>
-                    <View style={[styles.summaryCard, styles.incomeCard]}>
+                    <View style={styles.summaryCardContainer}>
                         <View style={styles.summaryCardContent}>
-                            <Text style={styles.summaryLabel}>Income</Text>
-                            <Text style={[styles.summaryAmount, { color: colors.success }]}>{formatCurrency(income)}</Text>
+                            <Card style={styles.summaryCard}>
+                                <View style={styles.summaryCardInner}>
+                                    <Text style={styles.summaryLabel}>Income</Text>
+                                    <Text style={[styles.summaryAmount, { color: colors.success }]}>{formatCurrency(income)}</Text>
+                                </View>
+                            </Card>
                         </View>
                     </View>
-                    <View style={[styles.summaryCard, styles.expenseCard]}>
+
+                    <View style={styles.summaryCardContainer}>
                         <View style={styles.summaryCardContent}>
-                            <Text style={styles.summaryLabel}>Expenses</Text>
-                            <Text style={[styles.summaryAmount, { color: colors.error }]}>{formatCurrency(expenses)}</Text>
+                            <Card style={styles.summaryCard}>
+                                <View style={styles.summaryCardInner}>
+                                    <Text style={styles.summaryLabel}>Expenses</Text>
+                                    <Text style={[styles.summaryAmount, { color: colors.error }]}>{formatCurrency(expenses)}</Text>
+                                </View>
+                            </Card>
                         </View>
                     </View>
-                    <View style={[styles.summaryCard, styles.balanceCard]}>
+
+                    <View style={styles.summaryCardContainer}>
                         <View style={styles.summaryCardContent}>
-                            <Text style={styles.summaryLabel}>Balance</Text>
-                            <Text style={[styles.summaryAmount, balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>{formatCurrency(balance)}</Text>
+                            <Card style={styles.summaryCard}>
+                                <View style={styles.summaryCardInner}>
+                                    <Text style={styles.summaryLabel}>Balance</Text>
+                                    <Text style={[styles.summaryAmount, balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>
+                                        {formatCurrency(balance)}
+                                    </Text>
+                                </View>
+                            </Card>
                         </View>
                     </View>
                 </View>
@@ -196,24 +234,21 @@ const BudgetScreen = ({ navigation }) => {
                 <View style={styles.entriesSection}>
                     <Text style={styles.sectionTitle}>Recent Transactions</Text>
                     {entries.length === 0 ? (
-                        <EmptyState icon="cash-remove" title="No transactions yet" message="Add your first entry to get started" action={<Button mode="contained" onPress={() => setModalVisible(true)} icon="plus">Add Entry</Button>} />
+                        <EmptyState 
+                            icon="cash-remove" 
+                            title="No transactions yet" 
+                            message="Add your first entry to get started" 
+                            action={
+                                <Button mode="contained" onPress={() => setModalVisible(true)} icon="plus">
+                                    Add Entry
+                                </Button>
+                            } 
+                        />
                     ) : (
                         entries.map((entry) => (
-                            <Card key={entry._id} style={styles.entryCard}>
-                                <Card.Content>
-                                    <View style={styles.entryHeader}>
-                                        <View style={styles.entryInfo}>
-                                            <Text style={styles.entryCategory}>{entry.category}</Text>
-                                            {entry.description && <Text style={styles.entryDescription}>{entry.description}</Text>}
-                                            <Text style={styles.entryDate}>{formatDate(entry.entryDate)}</Text>
-                                        </View>
-                                        <Text style={[styles.entryAmount, entry.type === 'INCOME' ? styles.incomeAmount : styles.expenseAmount]}>
-                                            {entry.type === 'INCOME' ? '+' : '-'}{formatCurrency(entry.amount)}
-                                        </Text>
-                                    </View>
-                                </Card.Content>
-                                <Card.Actions><Button onPress={() => handleDelete(entry._id)} textColor={colors.error}>Delete</Button></Card.Actions>
-                            </Card>
+                            <View key={entry._id}>
+                                {renderEntryCard({ item: entry })}
+                            </View>
                         ))
                     )}
                 </View>
@@ -222,62 +257,328 @@ const BudgetScreen = ({ navigation }) => {
             <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} />
 
             <Portal>
-                <Modal visible={modalVisible} onDismiss={() => { setModalVisible(false); resetForm(); }} contentContainerStyle={styles.modal}>
-                    <ScrollView showsVerticalScrollIndicator={false}>
-                        <Text style={styles.modalTitle}>Add New Entry</Text>
-                        <RadioButton.Group onValueChange={(value) => setFormData({ ...formData, type: value, category: '' })} value={formData.type}>
-                            <View style={styles.radioGroup}>
-                                <RadioButton.Item label="Income" value="INCOME" color={colors.success} />
-                                <RadioButton.Item label="Expense" value="EXPENSE" color={colors.error} />
-                            </View>
-                        </RadioButton.Group>
-                        <TouchableOpacity style={[styles.categorySelector, formErrors.category && { borderColor: colors.error }]} onPress={() => setShowCategoryPicker(true)}>
-                            <Text style={[styles.categorySelectorText, !formData.category && styles.placeholderText]}>{formData.category || 'Select Category'}</Text>
-                            <Icon name="chevron-down" size={24} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                        {formErrors.category && <Text style={styles.errorText}>{formErrors.category}</Text>}
-                        <TextInput label="Amount (€)" value={formData.amount} onChangeText={(text) => setFormData({ ...formData, amount: text })} mode="outlined" keyboardType="decimal-pad" style={styles.input} error={!!formErrors.amount} theme={{ colors: { primary: colors.primary } }} />
-                        {formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
-                        {/* <TextInput label="Description (Optional)" value={formData.description} onChangeText={(text) => setFormData({ ...formData, description: text })} mode="outlined" multiline numberOfLines={2} style={styles.input} theme={{ colors: { primary: colors.primary } }} /> */}
-                        <OptimizedInput
-    label="Description (Optional)"
-    value={formData.description}
-    onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-    multiline
-    numberOfLines={3}
-    maxLength={200}
-    placeholder="Enter description..."
-/>
+                <Modal 
+                    visible={modalVisible} 
+                    onDismiss={() => { setModalVisible(false); resetForm(); }} 
+                    contentContainerStyle={styles.modalContainer}
+                >
+                    <View style={styles.modalContent}>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={styles.modalTitle}>Add New Entry</Text>
+                            
+                            <RadioButton.Group 
+                                onValueChange={(value) => setFormData({ ...formData, type: value, category: '' })} 
+                                value={formData.type}
+                            >
+                                <View style={styles.radioGroup}>
+                                    <RadioButton.Item label="Income" value="INCOME" color={colors.success} />
+                                    <RadioButton.Item label="Expense" value="EXPENSE" color={colors.error} />
+                                </View>
+                            </RadioButton.Group>
+                            
+                            <TouchableOpacity 
+                                style={[styles.categorySelector, formErrors.category && { borderColor: colors.error }]} 
+                                onPress={() => setShowCategoryPicker(true)}
+                            >
+                                <Text style={[styles.categorySelectorText, !formData.category && styles.placeholderText]}>
+                                    {formData.category || 'Select Category'}
+                                </Text>
+                                <Icon name="chevron-down" size={24} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                            {formErrors.category && <Text style={styles.errorText}>{formErrors.category}</Text>}
+                            
+                            <TextInput 
+                                label="Amount (€)" 
+                                value={formData.amount} 
+                                onChangeText={(text) => setFormData({ ...formData, amount: text })} 
+                                mode="outlined" 
+                                keyboardType="decimal-pad" 
+                                style={styles.input} 
+                                error={!!formErrors.amount} 
+                                theme={{ colors: { primary: colors.primary } }} 
+                            />
+                            {formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
+                            
+                            <OptimizedInput
+                                label="Description (Optional)"
+                                value={formData.description}
+                                onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                                multiline
+                                numberOfLines={3}
+                                maxLength={200}
+                                placeholder="Enter description..."
+                            />
 
-                        <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
-                            <Icon name="calendar" size={24} color={colors.primary} />
-                            <Text style={styles.dateSelectorText}>{formatDate(formData.entryDate)}</Text>
-                        </TouchableOpacity>
-                        <View style={styles.modalButtons}>
-                            <Button mode="outlined" onPress={() => { setModalVisible(false); resetForm(); }} style={styles.modalButton}>Cancel</Button>
-                            <Button mode="contained" onPress={handleSubmit} style={styles.modalButton}>Add Entry</Button>
-                        </View>
-                    </ScrollView>
+                            <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
+                                <Icon name="calendar" size={24} color={colors.primary} />
+                                <Text style={styles.dateSelectorText}>{formatDate(formData.entryDate)}</Text>
+                            </TouchableOpacity>
+                            
+                            <View style={styles.modalButtons}>
+                                <Button 
+                                    mode="outlined" 
+                                    onPress={() => { setModalVisible(false); resetForm(); }} 
+                                    style={styles.modalButton}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    mode="contained" 
+                                    onPress={handleSubmit} 
+                                    style={styles.modalButton}
+                                >
+                                    Add Entry
+                                </Button>
+                            </View>
+                        </ScrollView>
+                    </View>
                 </Modal>
             </Portal>
 
-            {showDatePicker && <DateTimePicker value={formData.entryDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} maximumDate={new Date()} />}
+            {showDatePicker && (
+                <DateTimePicker 
+                    value={formData.entryDate} 
+                    mode="date" 
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'} 
+                    onChange={handleDateChange} 
+                    maximumDate={new Date()} 
+                />
+            )}
 
             <Portal>
-                <Modal visible={showCategoryPicker} onDismiss={() => setShowCategoryPicker(false)} contentContainerStyle={[styles.modal, { maxHeight: '50%' }]}>
-                    <Text style={styles.modalTitle}>Select Category</Text>
-                    <ScrollView>
-                        {(categories[formData.type.toLowerCase()] || []).map((category) => (
-                            <TouchableOpacity key={category} style={styles.categoryOption} onPress={() => { setFormData({ ...formData, category }); setShowCategoryPicker(false); }}>
-                                <Text style={styles.categoryOptionText}>{category}</Text>
-                                {formData.category === category && <Icon name="check" size={24} color={colors.primary} />}
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                <Modal 
+                    visible={showCategoryPicker} 
+                    onDismiss={() => setShowCategoryPicker(false)} 
+                    contentContainerStyle={[styles.modalContainer, { maxHeight: '50%' }]}
+                >
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Select Category</Text>
+                        <ScrollView>
+                            {(categories[formData.type.toLowerCase()] || []).map((category) => (
+                                <TouchableOpacity 
+                                    key={category} 
+                                    style={styles.categoryOption} 
+                                    onPress={() => { 
+                                        setFormData({ ...formData, category }); 
+                                        setShowCategoryPicker(false); 
+                                    }}
+                                >
+                                    <Text style={styles.categoryOptionText}>{category}</Text>
+                                    {formData.category === category && (
+                                        <Icon name="check" size={24} color={colors.primary} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
                 </Modal>
             </Portal>
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    scrollContent: {
+        paddingBottom: 100,
+    },
+    summaryContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.lg,
+        flexWrap: 'wrap',
+    },
+    summaryCardContainer: {
+        width: '31%',
+        minWidth: 100,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.md,
+        ...shadows.md,
+        backgroundColor: colors.surface,
+    },
+    summaryCardContent: {
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
+    },
+    summaryCard: {
+        margin: 0,
+        elevation: 0,
+        backgroundColor: 'transparent',
+    },
+    summaryCardInner: {
+        padding: spacing.md,
+        alignItems: 'center',
+    },
+    summaryLabel: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginBottom: spacing.xs,
+        textAlign: 'center',
+    },
+    summaryAmount: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    positiveBalance: {
+        color: colors.success,
+    },
+    negativeBalance: {
+        color: colors.error,
+    },
+    entriesSection: {
+        paddingHorizontal: spacing.md,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: spacing.md,
+    },
+    entryCardContainer: {
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.md,
+        ...shadows.sm,
+        backgroundColor: colors.surface,
+    },
+    entryCardContent: {
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
+    },
+    entryCard: {
+        margin: 0,
+        elevation: 0,
+        backgroundColor: 'transparent',
+    },
+    entryHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    entryInfo: {
+        flex: 1,
+        marginRight: spacing.md,
+    },
+    entryCategory: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text,
+        marginBottom: spacing.xs,
+    },
+    entryDescription: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginBottom: spacing.xs,
+    },
+    entryDate: {
+        fontSize: 12,
+        color: colors.textSecondary,
+    },
+    entryAmount: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    incomeAmount: {
+        color: colors.success,
+    },
+    expenseAmount: {
+        color: colors.error,
+    },
+    fab: {
+        position: 'absolute',
+        right: spacing.md,
+        bottom: spacing.xl,
+        backgroundColor: colors.primary,
+    },
+    modalContainer: {
+        backgroundColor: colors.surface,
+        margin: spacing.lg,
+        borderRadius: borderRadius.lg,
+        maxHeight: '80%',
+    },
+    modalContent: {
+        padding: spacing.lg,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: spacing.lg,
+        textAlign: 'center',
+    },
+    radioGroup: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: spacing.lg,
+    },
+    categorySelector: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginBottom: spacing.md,
+    },
+    categorySelectorText: {
+        fontSize: 16,
+        color: colors.text,
+    },
+    placeholderText: {
+        color: colors.textSecondary,
+    },
+    input: {
+        marginBottom: spacing.md,
+    },
+    dateSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginBottom: spacing.lg,
+    },
+    dateSelectorText: {
+        fontSize: 16,
+        color: colors.text,
+        marginLeft: spacing.md,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: spacing.md,
+    },
+    modalButton: {
+        flex: 1,
+    },
+    categoryOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    categoryOptionText: {
+        fontSize: 16,
+        color: colors.text,
+    },
+    errorText: {
+        fontSize: 12,
+        color: colors.error,
+        marginTop: -spacing.sm,
+        marginBottom: spacing.md,
+    },
+});
 
 export default React.memo(BudgetScreen);

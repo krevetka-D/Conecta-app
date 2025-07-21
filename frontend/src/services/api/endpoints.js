@@ -74,6 +74,12 @@ export const API_ENDPOINTS = {
         IMAGE: '/upload/image',
         DOCUMENT: '/upload/document',
     },
+    CHAT: {
+        ROOMS: '/chat/rooms',
+        ROOM_MESSAGES: (roomId) => `/chat/rooms/${roomId}/messages`,
+        SEND_MESSAGE: (roomId) => `/chat/rooms/${roomId}/messages`,
+        SEARCH: '/chat/search',
+    },
 
     // Messages
     MESSAGES: {

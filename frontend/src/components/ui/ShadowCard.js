@@ -1,0 +1,92 @@
+import React from 'react';
+import { View, TouchableOpacity } from 'react-native';
+import { Card } from 'react-native-paper';
+import { colors, shadows, borderRadius } from '../../constants/theme';
+
+export const ShadowCard = React.memo(({
+    children,
+    onPress,
+    style,
+    contentStyle,
+    shadowLevel = 'md',
+    borderRadiusSize = 'md',
+    overflow = 'hidden',
+    disabled = false,
+    ...props
+}) => {
+    const Component = onPress ? TouchableOpacity : View;
+    
+    const cardStyle = [
+        {
+            backgroundColor: colors.surface,
+            borderRadius: borderRadius[borderRadiusSize],
+            ...shadows[shadowLevel],
+        },
+        style,
+    ];
+
+    const innerContentStyle = [
+        {
+            borderRadius: borderRadius[borderRadiusSize],
+            overflow: overflow,
+        },
+        contentStyle,
+    ];
+
+    const componentProps = onPress ? {
+        onPress,
+        disabled,
+        activeOpacity: 0.8,
+        ...props
+    } : props;
+
+    return (
+        <Component style={cardStyle} {...componentProps}>
+            <View style={innerContentStyle}>
+                {children}
+            </View>
+        </Component>
+    );
+});
+
+// Alternative using Card component with proper overflow handling
+export const PaperShadowCard = React.memo(({
+    children,
+    onPress,
+    style,
+    contentStyle,
+    elevation = 2,
+    borderRadiusSize = 'md',
+    overflow = 'hidden',
+    ...props
+}) => {
+    const Component = onPress ? TouchableOpacity : Card;
+    
+    if (onPress) {
+        return (
+            <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={style}>
+                <Card elevation={elevation} style={{ borderRadius: borderRadius[borderRadiusSize] }} {...props}>
+                    <View style={[{ 
+                        borderRadius: borderRadius[borderRadiusSize], 
+                        overflow: overflow 
+                    }, contentStyle]}>
+                        {children}
+                    </View>
+                </Card>
+            </TouchableOpacity>
+        );
+    }
+
+    return (
+        <Card elevation={elevation} style={[{ borderRadius: borderRadius[borderRadiusSize] }, style]} {...props}>
+            <View style={[{ 
+                borderRadius: borderRadius[borderRadiusSize], 
+                overflow: overflow 
+            }, contentStyle]}>
+                {children}
+            </View>
+        </Card>
+    );
+});
+
+export default ShadowCard;
