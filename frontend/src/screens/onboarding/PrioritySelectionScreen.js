@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
     View,
@@ -9,37 +8,38 @@ import {
     Alert,
 } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
 import { PROFESSIONAL_PATHS } from '../../constants/config';
 import { styles } from '../../styles/screens/onboarding/PrioritySelectionScreenStyles';
+import checklistService from '../../services/checklistService';
 
-const PrioritySelectionScreen = ({ route }) => {
+const PrioritySelectionScreen = ({ route, navigation }) => {
     const { professionalPath } = route.params;
-    const { completeOnboarding } = useAuth(); // Use the correct function from context
+    const { completeOnboarding, user } = useAuth();
     const [selectedPriorities, setSelectedPriorities] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // --- DEBUG LOG ---
-    // Log when the component mounts and what data it receives.
     useEffect(() => {
-        console.log('[PrioritySelectionScreen] Component Mounted.');
-        console.log('[PrioritySelectionScreen] Received professionalPath:', professionalPath);
-        // Check if the function from the context is available
-        if (typeof completeOnboarding === 'function') {
-            console.log('[PrioritySelectionScreen] `completeOnboarding` function is available.');
-        } else {
-            console.error('[PrioritySelectionScreen] `completeOnboarding` function is MISSING from AuthContext!');
-        }
+        // Load any pre-selected items from registration
+        loadPendingChecklistItems();
     }, []);
 
-    // --- DEBUG LOG ---
-    // Log the state whenever it changes.
-    useEffect(() => {
-        console.log('[PrioritySelectionScreen] selectedPriorities state updated:', selectedPriorities);
-    }, [selectedPriorities]);
+    const loadPendingChecklistItems = async () => {
+        try {
+            const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
+            if (pendingItems) {
+                setSelectedPriorities(JSON.parse(pendingItems));
+                // Clear the pending items
+                await AsyncStorage.removeItem('pendingChecklistItems');
+            }
+        } catch (error) {
+            console.error('Error loading pending checklist items:', error);
+        }
+    };
 
-const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
+    const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
         ? [
             { id: 'OBTAIN_NIE', title: "Obtain your NIE" },
             { id: 'REGISTER_AUTONOMO', title: "Register as 'Autónomo'" },
@@ -52,11 +52,8 @@ const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
             { id: 'GET_COMPANY_NIF', title: 'Get Company NIF' },
             { id: 'RESEARCH_FUNDING', title: 'Research Funding Options' },
         ];
-   
 
     const togglePriority = (priorityId) => {
-        // --- DEBUG LOG ---
-        console.log('[PrioritySelectionScreen] togglePriority called with ID:', priorityId);
         if (selectedPriorities.includes(priorityId)) {
             setSelectedPriorities(selectedPriorities.filter(id => id !== priorityId));
         } else {
@@ -65,8 +62,6 @@ const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
     };
 
     const handleComplete = async () => {
-        // --- DEBUG LOG ---
-        console.log('[PrioritySelectionScreen] handleComplete called.');
         if (selectedPriorities.length === 0) {
             Alert.alert('Select Priorities', 'Please select at least one priority to continue.');
             return;
@@ -74,15 +69,16 @@ const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
 
         setLoading(true);
         try {
-            // --- DEBUG LOG ---
-            console.log('[PrioritySelectionScreen] Attempting to call completeOnboarding with:', selectedPriorities);
+            // First, initialize the checklist items in the backend
+            await checklistService.initializeChecklist(selectedPriorities);
+            
+            // Then complete the onboarding
             await completeOnboarding(selectedPriorities);
-            // --- DEBUG LOG ---
-            console.log('[PrioritySelectionScreen] completeOnboarding finished successfully.');
+            
+            // Navigation will be handled by AuthContext
         } catch (error) {
-            // --- DEBUG LOG ---
-            console.error('[PrioritySelectionScreen] Error calling completeOnboarding:', error);
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            console.error('Error completing onboarding:', error);
+            Alert.alert('Error', error.message || 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }

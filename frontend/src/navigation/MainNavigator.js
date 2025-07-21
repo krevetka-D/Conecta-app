@@ -161,7 +161,7 @@ const MainNavigator = () => {
                 },
             })}
         >
-            {/* 1. Home */}
+            {/* Tab screens configuration */}
             <Tab.Screen
                 name={SCREEN_NAMES.DASHBOARD}
                 options={{ title: 'Home' }}
@@ -169,7 +169,6 @@ const MainNavigator = () => {
                 {(props) => <SafeScreen component={DashboardScreen} screenName="Dashboard" {...props} />}
             </Tab.Screen>
             
-            {/* 2. Personal Chat */}
             <Tab.Screen
                 name={SCREEN_NAMES.PERSONAL_CHAT}
                 options={{ title: 'Chat' }}
@@ -177,7 +176,6 @@ const MainNavigator = () => {
                 {(props) => <SafeScreen component={PersonalChatNavigator} screenName="PersonalChat" {...props} />}
             </Tab.Screen>
             
-            {/* 3. Budget */}
             <Tab.Screen
                 name={SCREEN_NAMES.BUDGET}
                 options={{ title: 'Budget' }}
@@ -185,7 +183,6 @@ const MainNavigator = () => {
                 {(props) => <SafeScreen component={BudgetScreen} screenName="Budget" {...props} />}
             </Tab.Screen>
             
-            {/* 4. Chat Groups (Forums) */}
             <Tab.Screen
                 name={SCREEN_NAMES.FORUMS}
                 options={{ title: 'Groups' }}
@@ -193,7 +190,6 @@ const MainNavigator = () => {
                 {(props) => <SafeScreen component={ForumNavigator} screenName="Forums" {...props} />}
             </Tab.Screen>
             
-            {/* 5. Resources */}
             <Tab.Screen
                 name={SCREEN_NAMES.RESOURCES}
                 options={{ title: 'Resources' }}
@@ -201,7 +197,6 @@ const MainNavigator = () => {
                 {(props) => <SafeScreen component={ResourcesScreen} screenName="Resources" {...props} />}
             </Tab.Screen>
             
-            {/* 6. Events */}
             <Tab.Screen
                 name={SCREEN_NAMES.EVENTS}
                 options={{ title: 'Events' }}
@@ -209,7 +204,6 @@ const MainNavigator = () => {
                 {(props) => <SafeScreen component={EventNavigator} screenName="Events" {...props} />}
             </Tab.Screen>
 
-            {/* Hidden screens */}
             <Tab.Screen
                 name={SCREEN_NAMES.CHECKLIST}
                 options={{ 

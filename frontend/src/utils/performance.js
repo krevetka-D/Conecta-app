@@ -1,6 +1,6 @@
 // frontend/src/utils/performance.js
-import { InteractionManager } from 'react-native';
-import { useCallback, useRef, useMemo } from 'react';
+import { InteractionManager, Text } from 'react-native';
+import React, { useCallback, useRef, useMemo } from 'react';
 
 export const runAfterInteractions = (callback) => {
     return InteractionManager.runAfterInteractions(() => {
