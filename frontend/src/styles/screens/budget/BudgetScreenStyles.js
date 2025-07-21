@@ -1,6 +1,6 @@
 // frontend/src/styles/screens/budget/BudgetScreenStyles.js
 
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
 export const budgetStyles = StyleSheet.create({
@@ -13,32 +13,35 @@ export const budgetStyles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     scrollContent: {
-        paddingBottom: 80, // For FAB visibility
+        paddingBottom: 100, // For FAB visibility
     },
     summaryContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding: spacing.md,
-        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.lg,
+        flexWrap: 'wrap',
     },
-    summaryCard: {
-        flex: 1,
-        borderRadius: borderRadius.lg,
-        elevation: 2,
-        padding: spacing.md,
-        ...shadows.sm,
+    summaryCardContainer: {
+        width: '31%',
+        minWidth: 100,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.md,
+        ...shadows.md,
+        backgroundColor: colors.surface,
     },
     summaryCardContent: {
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
+    },
+    summaryCard: {
+        margin: 0,
+        elevation: 0,
+        backgroundColor: 'transparent',
+    },
+    summaryCardInner: {
+        padding: spacing.md,
         alignItems: 'center',
-    },
-    incomeCard: {
-        backgroundColor: `${colors.successLight}20`,
-    },
-    expenseCard: {
-        backgroundColor: `${colors.errorLight}20`,
-    },
-    balanceCard: {
-        backgroundColor: `${colors.primaryLight}20`,
     },
     summaryLabel: {
         fontSize: fonts.sizes.sm,
@@ -51,6 +54,12 @@ export const budgetStyles = StyleSheet.create({
         fontSize: fonts.sizes.lg,
         fontFamily: fonts.families.bold,
         textAlign: 'center',
+    },
+    incomeAmountColor: {
+        color: colors.success,
+    },
+    expenseAmountColor: {
+        color: colors.error,
     },
     positiveBalance: {
         color: colors.success,
@@ -68,11 +77,20 @@ export const budgetStyles = StyleSheet.create({
         color: colors.text,
         marginBottom: spacing.md,
     },
-    entryCard: {
+    entryCardContainer: {
         marginBottom: spacing.sm,
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.surface,
+        borderRadius: borderRadius.md,
         ...shadows.sm,
+        backgroundColor: colors.surface,
+    },
+    entryCardContent: {
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
+    },
+    entryCard: {
+        margin: 0,
+        elevation: 0,
+        backgroundColor: 'transparent',
     },
     entryHeader: {
         flexDirection: 'row',
@@ -116,19 +134,42 @@ export const budgetStyles = StyleSheet.create({
         right: 0,
         bottom: 0,
         backgroundColor: colors.primary,
+        zIndex: 100,
+        elevation: 8,
     },
-    modal: {
+    modalContainer: {
         backgroundColor: colors.surface,
-        padding: spacing.lg,
         margin: spacing.lg,
         borderRadius: borderRadius.lg,
         maxHeight: '85%',
+        zIndex: 9999,
+        elevation: 999,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.shadow,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+            },
+            android: {
+                elevation: 999,
+            },
+        }),
+    },
+    categoryModalContainer: {
+        maxHeight: '50%',
+        zIndex: 10000,
+        elevation: 1000,
+    },
+    modalContent: {
+        padding: spacing.lg,
     },
     modalTitle: {
         fontSize: fonts.sizes.xl,
         fontFamily: fonts.families.bold,
         color: colors.text,
         marginBottom: spacing.lg,
+        textAlign: 'center',
     },
     radioGroup: {
         flexDirection: 'row',
@@ -143,7 +184,7 @@ export const budgetStyles = StyleSheet.create({
         color: colors.error,
         fontSize: fonts.sizes.sm,
         marginTop: -spacing.sm,
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
         marginLeft: spacing.xs,
     },
     categorySelector: {
@@ -155,6 +196,10 @@ export const budgetStyles = StyleSheet.create({
         borderRadius: borderRadius.md,
         padding: spacing.md,
         marginBottom: spacing.md,
+        backgroundColor: colors.surface,
+    },
+    categorySelectorError: {
+        borderColor: colors.error,
     },
     categorySelectorText: {
         fontSize: fonts.sizes.md,
@@ -172,6 +217,7 @@ export const budgetStyles = StyleSheet.create({
         borderRadius: borderRadius.md,
         padding: spacing.md,
         marginBottom: spacing.lg,
+        backgroundColor: colors.surface,
     },
     dateSelectorText: {
         fontSize: fonts.sizes.md,
@@ -181,8 +227,8 @@ export const budgetStyles = StyleSheet.create({
     },
     modalButtons: {
         flexDirection: 'row',
-        justifyContent: 'space-evenly',
-        gap: spacing.sm,
+        justifyContent: 'space-between',
+        gap: spacing.md,
         paddingTop: spacing.sm,
     },
     modalButton: {
@@ -201,5 +247,61 @@ export const budgetStyles = StyleSheet.create({
         fontSize: fonts.sizes.md,
         fontFamily: fonts.families.regular,
         color: colors.text,
+    },
+    // Date Picker Styles
+    datePickerOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 99999,
+        elevation: 9999,
+    },
+    datePickerContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 99999,
+    },
+    datePickerContent: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        ...Platform.select({
+            ios: {
+                width: '90%',
+                maxWidth: 400,
+                shadowColor: colors.shadow,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+            },
+            android: {
+                elevation: 24,
+            },
+        }),
+    },
+    datePicker: {
+        width: '100%',
+    },
+    datePickerDoneButton: {
+        marginTop: spacing.md,
+    },
+    // Modal Overlay Style
+    modalOverlay: {
+        zIndex: 9998,
+        elevation: 998,
+    },
+    categoryScrollView: {
+        maxHeight: 300,
     },
 });

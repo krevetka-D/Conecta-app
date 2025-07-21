@@ -9,12 +9,12 @@ import {
     Platform,
     StyleSheet,
 } from 'react-native';
-import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button } from 'react-native-paper';
+import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button, Provider } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useAuth } from '../../store/contexts/AuthContext';
-import { colors, spacing, borderRadius, shadows } from '../../constants/theme';
+import { colors } from '../../constants/theme';
 import budgetService from '../../services/budgetService';
 import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
@@ -22,6 +22,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../../utils/formatting';
 import { OptimizedInput } from '../../components/ui/OptimizedInput';
+import { budgetStyles as styles } from '../../styles/screens/budget/BudgetScreenStyles';
 
 const BudgetScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -186,7 +187,8 @@ const BudgetScreen = ({ navigation }) => {
 
     const { income, expenses, balance } = calculateSummary();
 
-    return (
+    // Main content without Provider wrapper
+    const mainContent = (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView
                 style={styles.container}
@@ -200,7 +202,7 @@ const BudgetScreen = ({ navigation }) => {
                             <Card style={styles.summaryCard}>
                                 <View style={styles.summaryCardInner}>
                                     <Text style={styles.summaryLabel}>Income</Text>
-                                    <Text style={[styles.summaryAmount, { color: colors.success }]}>{formatCurrency(income)}</Text>
+                                    <Text style={[styles.summaryAmount, styles.incomeAmountColor]}>{formatCurrency(income)}</Text>
                                 </View>
                             </Card>
                         </View>
@@ -211,7 +213,7 @@ const BudgetScreen = ({ navigation }) => {
                             <Card style={styles.summaryCard}>
                                 <View style={styles.summaryCardInner}>
                                     <Text style={styles.summaryLabel}>Expenses</Text>
-                                    <Text style={[styles.summaryAmount, { color: colors.error }]}>{formatCurrency(expenses)}</Text>
+                                    <Text style={[styles.summaryAmount, styles.expenseAmountColor]}>{formatCurrency(expenses)}</Text>
                                 </View>
                             </Card>
                         </View>
@@ -255,12 +257,20 @@ const BudgetScreen = ({ navigation }) => {
             </ScrollView>
 
             <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} />
+        </SafeAreaView>
+    );
 
+    // Return with Provider wrapper and all Portals
+    return (
+        <Provider>
+            {mainContent}
+            
             <Portal>
                 <Modal 
                     visible={modalVisible} 
                     onDismiss={() => { setModalVisible(false); resetForm(); }} 
                     contentContainerStyle={styles.modalContainer}
+                    style={styles.modalOverlay}
                 >
                     <View style={styles.modalContent}>
                         <ScrollView showsVerticalScrollIndicator={false}>
@@ -277,7 +287,7 @@ const BudgetScreen = ({ navigation }) => {
                             </RadioButton.Group>
                             
                             <TouchableOpacity 
-                                style={[styles.categorySelector, formErrors.category && { borderColor: colors.error }]} 
+                                style={[styles.categorySelector, formErrors.category && styles.categorySelectorError]} 
                                 onPress={() => setShowCategoryPicker(true)}
                             >
                                 <Text style={[styles.categorySelectorText, !formData.category && styles.placeholderText]}>
@@ -335,25 +345,45 @@ const BudgetScreen = ({ navigation }) => {
                 </Modal>
             </Portal>
 
+            {/* Date Picker Modal for better visibility */}
             {showDatePicker && (
-                <DateTimePicker 
-                    value={formData.entryDate} 
-                    mode="date" 
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'} 
-                    onChange={handleDateChange} 
-                    maximumDate={new Date()} 
-                />
+                <Portal>
+                    <View style={styles.datePickerOverlay}>
+                        <View style={styles.datePickerContainer}>
+                            <View style={styles.datePickerContent}>
+                                <DateTimePicker 
+                                    value={formData.entryDate} 
+                                    mode="date" 
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'} 
+                                    onChange={handleDateChange} 
+                                    maximumDate={new Date()} 
+                                    style={styles.datePicker}
+                                />
+                                {Platform.OS === 'ios' && (
+                                    <Button 
+                                        mode="contained" 
+                                        onPress={() => setShowDatePicker(false)}
+                                        style={styles.datePickerDoneButton}
+                                    >
+                                        Done
+                                    </Button>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+                </Portal>
             )}
 
             <Portal>
                 <Modal 
                     visible={showCategoryPicker} 
                     onDismiss={() => setShowCategoryPicker(false)} 
-                    contentContainerStyle={[styles.modalContainer, { maxHeight: '50%' }]}
+                    contentContainerStyle={[styles.modalContainer, styles.categoryModalContainer]}
+                    style={styles.modalOverlay}
                 >
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Select Category</Text>
-                        <ScrollView>
+                        <ScrollView style={styles.categoryScrollView}>
                             {(categories[formData.type.toLowerCase()] || []).map((category) => (
                                 <TouchableOpacity 
                                     key={category} 
@@ -373,212 +403,8 @@ const BudgetScreen = ({ navigation }) => {
                     </View>
                 </Modal>
             </Portal>
-        </SafeAreaView>
+        </Provider>
     );
 };
-
-const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    scrollContent: {
-        paddingBottom: 100,
-    },
-    summaryContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.lg,
-        flexWrap: 'wrap',
-    },
-    summaryCardContainer: {
-        width: '31%',
-        minWidth: 100,
-        marginBottom: spacing.sm,
-        borderRadius: borderRadius.md,
-        ...shadows.md,
-        backgroundColor: colors.surface,
-    },
-    summaryCardContent: {
-        borderRadius: borderRadius.md,
-        overflow: 'hidden',
-    },
-    summaryCard: {
-        margin: 0,
-        elevation: 0,
-        backgroundColor: 'transparent',
-    },
-    summaryCardInner: {
-        padding: spacing.md,
-        alignItems: 'center',
-    },
-    summaryLabel: {
-        fontSize: 14,
-        color: colors.textSecondary,
-        marginBottom: spacing.xs,
-        textAlign: 'center',
-    },
-    summaryAmount: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    positiveBalance: {
-        color: colors.success,
-    },
-    negativeBalance: {
-        color: colors.error,
-    },
-    entriesSection: {
-        paddingHorizontal: spacing.md,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: colors.text,
-        marginBottom: spacing.md,
-    },
-    entryCardContainer: {
-        marginBottom: spacing.md,
-        borderRadius: borderRadius.md,
-        ...shadows.sm,
-        backgroundColor: colors.surface,
-    },
-    entryCardContent: {
-        borderRadius: borderRadius.md,
-        overflow: 'hidden',
-    },
-    entryCard: {
-        margin: 0,
-        elevation: 0,
-        backgroundColor: 'transparent',
-    },
-    entryHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    entryInfo: {
-        flex: 1,
-        marginRight: spacing.md,
-    },
-    entryCategory: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.text,
-        marginBottom: spacing.xs,
-    },
-    entryDescription: {
-        fontSize: 14,
-        color: colors.textSecondary,
-        marginBottom: spacing.xs,
-    },
-    entryDate: {
-        fontSize: 12,
-        color: colors.textSecondary,
-    },
-    entryAmount: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    incomeAmount: {
-        color: colors.success,
-    },
-    expenseAmount: {
-        color: colors.error,
-    },
-    fab: {
-        position: 'absolute',
-        right: spacing.md,
-        bottom: spacing.xl,
-        backgroundColor: colors.primary,
-    },
-    modalContainer: {
-        backgroundColor: colors.surface,
-        margin: spacing.lg,
-        borderRadius: borderRadius.lg,
-        maxHeight: '80%',
-    },
-    modalContent: {
-        padding: spacing.lg,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: colors.text,
-        marginBottom: spacing.lg,
-        textAlign: 'center',
-    },
-    radioGroup: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginBottom: spacing.lg,
-    },
-    categorySelector: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        marginBottom: spacing.md,
-    },
-    categorySelectorText: {
-        fontSize: 16,
-        color: colors.text,
-    },
-    placeholderText: {
-        color: colors.textSecondary,
-    },
-    input: {
-        marginBottom: spacing.md,
-    },
-    dateSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        marginBottom: spacing.lg,
-    },
-    dateSelectorText: {
-        fontSize: 16,
-        color: colors.text,
-        marginLeft: spacing.md,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: spacing.md,
-    },
-    modalButton: {
-        flex: 1,
-    },
-    categoryOption: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-    },
-    categoryOptionText: {
-        fontSize: 16,
-        color: colors.text,
-    },
-    errorText: {
-        fontSize: 12,
-        color: colors.error,
-        marginTop: -spacing.sm,
-        marginBottom: spacing.md,
-    },
-});
 
 export default React.memo(BudgetScreen);
