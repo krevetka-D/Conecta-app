@@ -19,6 +19,8 @@ class SocketService {
         this.connectionTimeout = null;
         this.userId = null;
         this.userStatusListeners = new Map();
+        this.connectionState = 'disconnected'; // 'disconnected', 'connecting', 'connected'
+        this.statusUpdateCallbacks = new Map();
     }
 
     async connect(userId) {
@@ -36,6 +38,7 @@ class SocketService {
         }
 
         this.isConnecting = true;
+        this.connectionState = 'connecting';
         this.userId = userId;
 
         try {
@@ -43,6 +46,7 @@ class SocketService {
             if (!token) {
                 devLog('Socket', 'No authentication token found, skipping socket connection');
                 this.isConnecting = false;
+                this.connectionState = 'disconnected';
                 return Promise.resolve();
             }
 
@@ -87,6 +91,7 @@ class SocketService {
             return new Promise((resolve, reject) => {
                 this.connectionTimeout = setTimeout(() => {
                     this.isConnecting = false;
+                    this.connectionState = 'disconnected';
                     if (this.socket && !this.socket.connected) {
                         this.socket.disconnect();
                     }
@@ -98,6 +103,7 @@ class SocketService {
                     clearTimeout(this.connectionTimeout);
                     devLog('Socket', 'Connected successfully');
                     this.isConnecting = false;
+                    this.connectionState = 'connected';
                     this.reconnectAttempts = 0;
                     
                     // Start heartbeat
@@ -115,12 +121,14 @@ class SocketService {
                 this.socket.once('connect_error', (error) => {
                     clearTimeout(this.connectionTimeout);
                     this.isConnecting = false;
+                    this.connectionState = 'disconnected';
                     devLog('Socket', `Connection error: ${error.message} - continuing without socket`);
                     resolve(); // Resolve instead of reject to allow app to continue
                 });
             });
         } catch (error) {
             this.isConnecting = false;
+            this.connectionState = 'disconnected';
             devLog('Socket', `Connection failed: ${error.message} - continuing without socket`);
             return Promise.resolve(); // Allow app to continue without socket
         }
@@ -148,24 +156,34 @@ class SocketService {
 
         // Connection events
         this.socket.on('connect', () => {
+            this.connectionState = 'connected';
             devLog('Socket', `Connected with ID: ${this.socket.id}`);
+            
+            // Re-authenticate on reconnection
+            if (this.userId) {
+                this.authenticate(this.userId);
+            }
+            
             this.updateUserStatus(true);
             this.flushMessageQueue();
+            this.notifyConnectionStateChange('connected');
         });
 
         this.socket.on('disconnect', (reason) => {
+            this.connectionState = 'disconnected';
             devLog('Socket', `Disconnected: ${reason}`);
             this.stopHeartbeat();
             this.isAuthenticated = false;
             this.updateUserStatus(false);
+            this.notifyConnectionStateChange('disconnected');
             
-            if (reason === 'io server disconnect') {
-                // Server disconnected us, try to reconnect
+            // Auto-reconnect for certain disconnect reasons
+            if (reason === 'io server disconnect' || reason === 'transport close') {
                 setTimeout(() => {
-                    if (this.userId) {
+                    if (this.userId && this.connectionState === 'disconnected') {
                         this.connect(this.userId);
                     }
-                }, 1000);
+                }, 2000);
             }
         });
 
@@ -206,13 +224,23 @@ class SocketService {
 
         // User status events
         this.socket.on('user_status_update', (data) => {
-            devLog('Socket', `User status update: ${data.userId} is ${data.isOnline ? 'online' : 'offline'}`);
+            devLog('Socket', `User ${data.userId} is ${data.isOnline ? 'online' : 'offline'}`);
             this.handleUserStatusUpdate(data);
+            this.notifyStatusUpdate(data);
+        });
+
+        this.socket.on('user_status_response', (data) => {
+            this.notifyStatusUpdate(data);
         });
 
         this.socket.on('users_online', (data) => {
             devLog('Socket', `Online users: ${data.users.length}`);
             this.handleOnlineUsersList(data.users);
+            this.notifyOnlineUsers(data.users);
+        });
+
+        this.socket.on('online_users', (data) => {
+            this.notifyOnlineUsers(data.users);
         });
     }
 
@@ -258,20 +286,61 @@ class SocketService {
         this.emit('online_users', users);
     }
 
+    // Enhanced subscribe to user status updates
     subscribeToUserStatus(userId, callback) {
-        const listenerId = `${userId}_${Date.now()}`;
+        const id = `${userId}_${Date.now()}`;
+        this.statusUpdateCallbacks.set(id, { userId, callback });
+        
+        // Also add to legacy listeners for backward compatibility
+        const listenerId = `${userId}_${Date.now()}_legacy`;
         this.userStatusListeners.set(listenerId, callback);
         
         // Request current status
-        if (this.socket?.connected && this.isAuthenticated) {
+        if (this.isConnected()) {
             this.socket.emit('get_user_status', { userId });
         }
         
-        return listenerId;
+        // Return unsubscribe function
+        return () => {
+            this.statusUpdateCallbacks.delete(id);
+            this.userStatusListeners.delete(listenerId);
+        };
     }
 
     unsubscribeFromUserStatus(listenerId) {
         this.userStatusListeners.delete(listenerId);
+    }
+
+    // Notify all status update subscribers
+    notifyStatusUpdate(data) {
+        this.statusUpdateCallbacks.forEach(({ userId, callback }) => {
+            if (userId === data.userId) {
+                callback(data);
+            }
+        });
+    }
+
+    // Connection state change notifications
+    notifyConnectionStateChange(state) {
+        this.emit('connection_state_change', state);
+    }
+
+    // Notify online users
+    notifyOnlineUsers(users) {
+        this.emit('online_users_update', users);
+    }
+
+    // Get current connection state
+    getConnectionState() {
+        return this.connectionState;
+    }
+
+    // Force reconnect
+    forceReconnect() {
+        this.disconnect();
+        if (this.userId) {
+            setTimeout(() => this.connect(this.userId), 1000);
+        }
     }
 
     flushMessageQueue() {
@@ -418,6 +487,7 @@ class SocketService {
             });
             this.listeners.clear();
             this.userStatusListeners.clear();
+            this.statusUpdateCallbacks.clear();
 
             // Clear message queue
             this.messageQueue = [];
@@ -429,6 +499,7 @@ class SocketService {
         
         this.isAuthenticated = false;
         this.isConnecting = false;
+        this.connectionState = 'disconnected';
         this.userId = null;
     }
 

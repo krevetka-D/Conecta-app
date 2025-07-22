@@ -6,7 +6,7 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import connectDB from './config/db.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
-import { setupSocketHandlers } from './socket/socketHandlers.js';
+import socketHandlers from './socket/socketHandlers.js';
 import User from './models/User.js';
 
 // Import routes
