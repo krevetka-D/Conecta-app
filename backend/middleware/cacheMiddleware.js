@@ -2,6 +2,7 @@
 import NodeCache from 'node-cache';
 import crypto from 'crypto';
 
+const { getAsync, setAsync, delAsync } = require('../config/redis');
 // Cache instances with different TTLs
 const caches = {
     short: new NodeCache({ stdTTL: 60 }), // 1 minute

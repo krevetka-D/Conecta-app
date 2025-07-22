@@ -101,8 +101,10 @@ const eventSchema = new mongoose.Schema({
 
 // Indexes for common queries
 eventSchema.index({ date: 1, isCancelled: 1 });
-eventSchema.index({ organizer: 1, date: -1 });
+eventSchema.index({ organizer: 1});
 eventSchema.index({ 'attendees': 1 });
+eventSchema.index({ targetAudience: 1 });
+
 
 // Virtual for checking if event is past
 eventSchema.virtual('isPast').get(function() {

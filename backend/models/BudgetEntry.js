@@ -39,8 +39,8 @@ const budgetEntrySchema = mongoose.Schema({
 
 // Compound indexes for common queries
 budgetEntrySchema.index({ user: 1, entryDate: -1 });
-budgetEntrySchema.index({ user: 1, type: 1, entryDate: -1 });
-budgetEntrySchema.index({ user: 1, category: 1, entryDate: -1 });
+budgetEntrySchema.index({ user: 1, type: 1});
+budgetEntrySchema.index({ user: 1, category: 1});
 
 // Virtual for formatted amount
 budgetEntrySchema.virtual('formattedAmount').get(function() {

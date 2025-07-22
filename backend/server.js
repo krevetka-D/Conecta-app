@@ -23,6 +23,7 @@ import messageRoutes from './routes/messageRoutes.js';
 dotenv.config();
 connectDB();
 
+const compression = require('compression');
 const app = express();
 const httpServer = createServer(app);
 
@@ -146,6 +147,16 @@ const io = new Server(httpServer, {
     }
 });
 
+app.use(compression({
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+            return false;
+        }
+        return compression.filter(req, res);
+    },
+    level: 6, // Balanced compression level
+}));
+
 // Socket authentication middleware
 io.use(async (socket, next) => {
     try {
@@ -194,7 +205,7 @@ io.use(async (socket, next) => {
 });
 
 // Setup socket handlers
-setupSocketHandlers(io);
+socketHandlers(io);
 
 // Global error handler for unhandled promises
 process.on('unhandledRejection', (reason, promise) => {

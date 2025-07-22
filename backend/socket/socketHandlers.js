@@ -1,5 +1,5 @@
 // backend/socket/socketHandlers.js
-import User from '../models/User';
+import User from '../models/User.js';
 
 const socketHandlers = (io) => {
     // Store user socket mappings

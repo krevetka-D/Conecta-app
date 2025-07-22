@@ -99,8 +99,10 @@ const userSchema = mongoose.Schema({
 
 // Indexes for performance
 userSchema.index({ email: 1 });
-userSchema.index({ isOnline: 1, lastSeen: -1 });
+userSchema.index({ isOnline: 1});
 userSchema.index({ professionalPath: 1 });
+userSchema.index({ createdAt: -1 });
+
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
