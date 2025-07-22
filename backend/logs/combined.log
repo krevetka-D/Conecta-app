@@ -754,3 +754,25 @@
 {"level":"info","message":"Socket disconnected: 34EcrbJWWuoRvHH2AAAD, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 02:20:47"}
 {"level":"info","message":"Socket connected: wOpnewpikgwlNmuZAAAJ","service":"conecta-alicante","timestamp":"2025-07-22 02:20:52"}
 {"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:21:06"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:22:06"}
+{"level":"info","message":"Socket disconnected: wk-SK27D-it8c6iSAAAH, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 02:22:50"}
+{"level":"info","message":"Socket connected: nKMw28TWKysUe41LAAAL","service":"conecta-alicante","timestamp":"2025-07-22 02:22:52"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:23:06"}
+{"level":"info","message":"Socket disconnected: nKMw28TWKysUe41LAAAL, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 02:24:00"}
+{"level":"info","message":"Socket connected: 1zqwk99Ry67Pww-vAAAN","service":"conecta-alicante","timestamp":"2025-07-22 02:24:01"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:24:06"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:25:06"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:26:06"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:27:06"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:28:06"}
+{"level":"info","message":"Socket connected: GUfQiHLxNkAXpa7fAAAB","service":"conecta-alicante","timestamp":"2025-07-22 02:29:01"}
+{"level":"info","message":"Socket connected: e-90FDt8T5Oo7w0hAAAD","service":"conecta-alicante","timestamp":"2025-07-22 02:29:04"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:30:00"}
+{"level":"info","message":"Socket disconnected: GUfQiHLxNkAXpa7fAAAB, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 02:30:11"}
+{"level":"info","message":"Socket connected: qtxapBwI-khpGAtVAAAF","service":"conecta-alicante","timestamp":"2025-07-22 02:30:15"}
+{"level":"info","message":"Disconnecting inactive socket: e-90FDt8T5Oo7w0hAAAD","service":"conecta-alicante","timestamp":"2025-07-22 02:30:15"}
+{"level":"info","message":"Socket disconnected: e-90FDt8T5Oo7w0hAAAD, reason: server namespace disconnect","service":"conecta-alicante","timestamp":"2025-07-22 02:30:15"}
+{"level":"info","message":"Socket disconnected: qtxapBwI-khpGAtVAAAF, reason: client namespace disconnect","service":"conecta-alicante","timestamp":"2025-07-22 02:30:30"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:31:00"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:32:00"}
+{"level":"info","message":"Socket connected: I6PTpIiDsuhUS9ocAAAH","service":"conecta-alicante","timestamp":"2025-07-22 02:32:09"}
