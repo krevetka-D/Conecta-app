@@ -44,6 +44,12 @@ const ForumDetailScreen = ({ route, navigation }) => {
     
     const flatListRef = useRef(null);
     const typingTimeoutRef = useRef(null);
+    const messagesRef = useRef(messages); // Keep a ref to current messages
+
+    // Update ref when messages change
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     useEffect(() => {
         // Set navigation header
@@ -92,25 +98,24 @@ const ForumDetailScreen = ({ route, navigation }) => {
     }, []);
 
     const handleStartChat = async (senderId, senderName) => {
-    try {
-        // Start or get existing conversation
-        const conversation = await personalChatService.startConversation(senderId);
-        
-        // Navigate to personal chat
-        navigation.navigate(SCREEN_NAMES.PERSONAL_CHAT, {
-            screen: SCREEN_NAMES.PERSONAL_CHAT_DETAIL,
-            params: {
-                userId: senderId,
-                userName: senderName,
-                conversationId: conversation.conversationId,
-            }
-        });
-    } catch (error) {
-        console.error('Failed to start conversation:', error);
-        showErrorAlert('Error', 'Failed to start conversation');
-    }
-};
-
+        try {
+            // Start or get existing conversation
+            const conversation = await personalChatService.startConversation(senderId);
+            
+            // Navigate to personal chat
+            navigation.navigate(SCREEN_NAMES.PERSONAL_CHAT, {
+                screen: SCREEN_NAMES.PERSONAL_CHAT_DETAIL,
+                params: {
+                    userId: senderId,
+                    userName: senderName,
+                    conversationId: conversation.conversationId,
+                }
+            });
+        } catch (error) {
+            console.error('Failed to start conversation:', error);
+            showErrorAlert('Error', 'Failed to start conversation');
+        }
+    };
 
     const initializeChat = async () => {
         try {
@@ -170,10 +175,14 @@ const ForumDetailScreen = ({ route, navigation }) => {
     };
 
     const setupSocketListeners = () => {
+        // Remove any existing listeners first to avoid duplicates
+        cleanupSocketListeners();
+        
         socketService.on('newMessage', handleNewMessage);
         socketService.on('messageDeleted', handleMessageDeleted);
         socketService.on('userTyping', handleUserTyping);
         socketService.on('roomUsers', handleRoomUsers);
+        socketService.on('joinedRoom', handleJoinedRoom);
     };
 
     const cleanupSocketListeners = () => {
@@ -181,14 +190,40 @@ const ForumDetailScreen = ({ route, navigation }) => {
         socketService.off('messageDeleted', handleMessageDeleted);
         socketService.off('userTyping', handleUserTyping);
         socketService.off('roomUsers', handleRoomUsers);
+        socketService.off('joinedRoom', handleJoinedRoom);
     };
 
-    const handleNewMessage = useCallback((message) => {
-        setMessages(prev => [...prev, message]);
-        setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
+    // Handle joined room event with messages
+    const handleJoinedRoom = useCallback((data) => {
+        if (data.messages) {
+            setMessages(data.messages);
+        }
+        if (data.onlineUsers) {
+            setOnlineUsers(data.onlineUsers);
+        }
     }, []);
+
+    // Fixed: Use functional state update to avoid stale closure
+    const handleNewMessage = useCallback((message) => {
+        console.log('New message received:', message);
+        
+        // Only add message if it's for this room
+        if (message.roomId === roomId) {
+            setMessages(prevMessages => {
+                // Check if message already exists (to avoid duplicates)
+                const exists = prevMessages.some(msg => msg._id === message._id);
+                if (exists) {
+                    return prevMessages;
+                }
+                return [...prevMessages, message];
+            });
+            
+            // Scroll to bottom after state update
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [roomId]);
 
     const handleMessageDeleted = useCallback(({ messageId }) => {
         setMessages(prev => prev.map(msg => 
@@ -219,6 +254,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
 
         try {
             if (socketService.isConnected()) {
+                // When using socket, the message will come back via 'newMessage' event
                 socketService.sendMessage({
                     roomId,
                     content: messageText,
@@ -226,10 +262,16 @@ const ForumDetailScreen = ({ route, navigation }) => {
                 });
             } else {
                 // Fallback to API
-                await chatService.sendMessage(roomId, messageText);
-                // Reload messages
-                const updatedMessages = await chatService.getRoomMessages(roomId);
-                setMessages(updatedMessages || []);
+                const newMessage = await chatService.sendMessage(roomId, messageText);
+                
+                // Add the message to local state since we won't get socket event
+                if (newMessage) {
+                    setMessages(prev => [...prev, newMessage]);
+                } else {
+                    // If API doesn't return the message, reload all messages
+                    const updatedMessages = await chatService.getRoomMessages(roomId);
+                    setMessages(updatedMessages || []);
+                }
             }
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -258,105 +300,106 @@ const ForumDetailScreen = ({ route, navigation }) => {
     };
 
     const renderMessage = ({ item, index }) => {
-    const isOwnMessage = item.sender._id === user._id;
-    const showAvatar = index === 0 || messages[index - 1]?.sender._id !== item.sender._id;
-    
-    // Group messages by time (5 minute intervals)
-    const showTimestamp = index === 0 || 
-        new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
+        const isOwnMessage = item.sender._id === user._id;
+        const showAvatar = index === 0 || messages[index - 1]?.sender._id !== item.sender._id;
+        
+        // Group messages by time (5 minute intervals)
+        const showTimestamp = index === 0 || 
+            new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
 
-    if (item.deleted) {
-        return (
-            <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
-                <Text style={styles.deletedMessage}>Message deleted</Text>
-            </View>
-        );
-    }
-
-    return (
-        <>
-            {showTimestamp && (
-                <View style={styles.timestampContainer}>
-                    <Text style={styles.timestamp}>
-                        {format(new Date(item.createdAt), 'HH:mm')}
-                    </Text>
+        if (item.deleted) {
+            return (
+                <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
+                    <Text style={styles.deletedMessage}>Message deleted</Text>
                 </View>
-            )}
-            
-            <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
-                {showAvatar && !isOwnMessage && (
-                    <Menu
-                        visible={menuVisible[item._id] || false}
-                        onDismiss={() => setMenuVisible(prev => ({ ...prev, [item._id]: false }))}
-                        anchor={
-                            <TouchableOpacity
-                                style={styles.avatarContainer}
-                                onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
-                                onLongPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
-                            >
-                                <View style={styles.avatar}>
-                                    <Text style={styles.avatarText}>
-                                        {item.sender.name.charAt(0).toUpperCase()}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        }
-                        contentStyle={styles.menuContent}
-                    >
-                        <Menu.Item
-                            onPress={() => {
-                                setMenuVisible(prev => ({ ...prev, [item._id]: false }));
-                                navigation.navigate(SCREEN_NAMES.USER_PROFILE, {
-                                    userId: item.sender._id,
-                                    userName: item.sender.name
-                                });
-                            }}
-                            title="View Profile"
-                            leadingIcon="account"
-                        />
-                        <Divider />
-                        <Menu.Item
-                            onPress={() => {
-                                setMenuVisible(prev => ({ ...prev, [item._id]: false }));
-                                handleStartChat(item.sender._id, item.sender.name);
-                            }}
-                            title="Start Chatting"
-                            leadingIcon="message"
-                        />
-                    </Menu>
+            );
+        }
+
+        return (
+            <>
+                {showTimestamp && (
+                    <View style={styles.timestampContainer}>
+                        <Text style={styles.timestamp}>
+                            {format(new Date(item.createdAt), 'HH:mm')}
+                        </Text>
+                    </View>
                 )}
                 
-                <View style={[
-                    styles.messageBubble,
-                    isOwnMessage && styles.ownMessageBubble,
-                    !showAvatar && !isOwnMessage && styles.messageBubbleWithoutAvatar
-                ]}>
-                    {!isOwnMessage && showAvatar && (
-                        <TouchableOpacity
-                            onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
+                    {showAvatar && !isOwnMessage && (
+                        <Menu
+                            visible={menuVisible[item._id] || false}
+                            onDismiss={() => setMenuVisible(prev => ({ ...prev, [item._id]: false }))}
+                            anchor={
+                                <TouchableOpacity
+                                    style={styles.avatarContainer}
+                                    onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                                    onLongPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                                >
+                                    <View style={styles.avatar}>
+                                        <Text style={styles.avatarText}>
+                                            {item.sender.name.charAt(0).toUpperCase()}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            }
+                            contentStyle={styles.menuContent}
                         >
-                            <Text style={styles.senderName}>{item.sender.name}</Text>
-                        </TouchableOpacity>
-                    )}
-                    
-                    <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
-                        {item.content}
-                    </Text>
-                    
-                    {isOwnMessage && (
-                        <View style={styles.messageStatus}>
-                            <Icon 
-                                name={item.readBy?.length > 1 ? "check-all" : "check"} 
-                                size={16} 
-                                color={item.readBy?.length > 1 ? "#60A5FA" : "#FFFFFF99"}
+                            <Menu.Item
+                                onPress={() => {
+                                    setMenuVisible(prev => ({ ...prev, [item._id]: false }));
+                                    navigation.navigate(SCREEN_NAMES.USER_PROFILE, {
+                                        userId: item.sender._id,
+                                        userName: item.sender.name
+                                    });
+                                }}
+                                title="View Profile"
+                                leadingIcon="account"
                             />
-                        </View>
+                            <Divider />
+                            <Menu.Item
+                                onPress={() => {
+                                    setMenuVisible(prev => ({ ...prev, [item._id]: false }));
+                                    handleStartChat(item.sender._id, item.sender.name);
+                                }}
+                                title="Start Chatting"
+                                leadingIcon="message"
+                            />
+                        </Menu>
                     )}
+                    
+                    <View style={[
+                        styles.messageBubble,
+                        isOwnMessage && styles.ownMessageBubble,
+                        !showAvatar && !isOwnMessage && styles.messageBubbleWithoutAvatar
+                    ]}>
+                        {!isOwnMessage && showAvatar && (
+                            <TouchableOpacity
+                                onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                            >
+                                <Text style={styles.senderName}>{item.sender.name}</Text>
+                            </TouchableOpacity>
+                        )}
+                        
+                        <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
+                            {item.content}
+                        </Text>
+                        
+                        {isOwnMessage && (
+                            <View style={styles.messageStatus}>
+                                <Icon 
+                                    name={item.readBy?.length > 1 ? "check-all" : "check"} 
+                                    size={16} 
+                                    color={item.readBy?.length > 1 ? "#60A5FA" : "#FFFFFF99"}
+                                />
+                            </View>
+                        )}
+                    </View>
                 </View>
-            </View>
-        </>
-    );
-};
+            </>
+        );
+    };
+
     const renderTypingIndicator = () => {
         if (typingUsers.length === 0) return null;
 
@@ -401,11 +444,12 @@ const ForumDetailScreen = ({ route, navigation }) => {
                     ref={flatListRef}
                     data={messages}
                     renderItem={renderMessage}
-                    keyExtractor={(item) => item._id}
+                    keyExtractor={(item) => item._id || String(Math.random())}
                     contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
                     onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
                     ListFooterComponent={renderTypingIndicator}
+                    extraData={messages} // Force re-render when messages change
                 />
 
                 <View style={styles.inputContainer}>

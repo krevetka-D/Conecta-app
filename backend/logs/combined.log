@@ -689,3 +689,42 @@
 {"level":"info","message":"Socket connected: TfH8dkN9XJSO8l4fAAAJ","service":"conecta-alicante","timestamp":"2025-07-22 01:45:17"}
 {"level":"info","message":"Socket connected: xqwQDWcN57zJRQtZAAAL","service":"conecta-alicante","timestamp":"2025-07-22 01:45:52"}
 {"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:46:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:47:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:48:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:49:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:50:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:51:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:52:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:53:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:54:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:55:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:56:10"}
+{"level":"info","message":"Socket stats - Connections: 5, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:57:10"}
+{"level":"info","message":"Socket connected: Y85nhS6hTb297iQhAAAB","service":"conecta-alicante","timestamp":"2025-07-22 01:58:04"}
+{"level":"info","message":"Socket connected: R5Ks1t0RtazjVStxAAAF","service":"conecta-alicante","timestamp":"2025-07-22 01:58:04"}
+{"level":"info","message":"Socket connected: RzlWzAEDSGAie25oAAAI","service":"conecta-alicante","timestamp":"2025-07-22 01:58:04"}
+{"level":"info","message":"Socket connected: _lKuJqLIfXEbt6PYAAAJ","service":"conecta-alicante","timestamp":"2025-07-22 01:58:04"}
+{"level":"info","message":"Socket connected: TIZ1cW-x8_jwCnDNAAAD","service":"conecta-alicante","timestamp":"2025-07-22 01:58:04"}
+{"level":"info","message":"Socket connected: 4V2L3XZRQ2s0XLmRAAAB","service":"conecta-alicante","timestamp":"2025-07-22 01:58:09"}
+{"level":"info","message":"Socket connected: knQi1J3GvupvhMfXAAAE","service":"conecta-alicante","timestamp":"2025-07-22 01:58:09"}
+{"level":"info","message":"Socket connected: 6XhduEzDB-0iQVBdAAAF","service":"conecta-alicante","timestamp":"2025-07-22 01:58:09"}
+{"level":"info","message":"Socket connected: Gxq2WR4HHriVFxSWAAAH","service":"conecta-alicante","timestamp":"2025-07-22 01:58:09"}
+{"level":"info","message":"Socket connected: Zfr5REuiDkhNZaMdAAAJ","service":"conecta-alicante","timestamp":"2025-07-22 01:58:09"}
+{"level":"info","message":"Socket connected: uBkCCVLz65JMNwE6AAAD","service":"conecta-alicante","timestamp":"2025-07-22 01:58:23"}
+{"level":"info","message":"Socket connected: UT81NytDESzcZw82AAAB","service":"conecta-alicante","timestamp":"2025-07-22 01:58:23"}
+{"level":"info","message":"Socket connected: d9kOYQ_wgj6z4ngUAAAF","service":"conecta-alicante","timestamp":"2025-07-22 01:58:24"}
+{"level":"info","message":"Socket connected: dECPDny22KgjsswRAAAH","service":"conecta-alicante","timestamp":"2025-07-22 01:58:26"}
+{"level":"info","message":"Socket connected: R8zouiNfbkzEm-F_AAAJ","service":"conecta-alicante","timestamp":"2025-07-22 01:58:27"}
+{"level":"info","message":"Socket disconnected: d9kOYQ_wgj6z4ngUAAAF, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 01:58:50"}
+{"level":"info","message":"Socket disconnected: UT81NytDESzcZw82AAAB, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 01:58:50"}
+{"level":"info","message":"Socket disconnected: R8zouiNfbkzEm-F_AAAJ, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 01:58:50"}
+{"level":"info","message":"Socket disconnected: dECPDny22KgjsswRAAAH, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 01:58:50"}
+{"level":"error","message":"Error handling disconnect: No matching document found for id \"687ed034b9fb39829bac797d\" version 0 modifiedPaths \"socketIds\"","modifiedPaths":["socketIds"],"service":"conecta-alicante","stack":"VersionError: No matching document found for id \"687ed034b9fb39829bac797d\" version 0 modifiedPaths \"socketIds\"\n    at generateVersionError (/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/node_modules/mongoose/lib/model.js:465:10)\n    at model.save (/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/node_modules/mongoose/lib/model.js:522:28)\n    at userSchema.methods.removeSocketId (file:///Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/models/User.js:144:17)\n    at Socket.<anonymous> (file:///Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/socket/socketHandlers.js:598:39)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-07-22 01:58:50","version":0}
+{"level":"error","message":"Error handling disconnect: No matching document found for id \"687ed034b9fb39829bac797d\" version 1 modifiedPaths \"socketIds\"","modifiedPaths":["socketIds"],"service":"conecta-alicante","stack":"VersionError: No matching document found for id \"687ed034b9fb39829bac797d\" version 1 modifiedPaths \"socketIds\"\n    at generateVersionError (/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/node_modules/mongoose/lib/model.js:465:10)\n    at model.save (/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/node_modules/mongoose/lib/model.js:522:28)\n    at userSchema.methods.removeSocketId (file:///Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/models/User.js:144:17)\n    at Socket.<anonymous> (file:///Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/backend/socket/socketHandlers.js:598:39)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-07-22 01:58:50","version":1}
+{"level":"info","message":"Socket connected: M7ypETjfw4wTEGqkAAAL","service":"conecta-alicante","timestamp":"2025-07-22 01:58:54"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 01:59:22"}
+{"level":"info","message":"Disconnecting inactive socket: uBkCCVLz65JMNwE6AAAD","service":"conecta-alicante","timestamp":"2025-07-22 01:59:37"}
+{"level":"info","message":"Socket disconnected: uBkCCVLz65JMNwE6AAAD, reason: server namespace disconnect","service":"conecta-alicante","timestamp":"2025-07-22 01:59:37"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:00:22"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:01:22"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 02:02:22"}

@@ -1,6 +1,7 @@
 import ChatMessage from '../models/ChatMessage.js';
 import Forum from '../models/Forum.js';
 import User from '../models/User.js';
+import Message from '../models/Message.js';
 import logger from '../utils/logger.js';
 
 export const setupSocketHandlers = (io) => {
@@ -8,6 +9,9 @@ export const setupSocketHandlers = (io) => {
     const connections = new Map(); // socketId -> { userId, roomIds }
     const userSockets = new Map(); // userId -> Set of socketIds
     const roomUsers = new Map(); // roomId -> Set of userIds
+    
+    // Message delivery tracking
+    const messageDeliveryStatus = new Map(); // messageId -> Set of delivered userIds
     
     // Heartbeat mechanism
     const HEARTBEAT_INTERVAL = 25000; // 25 seconds
@@ -62,25 +66,39 @@ export const setupSocketHandlers = (io) => {
                 }
                 userSockets.get(userId).add(socket.id);
                 
-                // Join user's personal room
+                // Join user's personal room for notifications
                 socket.join(`user_${userId}`);
                 
-                // Send connection success
+                // Send connection success with user info
                 socket.emit('connected', {
                     socketId: socket.id,
                     userId,
                     timestamp: new Date().toISOString(),
-                    authenticated: true
+                    authenticated: true,
+                    user: {
+                        _id: userId,
+                        name: user?.name,
+                        email: user?.email
+                    }
                 });
                 
                 // Notify others about user online
                 socket.broadcast.emit('userOnline', { 
                     userId,
-                    name: user?.name 
+                    name: user?.name,
+                    timestamp: new Date().toISOString()
                 });
+                
+                // Send any pending messages
+                await sendPendingMessages(socket, userId);
                 
             } catch (error) {
                 logger.error('Error setting up authenticated connection:', error);
+                socket.emit('error', {
+                    type: 'CONNECTION_ERROR',
+                    message: 'Failed to setup connection',
+                    code: 'SETUP_FAILED'
+                });
             }
         } else {
             // Anonymous connection
@@ -96,11 +114,12 @@ export const setupSocketHandlers = (io) => {
         socket.on('heartbeat', () => {
             heartbeats.set(socket.id, Date.now());
             socket.emit('heartbeat_ack', {
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                serverTime: Date.now()
             });
         });
 
-        // Handle room join
+        // Handle room join with enhanced response
         socket.on('joinRoom', async (roomId) => {
             try {
                 const connection = connections.get(socket.id);
@@ -113,13 +132,23 @@ export const setupSocketHandlers = (io) => {
                     });
                 }
 
+                // Validate roomId
+                if (!roomId || typeof roomId !== 'string') {
+                    return socket.emit('error', {
+                        type: 'JOIN_ROOM_ERROR',
+                        message: 'Invalid room ID',
+                        code: 'INVALID_ROOM_ID'
+                    });
+                }
+
                 // Verify room exists
                 const room = await Forum.findById(roomId);
                 if (!room) {
                     return socket.emit('error', { 
                         type: 'JOIN_ROOM_ERROR',
                         message: 'Room not found',
-                        code: 'ROOM_NOT_FOUND'
+                        code: 'ROOM_NOT_FOUND',
+                        roomId
                     });
                 }
 
@@ -129,6 +158,9 @@ export const setupSocketHandlers = (io) => {
                     const users = roomUsers.get(prevRoomId);
                     if (users) {
                         users.delete(connection.userId);
+                        if (users.size === 0) {
+                            roomUsers.delete(prevRoomId);
+                        }
                     }
                 }
 
@@ -147,9 +179,9 @@ export const setupSocketHandlers = (io) => {
                 const onlineUserIds = Array.from(roomUsers.get(roomId) || []);
                 const onlineUsers = await User.find({ 
                     _id: { $in: onlineUserIds } 
-                }).select('name email isOnline');
+                }).select('name email isOnline lastSeen');
 
-                // Load recent messages
+                // Load recent messages with proper population
                 const messages = await ChatMessage.find({ 
                     roomId,
                     deleted: false 
@@ -164,11 +196,18 @@ export const setupSocketHandlers = (io) => {
                 .limit(50)
                 .lean();
 
+                // Ensure all messages have the roomId
+                const messagesWithRoomId = messages.map(msg => ({
+                    ...msg,
+                    roomId: roomId
+                }));
+
                 // Mark messages as read
-                await ChatMessage.updateMany(
+                const unreadMessages = await ChatMessage.updateMany(
                     {
                         roomId,
-                        'readBy.user': { $ne: connection.userId }
+                        'readBy.user': { $ne: connection.userId },
+                        sender: { $ne: connection.userId }
                     },
                     {
                         $push: {
@@ -180,30 +219,43 @@ export const setupSocketHandlers = (io) => {
                     }
                 );
 
-                // Send room data
-                socket.emit('joinedRoom', {
-                    roomId,
-                    success: true,
-                    messages: messages.reverse(),
-                    onlineUsers,
-                    totalUsers: onlineUserIds.length
+                // Update room's last activity
+                await Forum.findByIdAndUpdate(roomId, {
+                    lastActivity: new Date(),
+                    $inc: { viewCount: 1 }
                 });
 
-                // Notify others
+                // Send comprehensive room data
+                socket.emit('joinedRoom', {
+                    roomId,
+                    roomTitle: room.title,
+                    roomDescription: room.description,
+                    success: true,
+                    messages: messagesWithRoomId.reverse(), // Chronological order
+                    onlineUsers,
+                    totalUsers: onlineUserIds.length,
+                    unreadCount: unreadMessages.modifiedCount || 0,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Notify others in the room
                 socket.to(roomId).emit('userJoinedRoom', {
                     userId: connection.userId,
                     userName: user?.name,
                     roomId,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    onlineUsersCount: onlineUserIds.length
                 });
 
                 logger.info(`User ${connection.userId} joined room ${roomId}`);
+                
             } catch (error) {
                 logger.error('Error joining room:', error);
                 socket.emit('error', { 
                     type: 'JOIN_ROOM_ERROR',
                     message: 'Failed to join room',
-                    error: error.message 
+                    error: error.message,
+                    roomId
                 });
             }
         });
@@ -226,19 +278,32 @@ export const setupSocketHandlers = (io) => {
                     }
                 }
 
+                // Notify others in the room
                 socket.to(roomId).emit('userLeftRoom', {
                     userId: connection.userId,
                     userName: user?.name,
-                    roomId
+                    roomId,
+                    timestamp: new Date().toISOString(),
+                    remainingUsers: users ? users.size : 0
                 });
 
-                socket.emit('leftRoom', { roomId, success: true });
+                socket.emit('leftRoom', { 
+                    roomId, 
+                    success: true,
+                    timestamp: new Date().toISOString()
+                });
+                
             } catch (error) {
                 logger.error('Error leaving room:', error);
+                socket.emit('error', {
+                    type: 'LEAVE_ROOM_ERROR',
+                    message: 'Failed to leave room',
+                    error: error.message
+                });
             }
         });
 
-        // Handle sending message
+        // Enhanced message sending with delivery tracking
         socket.on('sendMessage', async (data) => {
             try {
                 const connection = connections.get(socket.id);
@@ -271,16 +336,26 @@ export const setupSocketHandlers = (io) => {
                     });
                 }
 
-                // Create message
-                const message = await ChatMessage.create({
-                    roomId,
-                    sender: connection.userId,
-                    content: content.trim(),
-                    type,
-                    attachments,
-                    replyTo,
-                    readBy: [{ user: connection.userId, readAt: new Date() }]
-                });
+                // Create message with error handling
+                let message;
+                try {
+                    message = await ChatMessage.create({
+                        roomId,
+                        sender: connection.userId,
+                        content: content.trim(),
+                        type,
+                        attachments: attachments || [],
+                        replyTo,
+                        readBy: [{ user: connection.userId, readAt: new Date() }]
+                    });
+                } catch (dbError) {
+                    logger.error('Database error creating message:', dbError);
+                    return socket.emit('error', {
+                        type: 'MESSAGE_ERROR',
+                        message: 'Failed to save message',
+                        code: 'DB_ERROR'
+                    });
+                }
 
                 // Populate for response
                 const populatedMessage = await ChatMessage.findById(message._id)
@@ -292,47 +367,222 @@ export const setupSocketHandlers = (io) => {
                     })
                     .lean();
 
-                // Send to all users in room
-                io.to(roomId).emit('newMessage', populatedMessage);
+                // Ensure roomId is included in the message
+                const messageWithRoomId = {
+                    ...populatedMessage,
+                    roomId: roomId
+                };
+
+                // Initialize delivery tracking
+                messageDeliveryStatus.set(message._id.toString(), new Set([connection.userId]));
+
+                // Send to all users in room (including sender for consistency)
+                io.to(roomId).emit('newMessage', messageWithRoomId);
 
                 // Update forum activity
                 await Forum.findByIdAndUpdate(roomId, {
-                    lastActivity: new Date()
+                    lastActivity: new Date(),
+                    $inc: { messageCount: 1 }
                 });
 
-                // Send acknowledgment
+                // Send acknowledgment to sender
                 socket.emit('messageSent', {
                     messageId: message._id,
+                    roomId: roomId,
                     timestamp: new Date().toISOString(),
-                    success: true
+                    success: true,
+                    message: messageWithRoomId
                 });
+
+                // Track delivery for online users
+                const roomUserIds = roomUsers.get(roomId);
+                if (roomUserIds) {
+                    roomUserIds.forEach(userId => {
+                        if (userId !== connection.userId) {
+                            // Check if user is online and emit delivery status
+                            const userSocketIds = userSockets.get(userId);
+                            if (userSocketIds && userSocketIds.size > 0) {
+                                messageDeliveryStatus.get(message._id.toString()).add(userId);
+                            }
+                        }
+                    });
+                }
+
+                logger.info(`Message sent in room ${roomId} by user ${connection.userId}`);
 
             } catch (error) {
                 logger.error('Error sending message:', error);
                 socket.emit('error', { 
                     type: 'MESSAGE_ERROR',
                     message: 'Failed to send message',
-                    error: error.message 
+                    error: error.message,
+                    code: 'SEND_FAILED'
                 });
             }
         });
 
-        // Handle typing indicators
+        // Handle typing indicators with room validation
         socket.on('typing', (data) => {
             const connection = connections.get(socket.id);
             if (!connection) return;
 
             const { roomId, isTyping } = data;
             
+            // Validate user is in the room
+            if (!connection.roomIds.has(roomId)) {
+                return;
+            }
+            
             socket.to(roomId).emit('userTyping', {
                 userId: connection.userId,
                 userName: user?.name,
                 isTyping,
-                roomId
+                roomId,
+                timestamp: new Date().toISOString()
             });
         });
 
-        // Handle disconnection
+        // Handle message read receipts
+        socket.on('markAsRead', async (data) => {
+            try {
+                const connection = connections.get(socket.id);
+                if (!connection) return;
+
+                const { roomId, messageIds } = data;
+
+                const result = await ChatMessage.updateMany(
+                    {
+                        _id: { $in: messageIds },
+                        roomId,
+                        'readBy.user': { $ne: connection.userId }
+                    },
+                    {
+                        $push: {
+                            readBy: {
+                                user: connection.userId,
+                                readAt: new Date()
+                            }
+                        }
+                    }
+                );
+
+                // Notify sender about read receipt
+                const messages = await ChatMessage.find({
+                    _id: { $in: messageIds }
+                }).select('sender');
+
+                const senderIds = [...new Set(messages.map(m => m.sender.toString()))];
+                senderIds.forEach(senderId => {
+                    const senderSockets = userSockets.get(senderId);
+                    if (senderSockets) {
+                        senderSockets.forEach(socketId => {
+                            io.to(socketId).emit('messagesRead', {
+                                messageIds,
+                                readBy: connection.userId,
+                                roomId,
+                                timestamp: new Date().toISOString()
+                            });
+                        });
+                    }
+                });
+
+                socket.emit('markedAsRead', {
+                    success: true,
+                    count: result.modifiedCount
+                });
+
+            } catch (error) {
+                logger.error('Error marking messages as read:', error);
+            }
+        });
+
+        // Handle personal messages
+        socket.on('private_message', async (data) => {
+            try {
+                const connection = connections.get(socket.id);
+                if (!connection) {
+                    return socket.emit('error', {
+                        type: 'MESSAGE_ERROR',
+                        message: 'Authentication required',
+                        code: 'NOT_AUTHENTICATED'
+                    });
+                }
+
+                const { recipientId, content, type = 'text' } = data;
+
+                if (!recipientId || !content?.trim()) {
+                    return socket.emit('error', {
+                        type: 'MESSAGE_ERROR',
+                        message: 'Invalid message data',
+                        code: 'INVALID_DATA'
+                    });
+                }
+
+                // Create personal message
+                const conversationId = Message.generateConversationId(connection.userId, recipientId);
+                
+                const message = await Message.create({
+                    conversationId,
+                    sender: connection.userId,
+                    recipient: recipientId,
+                    content: content.trim(),
+                    type
+                });
+
+                // Populate message
+                await message.populate('sender', 'name email');
+                await message.populate('recipient', 'name email');
+
+                // Send to recipient if online
+                const recipientSockets = userSockets.get(recipientId);
+                if (recipientSockets) {
+                    recipientSockets.forEach(socketId => {
+                        io.to(socketId).emit('private_message', message);
+                    });
+                }
+
+                // Send confirmation to sender
+                socket.emit('private_message_sent', {
+                    message,
+                    timestamp: new Date().toISOString()
+                });
+
+            } catch (error) {
+                logger.error('Error sending private message:', error);
+                socket.emit('error', {
+                    type: 'MESSAGE_ERROR',
+                    message: 'Failed to send private message',
+                    error: error.message
+                });
+            }
+        });
+
+        // Handle user status updates
+        socket.on('update_status', async (data) => {
+            try {
+                const connection = connections.get(socket.id);
+                if (!connection) return;
+
+                const { isOnline } = data;
+
+                await User.findByIdAndUpdate(connection.userId, {
+                    isOnline,
+                    lastSeen: new Date()
+                });
+
+                // Broadcast status change
+                socket.broadcast.emit('user_status_update', {
+                    userId: connection.userId,
+                    isOnline,
+                    timestamp: new Date().toISOString()
+                });
+
+            } catch (error) {
+                logger.error('Error updating user status:', error);
+            }
+        });
+
+        // Handle disconnection with cleanup
         socket.on('disconnect', async (reason) => {
             logger.info(`Socket disconnected: ${socket.id}, reason: ${reason}`);
             
@@ -342,7 +592,7 @@ export const setupSocketHandlers = (io) => {
                 const { userId, roomIds } = connection;
                 
                 try {
-                    // Remove socket from user
+                    // Update user status
                     const userDoc = await User.findById(userId);
                     if (userDoc) {
                         await userDoc.removeSocketId(socket.id);
@@ -356,15 +606,16 @@ export const setupSocketHandlers = (io) => {
                         if (sockets.size === 0) {
                             userSockets.delete(userId);
                             
-                            // Notify others user is offline
+                            // User is now offline
                             socket.broadcast.emit('userOffline', { 
                                 userId,
-                                name: userDoc?.name 
+                                name: userDoc?.name,
+                                timestamp: new Date().toISOString()
                             });
                         }
                     }
                     
-                    // Remove from rooms
+                    // Remove from all rooms
                     for (const roomId of roomIds) {
                         const users = roomUsers.get(roomId);
                         if (users) {
@@ -376,7 +627,9 @@ export const setupSocketHandlers = (io) => {
                                 socket.to(roomId).emit('userLeftRoom', {
                                     userId,
                                     userName: userDoc?.name,
-                                    roomId
+                                    roomId,
+                                    reason: 'disconnect',
+                                    timestamp: new Date().toISOString()
                                 });
                             }
                         }
@@ -394,8 +647,50 @@ export const setupSocketHandlers = (io) => {
         // Error handler
         socket.on('error', (error) => {
             logger.error(`Socket error for ${socket.id}:`, error);
+            socket.emit('error', {
+                type: 'SOCKET_ERROR',
+                message: error.message || 'Unknown socket error',
+                timestamp: new Date().toISOString()
+            });
         });
     });
+
+    // Helper function to send pending messages
+    async function sendPendingMessages(socket, userId) {
+        try {
+            // Check for unread messages in user's rooms
+            const userRooms = await Forum.find({
+                $or: [
+                    { user: userId },
+                    { subscribers: userId }
+                ]
+            }).select('_id');
+
+            const roomIds = userRooms.map(r => r._id);
+
+            // Get recent unread messages
+            const unreadMessages = await ChatMessage.find({
+                roomId: { $in: roomIds },
+                'readBy.user': { $ne: userId },
+                sender: { $ne: userId }
+            })
+            .populate('sender', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .lean();
+
+            if (unreadMessages.length > 0) {
+                socket.emit('pendingMessages', {
+                    messages: unreadMessages,
+                    count: unreadMessages.length,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+        } catch (error) {
+            logger.error('Error sending pending messages:', error);
+        }
+    }
 
     // Periodic cleanup of stale data
     setInterval(() => {
@@ -406,6 +701,15 @@ export const setupSocketHandlers = (io) => {
             if (now - lastBeat > HEARTBEAT_TIMEOUT * 2) {
                 heartbeats.delete(socketId);
             }
+        }
+        
+        // Clean up old message delivery status
+        if (messageDeliveryStatus.size > 1000) {
+            // Keep only the 500 most recent
+            const entries = Array.from(messageDeliveryStatus.entries());
+            const toKeep = entries.slice(-500);
+            messageDeliveryStatus.clear();
+            toKeep.forEach(([k, v]) => messageDeliveryStatus.set(k, v));
         }
         
         // Log stats
