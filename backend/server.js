@@ -27,6 +27,7 @@ const app = express();
 const httpServer = createServer(app);
 
 // Enhanced CORS configuration
+// Enhanced CORS configuration
 const corsOptions = {
     origin: function (origin, callback) {
         const allowedOrigins = [
@@ -36,13 +37,31 @@ const corsOptions = {
             'http://localhost:19000',
             'http://localhost:19001',
             'http://localhost:19002',
+            'http://localhost:19006',
             'exp://localhost:19000',
+            'exp://localhost:8081',
+            // Add your Mac's IP for development
+            'http://192.168.1.129:8081',
+            'http://192.168.1.129:19000',
+            'http://192.168.1.129:19001',
+            'http://192.168.1.129:19002',
+            'exp://192.168.1.129:8081',
+            'exp://192.168.1.129:19000',
+            // Allow any IP in your local network range
+            /^http:\/\/192\.168\.1\.\d{1,3}:\d+$/,
+            /^exp:\/\/192\.168\.1\.\d{1,3}:\d+$/,
+            // General patterns for Expo
             /^exp:\/\/\d+\.\d+\.\d+\.\d+:\d+$/,
             /^http:\/\/\d+\.\d+\.\d+\.\d+:\d+$/
         ];
         
-        // Allow requests with no origin (mobile apps)
+        // Allow requests with no origin (mobile apps, Postman, etc)
         if (!origin) return callback(null, true);
+        
+        // In development, log all origins for debugging
+        if (process.env.NODE_ENV === 'development') {
+            console.log('CORS request from origin:', origin);
+        }
         
         const isAllowed = allowedOrigins.some(allowed => {
             if (allowed instanceof RegExp) {
@@ -54,14 +73,20 @@ const corsOptions = {
         if (isAllowed) {
             callback(null, true);
         } else {
-            console.log('Blocked by CORS:', origin);
-            callback(null, true); // In dev, allow all origins
+            console.log('CORS blocked origin:', origin);
+            // In development, allow all origins for easier testing
+            if (process.env.NODE_ENV === 'development') {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['X-Total-Count']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page'],
+    maxAge: 86400 // Cache preflight requests for 24 hours
 };
 
 app.use(cors(corsOptions));
