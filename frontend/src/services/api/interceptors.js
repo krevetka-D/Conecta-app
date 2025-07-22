@@ -74,8 +74,8 @@ export const setupInterceptors = (apiClient) => {
                 });
             }
 
-            // IMPORTANT: Return only the data from the response
-            // This simplifies the response handling in services
+            // Return the response data directly
+            // This removes the need to access response.data in services
             return response.data;
         },
         async (error) => {

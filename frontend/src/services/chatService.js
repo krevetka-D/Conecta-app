@@ -36,7 +36,44 @@ const chatService = {
 
             // Fixed: Use correct endpoint structure
             const response = await apiClient.get(`/chat/rooms/${roomId}/messages`, { params });
-            return response || [];
+            
+            // Debug log to see the response structure
+            console.log('getRoomMessages raw response:', response);
+            
+            // Handle different response structures from backend
+            let messages = [];
+            
+            // If backend returns wrapped response: { data: { messages: [...] } }
+            if (response && response.data && Array.isArray(response.data.messages)) {
+                console.log('Found messages in response.data.messages:', response.data.messages.length);
+                messages = response.data.messages;
+            }
+            // If backend returns: { messages: [...] }
+            else if (response && Array.isArray(response.messages)) {
+                console.log('Found messages in response.messages:', response.messages.length);
+                messages = response.messages;
+            }
+            // If backend returns array directly
+            else if (Array.isArray(response)) {
+                console.log('Response is already an array:', response.length);
+                messages = response;
+            }
+            // Fallback: check if response itself looks like a message array
+            else if (response && response.length !== undefined) {
+                console.log('Response might be array-like');
+                messages = Array.from(response);
+            }
+            
+            // Validate messages have required structure
+            const validMessages = messages.filter(msg => 
+                msg && msg._id && msg.sender && msg.content !== undefined
+            );
+            
+            if (validMessages.length !== messages.length) {
+                console.warn(`Filtered out ${messages.length - validMessages.length} invalid messages`);
+            }
+            
+            return validMessages;
         } catch (error) {
             console.error('Error fetching messages:', error);
             

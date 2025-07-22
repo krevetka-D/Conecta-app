@@ -44,12 +44,6 @@ const ForumDetailScreen = ({ route, navigation }) => {
     
     const flatListRef = useRef(null);
     const typingTimeoutRef = useRef(null);
-    const messagesRef = useRef(messages); // Keep a ref to current messages
-
-    // Update ref when messages change
-    useEffect(() => {
-        messagesRef.current = messages;
-    }, [messages]);
 
     useEffect(() => {
         // Set navigation header
@@ -129,9 +123,11 @@ const ForumDetailScreen = ({ route, navigation }) => {
                 // Load initial messages from API/Mock
                 try {
                     const initialMessages = await chatService.getRoomMessages(roomId);
-                    setMessages(initialMessages || []);
+                    // Ensure messages is always an array
+                    setMessages(Array.isArray(initialMessages) ? initialMessages : []);
                 } catch (error) {
                     console.error('Failed to load messages:', error);
+                    setMessages([]);
                 }
                 
                 setLoading(false);
@@ -161,9 +157,11 @@ const ForumDetailScreen = ({ route, navigation }) => {
             // Load initial messages from API (works even without socket)
             try {
                 const initialMessages = await chatService.getRoomMessages(roomId);
-                setMessages(initialMessages || []);
+                // Ensure messages is always an array
+                setMessages(Array.isArray(initialMessages) ? initialMessages : []);
             } catch (error) {
                 console.error('Failed to load messages:', error);
+                setMessages([]);
             }
 
             setLoading(false);
@@ -171,18 +169,15 @@ const ForumDetailScreen = ({ route, navigation }) => {
             console.error('Failed to initialize chat:', error);
             setLoading(false);
             setConnectionError(true);
+            setMessages([]);
         }
     };
 
     const setupSocketListeners = () => {
-        // Remove any existing listeners first to avoid duplicates
-        cleanupSocketListeners();
-        
         socketService.on('newMessage', handleNewMessage);
         socketService.on('messageDeleted', handleMessageDeleted);
         socketService.on('userTyping', handleUserTyping);
         socketService.on('roomUsers', handleRoomUsers);
-        socketService.on('joinedRoom', handleJoinedRoom);
     };
 
     const cleanupSocketListeners = () => {
@@ -190,59 +185,44 @@ const ForumDetailScreen = ({ route, navigation }) => {
         socketService.off('messageDeleted', handleMessageDeleted);
         socketService.off('userTyping', handleUserTyping);
         socketService.off('roomUsers', handleRoomUsers);
-        socketService.off('joinedRoom', handleJoinedRoom);
     };
 
-    // Handle joined room event with messages
-    const handleJoinedRoom = useCallback((data) => {
-        if (data.messages) {
-            setMessages(data.messages);
-        }
-        if (data.onlineUsers) {
-            setOnlineUsers(data.onlineUsers);
-        }
+    const handleNewMessage = useCallback((message) => {
+        setMessages(prev => {
+            // Ensure prev is an array
+            const prevMessages = Array.isArray(prev) ? prev : [];
+            return [...prevMessages, message];
+        });
+        setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
     }, []);
 
-    // Fixed: Use functional state update to avoid stale closure
-    const handleNewMessage = useCallback((message) => {
-        console.log('New message received:', message);
-        
-        // Only add message if it's for this room
-        if (message.roomId === roomId) {
-            setMessages(prevMessages => {
-                // Check if message already exists (to avoid duplicates)
-                const exists = prevMessages.some(msg => msg._id === message._id);
-                if (exists) {
-                    return prevMessages;
-                }
-                return [...prevMessages, message];
-            });
-            
-            // Scroll to bottom after state update
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
-        }
-    }, [roomId]);
-
     const handleMessageDeleted = useCallback(({ messageId }) => {
-        setMessages(prev => prev.map(msg => 
-            msg._id === messageId ? { ...msg, deleted: true } : msg
-        ));
+        setMessages(prev => {
+            // Ensure prev is an array
+            const prevMessages = Array.isArray(prev) ? prev : [];
+            return prevMessages.map(msg => 
+                msg._id === messageId ? { ...msg, deleted: true } : msg
+            );
+        });
     }, []);
 
     const handleUserTyping = useCallback(({ userId, isTyping }) => {
         setTypingUsers(prev => {
+            // Ensure prev is an array
+            const prevUsers = Array.isArray(prev) ? prev : [];
             if (isTyping) {
-                return prev.includes(userId) ? prev : [...prev, userId];
+                return prevUsers.includes(userId) ? prevUsers : [...prevUsers, userId];
             } else {
-                return prev.filter(id => id !== userId);
+                return prevUsers.filter(id => id !== userId);
             }
         });
     }, []);
 
     const handleRoomUsers = useCallback((users) => {
-        setOnlineUsers(users);
+        // Ensure users is an array
+        setOnlineUsers(Array.isArray(users) ? users : []);
     }, []);
 
     const sendMessage = async () => {
@@ -254,7 +234,6 @@ const ForumDetailScreen = ({ route, navigation }) => {
 
         try {
             if (socketService.isConnected()) {
-                // When using socket, the message will come back via 'newMessage' event
                 socketService.sendMessage({
                     roomId,
                     content: messageText,
@@ -262,16 +241,10 @@ const ForumDetailScreen = ({ route, navigation }) => {
                 });
             } else {
                 // Fallback to API
-                const newMessage = await chatService.sendMessage(roomId, messageText);
-                
-                // Add the message to local state since we won't get socket event
-                if (newMessage) {
-                    setMessages(prev => [...prev, newMessage]);
-                } else {
-                    // If API doesn't return the message, reload all messages
-                    const updatedMessages = await chatService.getRoomMessages(roomId);
-                    setMessages(updatedMessages || []);
-                }
+                await chatService.sendMessage(roomId, messageText);
+                // Reload messages
+                const updatedMessages = await chatService.getRoomMessages(roomId);
+                setMessages(Array.isArray(updatedMessages) ? updatedMessages : []);
             }
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -300,12 +273,15 @@ const ForumDetailScreen = ({ route, navigation }) => {
     };
 
     const renderMessage = ({ item, index }) => {
+        if (!item || !item.sender || !user) return null;
+        
         const isOwnMessage = item.sender._id === user._id;
-        const showAvatar = index === 0 || messages[index - 1]?.sender._id !== item.sender._id;
+        const messageList = Array.isArray(messages) ? messages : [];
+        const showAvatar = index === 0 || messageList[index - 1]?.sender._id !== item.sender._id;
         
         // Group messages by time (5 minute intervals)
         const showTimestamp = index === 0 || 
-            new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
+            (messageList[index - 1] && new Date(item.createdAt) - new Date(messageList[index - 1]?.createdAt) > 300000);
 
         if (item.deleted) {
             return (
@@ -401,7 +377,8 @@ const ForumDetailScreen = ({ route, navigation }) => {
     };
 
     const renderTypingIndicator = () => {
-        if (typingUsers.length === 0) return null;
+        const typingUsersList = Array.isArray(typingUsers) ? typingUsers : [];
+        if (typingUsersList.length === 0) return null;
 
         return (
             <View style={styles.typingContainer}>
@@ -411,7 +388,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
                     <View style={[styles.dot, styles.dot3]} />
                 </View>
                 <Text style={styles.typingText}>
-                    {typingUsers.length === 1 ? 'Someone is typing' : 'Multiple people are typing'}
+                    {typingUsersList.length === 1 ? 'Someone is typing' : 'Multiple people are typing'}
                 </Text>
             </View>
         );
@@ -424,6 +401,9 @@ const ForumDetailScreen = ({ route, navigation }) => {
             </View>
         );
     }
+
+    // Ensure messages is always an array
+    const messageList = Array.isArray(messages) ? messages : [];
 
     return (
         <SafeAreaView style={styles.container}>
@@ -442,14 +422,14 @@ const ForumDetailScreen = ({ route, navigation }) => {
             >
                 <FlatList
                     ref={flatListRef}
-                    data={messages}
+                    data={messageList}
                     renderItem={renderMessage}
-                    keyExtractor={(item) => item._id || String(Math.random())}
+                    keyExtractor={(item) => item?._id || String(Math.random())}
                     contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
                     onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
                     ListFooterComponent={renderTypingIndicator}
-                    extraData={messages} // Force re-render when messages change
+                    extraData={menuVisible}
                 />
 
                 <View style={styles.inputContainer}>
