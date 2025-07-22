@@ -1,4 +1,3 @@
-// frontend/webpack.config.js
 const createExpoWebpackConfigAsync = require('@expo/webpack-config');
 
 module.exports = async function (env, argv) {
@@ -7,36 +6,47 @@ module.exports = async function (env, argv) {
       ...env,
       babel: {
         dangerouslyAddModulePathsToTranspile: [
+          'react-native-vector-icons',
+          'react-native-paper',
+          'react-native-safe-area-context',
+          'react-native-gesture-handler',
+          'react-native-reanimated',
           '@react-native-community/datetimepicker',
           '@react-native-community/netinfo',
-          'react-native-modal',
-          'react-native-vector-icons',
+          '@react-native-async-storage/async-storage',
         ],
       },
     },
     argv
   );
 
-  // Customize the config
+  // Add fallbacks for Node.js modules
+  config.resolve.fallback = {
+    ...config.resolve.fallback,
+    crypto: require.resolve('crypto-browserify'),
+    stream: require.resolve('stream-browserify'),
+    buffer: require.resolve('buffer/'),
+    util: require.resolve('util/'),
+    process: require.resolve('process/browser'),
+  };
+
+  // Add aliases for problematic modules
   config.resolve.alias = {
     ...config.resolve.alias,
     'react-native$': 'react-native-web',
-    '@components': './src/components',
-    '@screens': './src/screens',
-    '@services': './src/services',
-    '@utils': './src/utils',
-    '@constants': './src/constants',
-    '@store': './src/store',
-    '@hooks': './src/hooks',
-    '@navigation': './src/navigation',
-    '@styles': './src/styles',
+    'react-native-vector-icons': 'react-native-vector-icons/dist',
   };
 
-  // Handle vector icons for web
+  // Handle font files
   config.module.rules.push({
-    test: /\.ttf$/,
-    loader: 'url-loader',
-    include: /react-native-vector-icons/,
+    test: /\.(ttf|otf|eot|woff|woff2)$/,
+    use: {
+      loader: 'file-loader',
+      options: {
+        name: '[name].[ext]',
+        outputPath: 'fonts/',
+      },
+    },
   });
 
   return config;

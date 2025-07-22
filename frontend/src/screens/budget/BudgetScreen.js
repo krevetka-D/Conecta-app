@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button, Provider } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import WebDateTimePicker from '../../components/common/WebDateTimePicker';
 
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';

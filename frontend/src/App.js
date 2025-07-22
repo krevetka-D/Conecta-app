@@ -1,14 +1,15 @@
-// frontend/src/App.js
 import 'react-native-gesture-handler';
 import React, { useEffect, useCallback } from 'react';
 import { LogBox, Platform, View, Text } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Import web polyfills first
-import './utils/webPolyfills';
+// Import web polyfills first - ONLY for web
+if (Platform.OS === 'web') {
+    require('./utils/webPolyfills');
+}
 
-// Apply global patches before any other imports
+// Apply global patches
 import { applyGlobalPatches } from './utils/globalPatches';
 applyGlobalPatches();
 
@@ -27,9 +28,11 @@ LogBox.ignoreLogs([
     'Invariant Violation: "main" has not been registered',
 ]);
 
-// Keep splash screen visible while loading
+// Keep splash screen visible while loading (native only)
 if (Platform.OS !== 'web') {
-    SplashScreen.preventAutoHideAsync();
+    SplashScreen.preventAutoHideAsync().catch(() => {
+        // Handle error silently
+    });
 }
 
 export default function App() {
@@ -44,7 +47,7 @@ export default function App() {
                 // Initialize API client with stored token
                 await initializeApiClient();
                 
-                // Add artificial delay for splash screen (optional)
+                // Add artificial delay for splash screen (native only)
                 if (Platform.OS !== 'web') {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
@@ -60,7 +63,9 @@ export default function App() {
 
     const onLayoutRootView = useCallback(async () => {
         if (appIsReady && Platform.OS !== 'web') {
-            await SplashScreen.hideAsync();
+            await SplashScreen.hideAsync().catch(() => {
+                // Handle error silently
+            });
         }
     }, [appIsReady]);
 

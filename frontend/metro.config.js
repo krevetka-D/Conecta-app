@@ -5,7 +5,7 @@ const path = require('path');
 const config = getDefaultConfig(__dirname);
 
 // Add support for additional file extensions
-config.resolver.sourceExts = [...config.resolver.sourceExts, 'cjs'];
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'cjs','web.js', 'web.ts', 'web.tsx'];
 
 // Configure module resolution
 config.resolver.extraNodeModules = {
@@ -18,6 +18,10 @@ config.resolver.extraNodeModules = {
   '@hooks': path.resolve(__dirname, 'src/hooks'),
   '@navigation': path.resolve(__dirname, 'src/navigation'),
   '@styles': path.resolve(__dirname, 'src/styles'),
+  ...config.resolver.extraNodeModules,
+    crypto: require.resolve('crypto-browserify'),
+    stream: require.resolve('stream-browserify'),
+    buffer: require.resolve('buffer/'),
 };
 
 // Watch all files in the project
