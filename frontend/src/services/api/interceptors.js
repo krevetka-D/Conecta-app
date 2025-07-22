@@ -26,7 +26,6 @@ export const setupInterceptors = (apiClient) => {
             const isAuthEndpoint = config.url.includes('/login') || config.url.includes('/register');
             
             if (!isAuthEndpoint) {
-                // Get fresh token for each request
                 try {
                     const token = await AsyncStorage.getItem('userToken');
                     if (token) {
@@ -42,7 +41,6 @@ export const setupInterceptors = (apiClient) => {
             const separator = config.url.includes('?') ? '&' : '?';
             config.url = `${config.url}${separator}_t=${timestamp}`;
 
-            // Log request in development
             if (__DEV__) {
                 console.log('API Request:', {
                     url: config.url,
@@ -62,10 +60,9 @@ export const setupInterceptors = (apiClient) => {
         }
     );
 
-    // Response interceptor
+    // Response interceptor - FIXED
     apiClient.interceptors.response.use(
         (response) => {
-            // Log response in development
             if (__DEV__) {
                 console.log('API Response:', {
                     url: response.config.url,
@@ -74,9 +71,11 @@ export const setupInterceptors = (apiClient) => {
                 });
             }
 
-            // Return the response data directly
-            // This removes the need to access response.data in services
-            return response.data;
+            // Handle both response.data and direct response formats
+            if (response.data !== undefined) {
+                return response.data;
+            }
+            return response;
         },
         async (error) => {
             const originalRequest = error.config;
@@ -92,7 +91,6 @@ export const setupInterceptors = (apiClient) => {
 
             // Handle network errors
             if (!error.response) {
-                // Don't show alert for every network error, just return the error
                 return Promise.reject(new Error(ERROR_MESSAGES.NETWORK_ERROR));
             }
 
@@ -103,14 +101,7 @@ export const setupInterceptors = (apiClient) => {
                                  originalRequest.url.includes('/register');
 
             // Handle 401 Unauthorized
-            if (status === 401) {
-                // For login/register requests, don't treat as session expiration
-                if (isAuthRequest) {
-                    // Return the actual error message from backend
-                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.LOGIN_FAILED));
-                }
-                
-                // For other requests, treat as session expiration
+            if (status === 401 && !isAuthRequest) {
                 if (!originalRequest._retry) {
                     if (isRefreshing) {
                         return new Promise((resolve, reject) => {
@@ -138,7 +129,6 @@ export const setupInterceptors = (apiClient) => {
                         
                         // Use setTimeout to ensure navigation is ready
                         setTimeout(() => {
-                            // Import navigation service dynamically to avoid circular dependency
                             const { resetRoot } = require('../../navigation/NavigationService');
                             resetRoot();
                         }, 100);
@@ -154,38 +144,8 @@ export const setupInterceptors = (apiClient) => {
             }
 
             // Handle other error statuses
-            switch (status) {
-                case 400:
-                    // Bad request - often validation errors
-                    // For registration, this might be "user already exists"
-                    return Promise.reject(new Error(data?.message || data?.error || ERROR_MESSAGES.VALIDATION_ERROR));
-                    
-                case 403:
-                    // Forbidden
-                    return Promise.reject(new Error(data?.message || 'Access denied'));
-
-                case 404:
-                    // Not found
-                    return Promise.reject(new Error(data?.message || 'Resource not found'));
-
-                case 409:
-                    // Conflict - often used for duplicate resources
-                    return Promise.reject(new Error(data?.message || 'Resource already exists'));
-
-                case 422:
-                    // Validation error
-                    return Promise.reject(new Error(data?.message || ERROR_MESSAGES.VALIDATION_ERROR));
-
-                case 500:
-                case 502:
-                case 503:
-                    // Server error - don't show alert here, let the service handle it
-                    return Promise.reject(new Error(data?.message || 'Server error. Please try again later.'));
-
-                default:
-                    // Generic error - use backend message if available
-                    return Promise.reject(new Error(data?.message || data?.error || ERROR_MESSAGES.GENERIC_ERROR));
-            }
+            const errorMessage = data?.message || data?.error || ERROR_MESSAGES.GENERIC_ERROR;
+            return Promise.reject(new Error(errorMessage));
         }
     );
 };

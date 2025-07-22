@@ -15,7 +15,7 @@ export const getDashboardOverview = asyncHandler(async (req, res) => {
         const userId = req.user._id;
         const currentDate = new Date();
 
-        // Use Promise.all for parallel execution
+        // Using Promise.all for parallel execution
         const [
             recentBudgetEntries,
             monthlyBudget,

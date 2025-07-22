@@ -18,7 +18,7 @@ export const getBudgetCategories = asyncHandler(async (req, res) => {
         console.log('No professional path provided, defaulting to FREELANCER');
     }
 
-    // Convert to uppercase to ensure consistent matching with keys
+    // Converting using  to uppercase to ensure consistent matching with keys
     const professionalPath = path.toUpperCase();
 
     const categories = BUDGET_CATEGORIES[professionalPath];
@@ -31,7 +31,7 @@ export const getBudgetCategories = asyncHandler(async (req, res) => {
         res.status(200).json({
             income: defaultCategories.INCOME || [],
             expense: defaultCategories.EXPENSE || [],
-            professionalPath: 'FREELANCER' // Include the path used
+            professionalPath: 'FREELANCER' 
         });
         return;
     }
@@ -39,7 +39,7 @@ export const getBudgetCategories = asyncHandler(async (req, res) => {
     res.status(200).json({
         income: categories.INCOME || [],
         expense: categories.EXPENSE || [],
-        professionalPath: professionalPath // Include the path used
+        professionalPath: professionalPath
     });
 });
 
@@ -78,6 +78,5 @@ export const getChecklistItemsConfig = asyncHandler(async (req, res) => {
 export const getConstants = asyncHandler(async (req, res) => {
     res.status(200).json({
         professionalPaths: PROFESSIONAL_PATHS,
-        // Don't send all categories and checklist items to public endpoint
     });
 });

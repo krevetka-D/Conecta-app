@@ -5,6 +5,9 @@ import { LogBox, Platform, View, Text } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+// Import web polyfills first
+import './utils/webPolyfills';
+
 // Apply global patches before any other imports
 import { applyGlobalPatches } from './utils/globalPatches';
 applyGlobalPatches();
@@ -25,7 +28,9 @@ LogBox.ignoreLogs([
 ]);
 
 // Keep splash screen visible while loading
-SplashScreen.preventAutoHideAsync();
+if (Platform.OS !== 'web') {
+    SplashScreen.preventAutoHideAsync();
+}
 
 export default function App() {
     const [appIsReady, setAppIsReady] = React.useState(false);
@@ -33,14 +38,16 @@ export default function App() {
     useEffect(() => {
         async function prepare() {
             try {
-                // Load fonts
+                // Load fonts (will handle web gracefully)
                 await loadFonts();
                 
                 // Initialize API client with stored token
                 await initializeApiClient();
                 
                 // Add artificial delay for splash screen (optional)
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                if (Platform.OS !== 'web') {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             } catch (e) {
                 console.warn('App initialization error:', e);
             } finally {
@@ -52,7 +59,7 @@ export default function App() {
     }, []);
 
     const onLayoutRootView = useCallback(async () => {
-        if (appIsReady) {
+        if (appIsReady && Platform.OS !== 'web') {
             await SplashScreen.hideAsync();
         }
     }, [appIsReady]);

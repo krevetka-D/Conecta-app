@@ -2,24 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
     <title>Conecta Alicante</title>
     <style>
-        /* Prevent body from scrolling */
+        /* Prevent body from scrolling and bouncing */
         html, body {
             overflow: hidden;
             margin: 0;
             padding: 0;
             height: 100%;
+            width: 100%;
             background-color: #f3f4f6;
+            -webkit-overflow-scrolling: touch;
+            position: fixed;
         }
+        
+        /* Prevent text selection on UI elements */
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Allow text selection in input fields */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        
         /* Root div should take full space */
         #root {
             display: flex;
             height: 100%;
             width: 100%;
+            position: relative;
         }
+        
         /* Loading spinner */
         .loader {
             position: absolute;
@@ -27,6 +46,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
+        
         .loader:after {
             content: " ";
             display: block;
@@ -38,6 +58,7 @@
             border-color: #1E3A8A transparent #1E3A8A transparent;
             animation: loader 1.2s linear infinite;
         }
+        
         @keyframes loader {
             0% {
                 transform: rotate(0deg);
@@ -46,12 +67,53 @@
                 transform: rotate(360deg);
             }
         }
+        
+        /* Error display */
+        .error-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .error-container.show {
+            display: block;
+        }
+        
+        .error-title {
+            color: #DC2626;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .error-message {
+            color: #6B7280;
+            font-size: 16px;
+        }
     </style>
+    <script>
+        // Global error handler for web
+        window.addEventListener('error', function(event) {
+            console.error('Global error:', event.error);
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+        });
+    </script>
 </head>
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root">
         <div class="loader"></div>
+        <div class="error-container" id="error-container">
+            <div class="error-title">Failed to load application</div>
+            <div class="error-message">Please refresh the page to try again.</div>
+        </div>
     </div>
 </body>
 </html>

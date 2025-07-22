@@ -26,8 +26,7 @@ connectDB();
 const app = express();
 const httpServer = createServer(app);
 
-// Enhanced CORS configuration
-// Enhanced CORS configuration
+//CORS configuration
 const corsOptions = {
     origin: function (origin, callback) {
         const allowedOrigins = [
@@ -124,7 +123,7 @@ app.get('/api/health', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-// Socket.IO configuration with enhanced error handling
+// Socket.IO configuration with error handling
 const io = new Server(httpServer, {
     cors: corsOptions,
     transports: ['websocket', 'polling'],

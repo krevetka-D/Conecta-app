@@ -25,22 +25,29 @@ export const AuthProvider = ({ children }) => {
 
     // Initialize pending checklist items
     const initializePendingChecklist = useCallback(async () => {
-        try {
-            const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
-            if (pendingItems && user) {
-                const items = JSON.parse(pendingItems);
-                if (items.length > 0) {
+    try {
+        const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
+        if (pendingItems && user) {
+            const items = JSON.parse(pendingItems);
+            if (items.length > 0) {
+                try {
                     // Initialize checklist items in backend
                     await checklistService.initializeChecklist(items);
                     // Clear pending items after successful initialization
                     await AsyncStorage.removeItem('pendingChecklistItems');
                     console.log('Checklist initialized with items:', items);
+                } catch (error) {
+                    // Don't throw - just log the error
+                    console.warn('Checklist initialization deferred:', error.message);
+                    // Keep the pending items for later retry
                 }
             }
-        } catch (error) {
-            console.error('Failed to initialize pending checklist:', error);
         }
-    }, [user]);
+    } catch (error) {
+        console.warn('Failed to process pending checklist:', error);
+        // Don't throw - this is not critical for app functionality
+    }
+}, [user]);
 
     // Load user from storage on mount
     useEffect(() => {

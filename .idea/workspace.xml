@@ -5,21 +5,53 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f9d4abe1-c459-42a0-8d6a-608c8b9492d2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/backend/.env" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/config/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/constants.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/config/db.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/db.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/config/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/budgetController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/budgetController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/checklistController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/checklistController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/configController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/configController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/dashboardController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/dashboardController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/eventController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/eventController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/controllers/forumController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/forumController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/controllers/userController.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/controllers/userController.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/logs/combined.log" beforeDir="false" afterPath="$PROJECT_DIR$/backend/logs/combined.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/logs/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/backend/logs/error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/middleware/authMiddleware.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/middleware/authMiddleware.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/middleware/cacheMiddleware.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/middleware/cacheMiddleware.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/middleware/validationMiddleware.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/middleware/validationMiddleware.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/BudgetEntry.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/BudgetEntry.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/ChecklistItem.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/ChecklistItem.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/models/Event.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/Event.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/models/Forum.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/Forum.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/Guide.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/Guide.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/Message.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/Message.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/Post.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/ServiceDirectoryEntry.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/ServiceDirectoryEntry.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/Thread.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/User.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/User.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/node_modules/.package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/.package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/api.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/budgetRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/budgetRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/checklistRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/checklistRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/dashboardRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/dashboardRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/routes/eventRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/eventRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/forumRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/forumRoutes.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/userRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/userRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock 2.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/websocket.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/websocket.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/screens/forums/ForumScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/screens/forums/ForumScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/styles/screens/forums/ForumScreenStyles.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/screens/forums/ForumScreenStyles.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/services/api/client.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/api/client.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/services/api/interceptors.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/api/interceptors.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/services/checklistService.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/services/checklistService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/contexts/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/store/contexts/AuthContext.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/web/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/web/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,6 +137,7 @@
       <workItem from="1752799306463" duration="2250000" />
       <workItem from="1752854879000" duration="7834000" />
       <workItem from="1752928017688" duration="546000" />
+      <workItem from="1753189668183" duration="18000" />
     </task>
     <servers />
   </component>

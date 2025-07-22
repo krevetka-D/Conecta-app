@@ -5,7 +5,7 @@ import User from '../models/User.js';
 const FREELANCER_CHECKLIST = [ 'OBTAIN_NIE', 'REGISTER_AUTONOMO', 'UNDERSTAND_TAXES', 'OPEN_BANK_ACCOUNT' ];
 const ENTREPRENEUR_CHECKLIST = [ 'OBTAIN_NIE', 'FORM_SL_COMPANY', 'GET_COMPANY_NIF', 'RESEARCH_FUNDING' ];
 
-// Add this new endpoint to initialize checklist items
+//Initializing checklist items
 const initializeChecklist = asyncHandler(async (req, res) => {
     const { selectedItems } = req.body;
     
@@ -85,7 +85,7 @@ const updateChecklistItem = asyncHandler(async (req, res) => {
     res.status(200).json(item);
 });
 
-// New function to create checklist items for a user (called during onboarding completion)
+//  Creating checklist items for a user (called during onboarding completion)
 const createChecklistForUser = async (userId, selectedItems) => {
     if (!userId || !selectedItems || selectedItems.length === 0) return;
     

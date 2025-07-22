@@ -1034,3 +1034,48 @@
 {"level":"info","message":"Socket connected: tSquiiuSmWe1-rUPAAAF","service":"conecta-alicante","timestamp":"2025-07-22 14:18:50"}
 {"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:19:45"}
 {"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:20:45"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:21:45"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:22:45"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:23:45"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:24:45"}
+{"level":"info","message":"Socket connected: ZKFva3spO_jjsIyPAAAB","service":"conecta-alicante","timestamp":"2025-07-22 14:25:25"}
+{"level":"info","message":"Socket connected: 31yQYY6ovbhab6FcAAAB","service":"conecta-alicante","timestamp":"2025-07-22 14:25:53"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:26:51"}
+{"level":"info","message":"Disconnecting inactive socket: 31yQYY6ovbhab6FcAAAB","service":"conecta-alicante","timestamp":"2025-07-22 14:27:06"}
+{"level":"info","message":"Socket disconnected: 31yQYY6ovbhab6FcAAAB, reason: server namespace disconnect","service":"conecta-alicante","timestamp":"2025-07-22 14:27:06"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:29:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:30:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:31:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:32:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:33:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:34:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:35:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:39:05"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:40:58"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:41:58"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:42:58"}
+{"level":"info","message":"Socket connected: W7rlwI0lBkvyrA0eAAAB","service":"conecta-alicante","timestamp":"2025-07-22 14:43:05"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:43:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:44:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:45:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:46:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:47:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:48:58"}
+{"level":"info","message":"Socket disconnected: W7rlwI0lBkvyrA0eAAAB, reason: transport close","service":"conecta-alicante","timestamp":"2025-07-22 14:49:20"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:49:58"}
+{"level":"info","message":"Socket stats - Connections: 0, Users: 0, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:50:58"}
+{"level":"info","message":"Socket connected: zpBLZNBH3JlzIyqSAAAD","service":"conecta-alicante","timestamp":"2025-07-22 14:51:54"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:51:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:52:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:53:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:54:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:55:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:56:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 14:57:58"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:05:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:06:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:07:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:08:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:09:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:10:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:11:23"}

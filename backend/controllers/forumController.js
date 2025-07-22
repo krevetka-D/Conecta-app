@@ -1,4 +1,4 @@
-//modifyed to use chat-rooms
+//modifyed to switch from forums to chat-rooms
 
 import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';

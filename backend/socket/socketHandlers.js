@@ -303,7 +303,7 @@ export const setupSocketHandlers = (io) => {
             }
         });
 
-        // Enhanced message sending with delivery tracking
+        // Message sending with delivery tracking
         socket.on('sendMessage', async (data) => {
             try {
                 const connection = connections.get(socket.id);
@@ -421,7 +421,7 @@ export const setupSocketHandlers = (io) => {
             }
         });
 
-        // Handle typing indicators with room validation
+        // Typing indicators with room validation
         socket.on('typing', (data) => {
             const connection = connections.get(socket.id);
             if (!connection) return;
@@ -442,7 +442,7 @@ export const setupSocketHandlers = (io) => {
             });
         });
 
-        // Handle message read receipts
+        // Message read receipts
         socket.on('markAsRead', async (data) => {
             try {
                 const connection = connections.get(socket.id);
@@ -496,7 +496,7 @@ export const setupSocketHandlers = (io) => {
             }
         });
 
-        // Handle personal messages
+        // Personal messages
         socket.on('private_message', async (data) => {
             try {
                 const connection = connections.get(socket.id);
@@ -557,7 +557,7 @@ export const setupSocketHandlers = (io) => {
             }
         });
 
-        // Handle user status updates
+        // User status updates
         socket.on('update_status', async (data) => {
             try {
                 const connection = connections.get(socket.id);
@@ -582,7 +582,7 @@ export const setupSocketHandlers = (io) => {
             }
         });
 
-        // Handle disconnection with cleanup
+        // Disconnection with cleanup
         socket.on('disconnect', async (reason) => {
             logger.info(`Socket disconnected: ${socket.id}, reason: ${reason}`);
             
