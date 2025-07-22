@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
+import checklistService from '../../services/checklistService';
 import budgetService from '../../services/budgetService';
 import apiClient from '../../services/api/client';
 import socketService from '../../services/socketService';
@@ -21,6 +22,25 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Initialize pending checklist items
+    const initializePendingChecklist = useCallback(async () => {
+        try {
+            const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
+            if (pendingItems && user) {
+                const items = JSON.parse(pendingItems);
+                if (items.length > 0) {
+                    // Initialize checklist items in backend
+                    await checklistService.initializeChecklist(items);
+                    // Clear pending items after successful initialization
+                    await AsyncStorage.removeItem('pendingChecklistItems');
+                    console.log('Checklist initialized with items:', items);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to initialize pending checklist:', error);
+        }
+    }, [user]);
 
     // Load user from storage on mount
     useEffect(() => {
@@ -71,6 +91,14 @@ export const AuthProvider = ({ children }) => {
         loadUserFromStorage();
     }, []);
 
+    // Initialize pending checklist when user is set
+    useEffect(() => {
+        if (user && user._id) {
+            // Initialize any pending checklist items
+            initializePendingChecklist();
+        }
+    }, [user, initializePendingChecklist]);
+
     const clearAuthData = async () => {
         try {
             setUser(null);
@@ -111,6 +139,21 @@ export const AuthProvider = ({ children }) => {
                 socketService.connect(data.user._id).catch(err => {
                     console.log('Socket connection failed, continuing without realtime features');
                 });
+            }
+
+            // Initialize pending checklist items after successful login
+            const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
+            if (pendingItems) {
+                const items = JSON.parse(pendingItems);
+                if (items.length > 0) {
+                    try {
+                        await checklistService.initializeChecklist(items);
+                        await AsyncStorage.removeItem('pendingChecklistItems');
+                        console.log('Checklist initialized after login with items:', items);
+                    } catch (error) {
+                        console.error('Failed to initialize checklist after login:', error);
+                    }
+                }
             }
 
             return data;
@@ -171,6 +214,22 @@ export const AuthProvider = ({ children }) => {
                 socketService.connect(data.user._id).catch(err => {
                     console.log('Socket connection failed, continuing without realtime features');
                 });
+            }
+
+            // If we have a token, try to initialize checklist immediately
+            const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
+            if (pendingItems && data.token) {
+                const items = JSON.parse(pendingItems);
+                if (items.length > 0) {
+                    try {
+                        await checklistService.initializeChecklist(items);
+                        await AsyncStorage.removeItem('pendingChecklistItems');
+                        console.log('Checklist initialized immediately after registration');
+                    } catch (error) {
+                        console.error('Failed to initialize checklist after registration:', error);
+                        // Don't throw - allow registration to complete
+                    }
+                }
             }
 
             return data;

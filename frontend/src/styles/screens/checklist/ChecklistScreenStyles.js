@@ -180,4 +180,37 @@ export const checklistStyles = StyleSheet.create({
         color: colors.textSecondary,
         marginTop: spacing.xs / 2,
     },
+    // Empty state styles
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.xl,
+    },
+    emptyTitle: {
+        fontSize: fonts.sizes.xl,
+        fontFamily: fonts.families.semiBold,
+        color: colors.text,
+        marginTop: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    emptyText: {
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.regular,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.xl,
+        lineHeight: fonts.sizes.md * fonts.lineHeights.normal,
+    },
+    emptyStateButton: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.full,
+    },
+    emptyStateButtonText: {
+        color: colors.textInverse,
+        fontSize: fonts.sizes.md,
+        fontFamily: fonts.families.semiBold,
+    },
 });

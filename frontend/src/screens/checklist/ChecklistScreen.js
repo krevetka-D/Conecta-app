@@ -1,3 +1,4 @@
+// frontend/src/screens/checklist/ChecklistScreen.js
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
@@ -9,6 +10,7 @@ import {
     SafeAreaView,
 } from 'react-native';
 import { Card, Checkbox, ProgressBar } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
@@ -158,10 +160,36 @@ const ChecklistScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [updating, setUpdating] = useState({});
+    const [isInitializing, setIsInitializing] = useState(false);
 
     const loadChecklist = useCallback(async () => {
         try {
             const data = await checklistService.getChecklist();
+            
+            // If no checklist data and user has pendingChecklistItems, try to initialize
+            if ((!data || data.length === 0) && user && !isInitializing) {
+                const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
+                if (pendingItems) {
+                    const items = JSON.parse(pendingItems);
+                    if (items.length > 0) {
+                        try {
+                            setIsInitializing(true);
+                            console.log('Initializing checklist with pending items:', items);
+                            await checklistService.initializeChecklist(items);
+                            await AsyncStorage.removeItem('pendingChecklistItems');
+                            // Reload checklist after initialization
+                            const newData = await checklistService.getChecklist();
+                            setChecklistData(newData || []);
+                            setIsInitializing(false);
+                            return;
+                        } catch (error) {
+                            console.error('Failed to initialize checklist from pending items:', error);
+                            setIsInitializing(false);
+                        }
+                    }
+                }
+            }
+            
             setChecklistData(data || []);
         } catch (error) {
             console.error('Failed to load checklist:', error);
@@ -169,7 +197,7 @@ const ChecklistScreen = ({ navigation }) => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user, isInitializing]);
 
     useEffect(() => {
         loadChecklist();
@@ -234,7 +262,7 @@ const ChecklistScreen = ({ navigation }) => {
         return "All done! You're ready to rock! 🎉";
     }, [progress]);
 
-    if (loading) {
+    if (loading || isInitializing) {
         return <LoadingSpinner fullScreen text="Loading your checklist..." />;
     }
 
@@ -249,6 +277,12 @@ const ChecklistScreen = ({ navigation }) => {
                         <Text style={styles.emptyText}>
                             You haven't selected any checklist items during registration.
                         </Text>
+                        <TouchableOpacity
+                            style={styles.emptyStateButton}
+                            onPress={() => navigation.navigate('Profile')}
+                        >
+                            <Text style={styles.emptyStateButtonText}>Go to Profile</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </SafeAreaView>
