@@ -1,95 +1,258 @@
-// frontend/src/services/api/client.js
+// frontend/src/services/api/optimizedClient.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../config/network';
-import { setupInterceptors } from './interceptors';
+import { cache } from '../../utils/cacheManager';
+import { withRetry } from '../../utils/networkRetry';
 import { Platform } from 'react-native';
 
-// Create axios instance with optimized config
-const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 30000,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-    // Add web-specific configurations
-    ...(Platform.OS === 'web' && {
-        withCredentials: false, // Set to true if you need CORS cookies
-    }),
-});
+// Request queue for offline support
+class RequestQueue {
+    constructor() {
+        this.queue = [];
+        this.processing = false;
+    }
 
-// Development logging - improved
-if (__DEV__) {
-    apiClient.interceptors.request.use(request => {
-        console.log('🚀 API Request:', {
-            method: request.method?.toUpperCase(),
-            url: request.url,
-            baseURL: request.baseURL,
-            headers: request.headers,
+    async add(config) {
+        this.queue.push({
+            ...config,
+            timestamp: Date.now(),
+            id: `${Date.now()}_${Math.random()}`,
         });
-        return request;
+        
+        // Store in AsyncStorage for persistence
+        await this.persist();
+    }
+
+    async process() {
+        if (this.processing || this.queue.length === 0) return;
+        
+        this.processing = true;
+        
+        while (this.queue.length > 0) {
+            const request = this.queue[0];
+            
+            try {
+                await axios(request);
+                this.queue.shift();
+                await this.persist();
+            } catch (error) {
+                if (this.shouldRetryLater(error)) {
+                    break;
+                } else {
+                    // Remove failed request
+                    this.queue.shift();
+                    await this.persist();
+                }
+            }
+        }
+        
+        this.processing = false;
+    }
+
+    shouldRetryLater(error) {
+        return !error.response || error.response.status >= 500;
+    }
+
+    async persist() {
+        try {
+            await AsyncStorage.setItem('request_queue', JSON.stringify(this.queue));
+        } catch (error) {
+            console.error('Failed to persist request queue:', error);
+        }
+    }
+
+    async restore() {
+        try {
+            const stored = await AsyncStorage.getItem('request_queue');
+            if (stored) {
+                this.queue = JSON.parse(stored);
+            }
+        } catch (error) {
+            console.error('Failed to restore request queue:', error);
+        }
+    }
+}
+
+// Create optimized axios instance
+const createOptimizedClient = () => {
+    const requestQueue = new RequestQueue();
+    
+    const client = axios.create({
+        baseURL: API_BASE_URL,
+        timeout: 30000,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Platform': Platform.OS,
+            'X-App-Version': '1.0.0',
+        },
     });
 
-    apiClient.interceptors.response.use(
-        response => {
-            console.log('✅ API Response:', {
-                status: response.status,
-                url: response.config.url,
-                data: response.data,
-            });
-            return response;
-        },
-        error => {
-            if (error.response) {
-                console.log('❌ API Error Response:', {
-                    status: error.response?.status,
-                    url: error.config?.url,
-                    data: error.response?.data,
-                    message: error.message,
-                });
-            } else if (error.request) {
-                console.log('❌ API No Response:', {
-                    url: error.config?.url,
-                    message: 'No response received from server',
-                });
-            } else {
-                console.log('❌ API Request Error:', {
-                    message: error.message,
-                });
+    // Request interceptor
+    client.interceptors.request.use(
+        async (config) => {
+            // Add auth token
+            const token = await AsyncStorage.getItem('userToken');
+            if (token && !config.headers.skipAuth) {
+                config.headers.Authorization = `Bearer ${token}`;
             }
+
+            // Add request ID for tracking
+            config.headers['X-Request-ID'] = `${Date.now()}_${Math.random()}`;
+
+            // Check cache for GET requests
+            if (config.method === 'get' && config.cache !== false) {
+                const cacheKey = `api_${config.url}_${JSON.stringify(config.params || {})}`;
+                const cached = await cache.get(cacheKey);
+                
+                if (cached !== null) {
+                    // Return cached response
+                    config.adapter = () => Promise.resolve({
+                        data: cached,
+                        status: 200,
+                        statusText: 'OK (from cache)',
+                        headers: {},
+                        config,
+                    });
+                }
+            }
+
+            // Add timestamp
+            config.metadata = { startTime: Date.now() };
+
+            return config;
+        },
+        (error) => {
             return Promise.reject(error);
         }
     );
-}
 
-// Token management
-export const setAuthToken = (token) => {
-    if (token) {
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-        delete apiClient.defaults.headers.common['Authorization'];
-    }
-};
+    // Response interceptor
+    client.interceptors.response.use(
+        async (response) => {
+            // Log response time in development
+            if (__DEV__ && response.config.metadata) {
+                const duration = Date.now() - response.config.metadata.startTime;
+                console.log(`API ${response.config.method.toUpperCase()} ${response.config.url} - ${duration}ms`);
+            }
 
-// Setup interceptors
-setupInterceptors(apiClient);
+            // Cache successful GET responses
+            if (response.config.method === 'get' && response.config.cache !== false) {
+                const cacheKey = `api_${response.config.url}_${JSON.stringify(response.config.params || {})}`;
+                const cacheTTL = response.config.cacheTTL || 5 * 60 * 1000; // 5 minutes default
+                
+                await cache.set(cacheKey, response.data, {
+                    ttl: cacheTTL,
+                    persistent: response.config.persistCache || false,
+                });
+            }
 
-// Reset API client
-export const resetApiClient = () => {
-    delete apiClient.defaults.headers.common['Authorization'];
-};
+            return response.data;
+        },
+        async (error) => {
+            const { config, response } = error;
 
-// Initialize API client with stored token
-export const initializeApiClient = async () => {
-    try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (token) {
-            setAuthToken(token);
+            // Log error in development
+            if (__DEV__) {
+                console.error(`API Error ${config?.method?.toUpperCase()} ${config?.url}:`, {
+                    status: response?.status,
+                    data: response?.data,
+                    message: error.message,
+                });
+            }
+
+            // Handle specific error cases
+            if (!response) {
+                // Network error - add to queue if it's a mutation
+                if (config && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
+                    await requestQueue.add(config);
+                    return Promise.reject(new Error('Request queued for retry when online'));
+                }
+                
+                return Promise.reject(new Error('Network error - please check your connection'));
+            }
+
+            // Handle 401 - Unauthorized
+            if (response.status === 401 && !config.skipAuthRefresh) {
+                // Clear auth and redirect to login
+                await AsyncStorage.multiRemove(['userToken', 'user']);
+                
+                // Notify app about auth failure
+                if (global.authFailureHandler) {
+                    global.authFailureHandler();
+                }
+                
+                return Promise.reject(new Error('Session expired - please login again'));
+            }
+
+            // Handle rate limiting
+            if (response.status === 429) {
+                const retryAfter = response.headers['retry-after'];
+                const delay = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
+                
+                return new Promise((resolve, reject) => {
+                    setTimeout(async () => {
+                        try {
+                            const result = await client.request(config);
+                            resolve(result);
+                        } catch (retryError) {
+                            reject(retryError);
+                        }
+                    }, delay);
+                });
+            }
+
+            // Extract error message
+            const errorMessage = response.data?.message || 
+                               response.data?.error || 
+                               error.message || 
+                               'An error occurred';
+
+            return Promise.reject(new Error(errorMessage));
         }
-    } catch (error) {
-        console.error('Failed to initialize API client with token:', error);
+    );
+
+    // Restore request queue
+    requestQueue.restore();
+
+    // Process queue when online
+    if (global.addEventListener) {
+        global.addEventListener('online', () => {
+            requestQueue.process();
+        });
     }
+
+    return {
+        client,
+        
+        // Convenience methods with retry
+        get: (url, config) => withRetry(() => client.get(url, config)),
+        post: (url, data, config) => withRetry(() => client.post(url, data, config)),
+        put: (url, data, config) => withRetry(() => client.put(url, data, config)),
+        patch: (url, data, config) => withRetry(() => client.patch(url, data, config)),
+        delete: (url, config) => withRetry(() => client.delete(url, config)),
+        
+        // Clear cache for specific endpoint
+        clearCache: (url, params) => {
+            const cacheKey = `api_${url}_${JSON.stringify(params || {})}`;
+            return cache.invalidate(cacheKey);
+        },
+        
+        // Clear all API cache
+        clearAllCache: () => cache.invalidatePattern('^api_'),
+        
+        // Get cache stats
+        getCacheStats: () => cache.getStats(),
+        
+        // Set auth failure handler
+        setAuthFailureHandler: (handler) => {
+            global.authFailureHandler = handler;
+        },
+    };
 };
+
+// Create and export optimized client
+const apiClient = createOptimizedClient();
 
 export default apiClient;

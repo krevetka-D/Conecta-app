@@ -4,14 +4,14 @@ import { Card, FAB, Portal, Modal, Button, Chip, TextInput, Badge, Provider, Sea
 import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
-import { useSocket } from '../../store/contexts/SocketContext';
+import socketService from '../../services/socketService';
 import forumService from '../../services/forumService';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { forumsStyles as createStyles } from '../../styles/screens/forums/ForumScreenStyles';
 import { colors } from '../../constants/theme';
-import { debounce } from 'lodash';
+import { debounce } from '../../utils/debounce';
 
 // Add formatRelativeTime helper function
 const formatRelativeTime = (dateString) => {
@@ -126,7 +126,7 @@ const GroupItem = React.memo(({ item, onPress, styles, index }) => {
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
     const { user } = useAuth();
-    const { socket, isConnected } = useSocket();
+    const isConnected = socketService.isConnected();
 
     const [forums, setForums] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -182,7 +182,10 @@ const ForumScreen = ({ navigation }) => {
 
     // Socket event handlers
     useEffect(() => {
-        if (!socket || !isConnected) return;
+        if (!socketService || !isConnected) return;
+
+        const socket = socketService.socket;
+        if (!socket) return;
 
         // Listen for real-time updates
         const handleNewMessage = (data) => {
@@ -224,16 +227,16 @@ const ForumScreen = ({ navigation }) => {
             setForums(prevForums => [room, ...prevForums]);
         };
 
-        socket.on('new_message', handleNewMessage);
-        socket.on('room_update', handleRoomUpdate);
-        socket.on('new_room', handleNewRoom);
+        socketService.on('new_message', handleNewMessage);
+        socketService.on('room_update', handleRoomUpdate);
+        socketService.on('new_room', handleNewRoom);
 
         return () => {
-            socket.off('new_message', handleNewMessage);
-            socket.off('room_update', handleRoomUpdate);
-            socket.off('new_room', handleNewRoom);
+            socketService.off('new_message', handleNewMessage);
+            socketService.off('room_update', handleRoomUpdate);
+            socketService.off('new_room', handleNewRoom);
         };
-    }, [socket, isConnected]);
+    }, [isConnected]);
 
     useEffect(() => {
         loadForums();
