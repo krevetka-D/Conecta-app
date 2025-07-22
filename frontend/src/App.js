@@ -4,6 +4,7 @@ import { LogBox, Platform, View, Text, AppState } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import web polyfills first - ONLY for web
 if (Platform.OS === 'web') {
@@ -21,7 +22,6 @@ import RootNavigator from './navigation/RootNavigator';
 import { AuthProvider } from './store/contexts/AuthContext';
 import { ThemeProvider } from './store/contexts/ThemeContext';
 import { AppProvider } from './store/contexts/AppContext';
-import { initializeApiClient } from './services/api/client';
 import ErrorBoundaryWrapper from './components/common/ErrorBoundaryWrapper';
 import { loadFonts } from './utils/fontLoader';
 import appStability, { getPerformanceReport } from './utils/appStability';
@@ -87,8 +87,11 @@ export default function App() {
                 // Load fonts (will handle web gracefully)
                 await loadFonts();
                 
-                // Initialize API client with stored token
-                await initializeApiClient();
+                // Set up API client authorization header if token exists
+                const token = await AsyncStorage.getItem('userToken');
+                if (token) {
+                    optimizedApiClient.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                }
                 
                 // Preload critical cache data
                 await cache.preload([
@@ -148,7 +151,10 @@ export default function App() {
 
         // Cleanup
         return () => {
-            subscription.remove();
+            // Use the subscription's remove method instead of removeEventListener
+            if (subscription && typeof subscription.remove === 'function') {
+                subscription.remove();
+            }
             unsubscribeNetwork();
             appStability.cleanup();
         };

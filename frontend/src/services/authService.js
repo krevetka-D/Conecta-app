@@ -1,5 +1,5 @@
 // frontend/src/services/authService.js
-import apiClient, { setAuthToken } from './api/client';
+import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -210,7 +210,13 @@ const authService = {
         }
     },
 
-    setAuthToken,
+    setAuthToken: (token) => {
+        if (token) {
+            apiClient.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+            delete apiClient.client.defaults.headers.common['Authorization'];
+        }
+    },
 };
 
 export default authService;

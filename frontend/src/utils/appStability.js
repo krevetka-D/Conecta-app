@@ -17,15 +17,19 @@ class AppStabilityEnhancer {
             memoryWarnings: 0,
         };
         
+        // Store subscriptions for cleanup
+        this.appStateSubscription = null;
+        this.networkSubscription = null;
+        
         this.initialize();
     }
 
     async initialize() {
         // Setup app state listener
-        AppState.addEventListener('change', this.handleAppStateChange);
+        this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
         
         // Setup network monitoring
-        NetInfo.addEventListener(this.handleNetworkChange);
+        this.networkSubscription = NetInfo.addEventListener(this.handleNetworkChange);
         
         // Setup memory warning listener (iOS)
         if (Platform.OS === 'ios') {
@@ -377,8 +381,17 @@ class AppStabilityEnhancer {
 
     // Cleanup
     cleanup() {
-        AppState.removeEventListener('change', this.handleAppStateChange);
+        // Remove event listeners using the stored subscriptions
+        if (this.appStateSubscription && typeof this.appStateSubscription.remove === 'function') {
+            this.appStateSubscription.remove();
+        }
+        if (this.networkSubscription && typeof this.networkSubscription === 'function') {
+            this.networkSubscription();
+        }
         // Clear intervals and listeners
+        if (this.memoryWarningListeners) {
+            this.memoryWarningListeners = [];
+        }
     }
 }
 
