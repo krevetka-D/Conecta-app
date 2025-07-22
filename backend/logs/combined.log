@@ -1104,3 +1104,13 @@
 {"level":"info","message":"Socket connected: SuiQieDwIkAvRtKkAAAH","service":"conecta-alicante","timestamp":"2025-07-22 15:31:57"}
 {"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:32:23"}
 {"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:33:23"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:34:23"}
+{"level":"info","message":"Disconnecting inactive socket: SuiQieDwIkAvRtKkAAAH","service":"conecta-alicante","timestamp":"2025-07-22 15:34:33"}
+{"level":"info","message":"Socket disconnected: SuiQieDwIkAvRtKkAAAH, reason: server namespace disconnect","service":"conecta-alicante","timestamp":"2025-07-22 15:34:33"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:35:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:36:23"}
+{"level":"info","message":"Socket stats - Connections: 1, Users: 1, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:37:23"}
+{"level":"info","message":"Socket connected: inc07fxACNlxB0UOAAAJ","service":"conecta-alicante","timestamp":"2025-07-22 15:38:04"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:38:23"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:39:23"}
+{"level":"info","message":"Socket stats - Connections: 2, Users: 2, Rooms with users: 0","service":"conecta-alicante","timestamp":"2025-07-22 15:40:23"}
