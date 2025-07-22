@@ -1,4 +1,4 @@
-// frontend/src/services/api/optimizedClient.js
+// frontend/src/services/api/client.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../config/network';
@@ -225,6 +225,7 @@ const createOptimizedClient = () => {
 
     return {
         client,
+        defaults: client.defaults,
         
         // Convenience methods with retry
         get: (url, config) => withRetry(() => client.get(url, config)),

@@ -212,9 +212,9 @@ const authService = {
 
     setAuthToken: (token) => {
         if (token) {
-            apiClient.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         } else {
-            delete apiClient.client.defaults.headers.common['Authorization'];
+            delete apiClient.defaults.headers.common['Authorization'];
         }
     },
 };

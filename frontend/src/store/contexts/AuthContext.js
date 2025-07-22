@@ -60,7 +60,9 @@ export const AuthProvider = ({ children }) => {
                 if (tokenValue && userValue) {
                     // Set the token in the API client first
                     authService.setAuthToken(tokenValue);
-                    apiClient.defaults.headers.common['Authorization'] = `Bearer ${tokenValue}`;
+                    if (apiClient.defaults && apiClient.defaults.headers) {
+                        apiClient.defaults.headers.common['Authorization'] = `Bearer ${tokenValue}`;
+                    }
                     
                     // Verify token is still valid by fetching current user
                     try {
@@ -112,7 +114,9 @@ export const AuthProvider = ({ children }) => {
             setToken(null);
             await AsyncStorage.multiRemove(['userToken', 'user']);
             authService.setAuthToken(null);
-            delete apiClient.defaults.headers.common['Authorization'];
+            if (apiClient.defaults && apiClient.defaults.headers) {
+                delete apiClient.defaults.headers.common['Authorization'];
+            }
             budgetService.clearCategoriesCache();
             socketService.disconnect();
         } catch (error) {
@@ -131,7 +135,9 @@ export const AuthProvider = ({ children }) => {
 
             // Set token in API client immediately
             authService.setAuthToken(data.token);
-            apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+            if (apiClient.defaults && apiClient.defaults.headers) {
+                apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+            }
 
             setUser(data.user);
             setToken(data.token);
@@ -200,7 +206,9 @@ export const AuthProvider = ({ children }) => {
 
             // Set token in API client immediately
             authService.setAuthToken(data.token);
-            apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+            if (apiClient.defaults && apiClient.defaults.headers) {
+                apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+            }
 
             // Update user with onboarding status
             const updatedUser = {
