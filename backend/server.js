@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
@@ -8,6 +9,7 @@ import connectDB from './config/db.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import socketHandlers from './socket/socketHandlers.js';
 import User from './models/User.js';
+import { performanceMonitor } from './middleware/performanceMiddleware.js';
 
 // Import routes
 import userRoutes from './routes/userRoutes.js';
@@ -19,18 +21,29 @@ import eventRoutes from './routes/eventRoutes.js';
 import configRoutes from './routes/configRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
+// Load environment variables
 dotenv.config();
-connectDB();
 
-const compression = require('compression');
+// Initialize express app
 const app = express();
 const httpServer = createServer(app);
 
-//CORS configuration
+// Connect to database with retry logic
+const initializeDatabase = async () => {
+    try {
+        await connectDB();
+    } catch (error) {
+        console.error('Failed to connect to database:', error);
+        process.exit(1);
+    }
+};
+
+// CORS configuration
 const corsOptions = {
     origin: function (origin, callback) {
-        const allowedOrigins = [
+        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
             'http://localhost:3000',
             'http://localhost:5001',
             'http://localhost:8081',
@@ -40,66 +53,75 @@ const corsOptions = {
             'http://localhost:19006',
             'exp://localhost:19000',
             'exp://localhost:8081',
-            // Add your Mac's IP for development
             'http://192.168.1.129:8081',
             'http://192.168.1.129:19000',
-            'http://192.168.1.129:19001',
-            'http://192.168.1.129:19002',
             'exp://192.168.1.129:8081',
-            'exp://192.168.1.129:19000',
-            // Allow any IP in your local network range
-            /^http:\/\/192\.168\.1\.\d{1,3}:\d+$/,
-            /^exp:\/\/192\.168\.1\.\d{1,3}:\d+$/,
-            // General patterns for Expo
-            /^exp:\/\/\d+\.\d+\.\d+\.\d+:\d+$/,
-            /^http:\/\/\d+\.\d+\.\d+\.\d+:\d+$/
+        ];
+        
+        // Dynamic IP patterns
+        const allowedPatterns = [
+            /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/,
+            /^exp:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/,
+            /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/,
+            /^exp:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/,
+            /^http:\/\/localhost:\d+$/,
+            /^exp:\/\/localhost:\d+$/,
         ];
         
         // Allow requests with no origin (mobile apps, Postman, etc)
         if (!origin) return callback(null, true);
         
-        // In development, log all origins for debugging
-        if (process.env.NODE_ENV === 'development') {
-            console.log('CORS request from origin:', origin);
+        // Check exact matches
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
         }
         
-        const isAllowed = allowedOrigins.some(allowed => {
-            if (allowed instanceof RegExp) {
-                return allowed.test(origin);
-            }
-            return allowed === origin;
-        });
+        // Check patterns
+        const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
         
-        if (isAllowed) {
+        if (isAllowed || process.env.NODE_ENV === 'development') {
             callback(null, true);
         } else {
             console.log('CORS blocked origin:', origin);
-            // In development, allow all origins for easier testing
-            if (process.env.NODE_ENV === 'development') {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
+            callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page'],
+    exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page', 'X-Cache', 'X-Response-Time'],
     maxAge: 86400 // Cache preflight requests for 24 hours
 };
 
+// Apply middleware
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(compression({
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+            return false;
+        }
+        return compression.filter(req, res);
+    },
+    level: 6,
+    threshold: 1024
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Performance monitoring (only in development)
+if (process.env.NODE_ENV === 'development') {
+    app.use(performanceMonitor);
+}
 
 // Request logging middleware
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    }
     next();
 });
 
-// Routes
+// API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/checklist', checklistRoutes);
@@ -109,122 +131,152 @@ app.use('/api/events', eventRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
-// Health check endpoint
+// Health check endpoint with more details
 app.get('/api/health', (req, res) => {
-    res.json({
+    const healthcheck = {
         status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        environment: process.env.NODE_ENV
-    });
+        environment: process.env.NODE_ENV,
+        memoryUsage: process.memoryUsage(),
+        version: process.env.npm_package_version || '1.0.0'
+    };
+    
+    res.status(200).json(healthcheck);
 });
 
 // Error handlers
 app.use(notFound);
 app.use(errorHandler);
 
-// Socket.IO configuration with error handling
+// Socket.IO configuration
 const io = new Server(httpServer, {
     cors: corsOptions,
     transports: ['websocket', 'polling'],
-    pingTimeout: 60000,
-    pingInterval: 25000,
+    pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
+    pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000,
     connectTimeout: 45000,
-    allowEIO3: true,
-    maxHttpBufferSize: 1e8, // 100 MB
+    maxHttpBufferSize: parseInt(process.env.SOCKET_MAX_HTTP_BUFFER_SIZE) || 1e6,
     path: '/socket.io/',
-    serveClient: false,
-    cookie: false,
-    
-    // Additional options for stability
-    allowUpgrades: true,
+    allowEIO3: true,
     perMessageDeflate: {
-        threshold: 1024
-    },
-    httpCompression: {
-        threshold: 1024
+        threshold: 1024,
+        zlibDeflateOptions: {
+            chunkSize: 16 * 1024,
+        },
+        zlibInflateOptions: {
+            chunkSize: 10 * 1024,
+        },
+        clientNoContextTakeover: true,
+        serverNoContextTakeover: true,
+        serverMaxWindowBits: 10,
+        concurrencyLimit: 10,
     }
 });
-
-app.use(compression({
-    filter: (req, res) => {
-        if (req.headers['x-no-compression']) {
-            return false;
-        }
-        return compression.filter(req, res);
-    },
-    level: 6, // Balanced compression level
-}));
 
 // Socket authentication middleware
 io.use(async (socket, next) => {
     try {
-        const token = socket.handshake.auth.token;
+        const token = socket.handshake.auth?.token || socket.handshake.query?.token;
         
         if (!token) {
-            console.log('Socket auth: No token provided');
-            // Allow connection without auth for development
             if (process.env.NODE_ENV === 'development') {
-                socket.userId = 'anonymous';
+                socket.userId = 'anonymous-' + Date.now();
                 return next();
             }
-            return next(new Error('Authentication error: No token provided'));
+            return next(new Error('Authentication required'));
         }
         
-        // Verify token
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            const user = await User.findById(decoded.id).select('-password');
-            
-            if (!user) {
-                console.log('Socket auth: User not found');
-                return next(new Error('Authentication error: User not found'));
-            }
-            
-            socket.userId = user._id.toString();
-            socket.user = user;
-            console.log(`Socket authenticated for user: ${user.name}`);
-            next();
-        } catch (jwtError) {
-            console.error('JWT verification error:', jwtError.message);
-            if (process.env.NODE_ENV === 'development') {
-                socket.userId = 'anonymous';
-                return next();
-            }
-            return next(new Error('Authentication error: Invalid token'));
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password').lean();
+        
+        if (!user) {
+            return next(new Error('User not found'));
         }
+        
+        socket.userId = user._id.toString();
+        socket.user = user;
+        next();
     } catch (error) {
-        console.error('Socket authentication error:', error);
+        console.error('Socket authentication error:', error.message);
         if (process.env.NODE_ENV === 'development') {
-            socket.userId = 'anonymous';
+            socket.userId = 'anonymous-' + Date.now();
             return next();
         }
-        next(new Error('Authentication error: Invalid token'));
+        next(new Error('Authentication failed'));
     }
 });
 
 // Setup socket handlers
 socketHandlers(io);
 
-// Global error handler for unhandled promises
+// Graceful shutdown handlers
+const gracefulShutdown = async (signal) => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+    
+    // Stop accepting new connections
+    httpServer.close(() => {
+        console.log('HTTP server closed');
+    });
+    
+    // Close all socket connections
+    io.close(() => {
+        console.log('Socket.IO server closed');
+    });
+    
+    // Close database connection
+    try {
+        await mongoose.connection.close();
+        console.log('Database connection closed');
+    } catch (error) {
+        console.error('Error closing database:', error);
+    }
+    
+    // Exit process
+    process.exit(0);
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught errors
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit the process in production
+    if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+    }
 });
 
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    // Graceful shutdown
-    httpServer.close(() => {
-        process.exit(1);
-    });
+    // Attempt graceful shutdown
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
+// Start server
 const PORT = process.env.PORT || 5001;
+const HOST = '0.0.0.0';
 
-httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    console.log(`Socket.IO server ready`);
-});
+const startServer = async () => {
+    try {
+        await initializeDatabase();
+        
+        httpServer.listen(PORT, HOST, () => {
+            console.log(`✅ Server running in ${process.env.NODE_ENV} mode`);
+            console.log(`📡 Listening on ${HOST}:${PORT}`);
+            console.log(`🔌 Socket.IO server ready`);
+            console.log(`🚀 API available at http://localhost:${PORT}/api`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 export { io };

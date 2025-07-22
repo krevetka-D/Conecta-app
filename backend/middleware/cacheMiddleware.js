@@ -1,8 +1,8 @@
-
 import NodeCache from 'node-cache';
 import crypto from 'crypto';
 
-const { getAsync, setAsync, delAsync } = require('../config/redis');
+// Note: Redis integration is commented out until redis.js is converted to ES modules
+// const { getAsync, setAsync, delAsync } = require('../config/redis');
 
 // Cache instances with different TTLs
 const caches = {
@@ -18,7 +18,7 @@ const CACHE_DURATIONS = {
     long: 3600,
 };
 
-// Enhanced cache middleware with Redis support
+// Enhanced cache middleware (Redis temporarily disabled)
 export const cacheMiddleware = (duration = 'medium', customKey = null) => {
     return async (req, res, next) => {
         // Only cache GET requests
@@ -34,7 +34,7 @@ export const cacheMiddleware = (duration = 'medium', customKey = null) => {
             ? typeof customKey === 'function' ? customKey(req) : customKey
             : `${req.originalUrl || req.url}_${req.user?._id || 'public'}`;
         
-        // Try to get from memory cache first
+        // Try to get from memory cache
         let cachedData = cache.get(key);
 
         if (cachedData) {
@@ -43,40 +43,16 @@ export const cacheMiddleware = (duration = 'medium', customKey = null) => {
             return res.json(cachedData);
         }
 
-        // Try Redis if memory cache miss
-        try {
-            const redisData = await getAsync(key);
-            if (redisData) {
-                cachedData = JSON.parse(redisData);
-                // Store in memory cache for faster subsequent access
-                cache.set(key, cachedData);
-                res.setHeader('X-Cache', 'HIT');
-                res.setHeader('X-Cache-Type', 'redis');
-                return res.json(cachedData);
-            }
-        } catch (error) {
-            console.error('Redis get error:', error);
-            // Continue without cache on Redis error
-        }
-
         // Store original json method
         const originalJson = res.json;
 
         // Override json method
-        res.json = async function(data) {
+        res.json = function(data) {
             res.setHeader('X-Cache', 'MISS');
             // Only cache successful responses
             if (res.statusCode === 200) {
                 // Store in memory cache
                 cache.set(key, data);
-                
-                // Store in Redis asynchronously
-                try {
-                    await setAsync(key, JSON.stringify(data), 'EX', ttl);
-                } catch (error) {
-                    console.error('Redis set error:', error);
-                    // Continue even if Redis fails
-                }
             }
             return originalJson.call(this, data);
         };
@@ -85,7 +61,7 @@ export const cacheMiddleware = (duration = 'medium', customKey = null) => {
     };
 };
 
-// Clear cache with Redis support
+// Clear cache (Redis temporarily disabled)
 export const clearCache = async (pattern, duration = 'all') => {
     // Clear memory cache
     if (duration === 'all') {
@@ -116,48 +92,47 @@ export const clearCache = async (pattern, duration = 'all') => {
             }
         }
     }
-
-    // Clear Redis cache
-    try {
-        if (pattern) {
-            // Note: This is a simplified approach. In production, you might want to use Redis SCAN
-            // to find and delete keys matching the pattern
-            await delAsync(pattern);
-        }
-    } catch (error) {
-        console.error('Redis clear error:', error);
-    }
 };
 
-// Get async wrapper for Redis-backed cache
-export const getAsync = async (key) => {
+// Cache utility functions (simplified without Redis for now)
+export const getCacheAsync = async (key) => {
     try {
-        const data = await getAsync(key);
-        return data ? JSON.parse(data) : null;
+        // Try all cache levels
+        for (const [name, cache] of Object.entries(caches)) {
+            const data = cache.get(key);
+            if (data) return data;
+        }
+        return null;
     } catch (error) {
-        console.error('Cache getAsync error:', error);
+        console.error('Cache get error:', error);
         return null;
     }
 };
 
-// Set async wrapper for Redis-backed cache
-export const setAsync = async (key, data, ttl = 300) => {
+export const setCacheAsync = async (key, data, ttl = 300) => {
     try {
-        await setAsync(key, JSON.stringify(data), 'EX', ttl);
+        // Determine which cache to use based on TTL
+        let cacheToUse = caches.medium;
+        if (ttl <= 60) cacheToUse = caches.short;
+        else if (ttl >= 3600) cacheToUse = caches.long;
+        
+        cacheToUse.set(key, data, ttl);
         return true;
     } catch (error) {
-        console.error('Cache setAsync error:', error);
+        console.error('Cache set error:', error);
         return false;
     }
 };
 
-// Delete async wrapper for Redis-backed cache
-export const delAsync = async (key) => {
+export const delCacheAsync = async (key) => {
     try {
-        await delAsync(key);
+        // Delete from all caches
+        Object.values(caches).forEach(cache => {
+            cache.del(key);
+        });
         return true;
     } catch (error) {
-        console.error('Cache delAsync error:', error);
+        console.error('Cache delete error:', error);
         return false;
     }
 };

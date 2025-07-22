@@ -1,26 +1,35 @@
-
-import logger from '../utils/logger.js';
+import mongoose from 'mongoose';
 
 // Performance metrics storage
 const metrics = {
     requests: new Map(),
     slowQueries: [],
-    errorRates: new Map()
+    errorRates: new Map(),
+    apiStats: new Map()
 };
 
 export const performanceMonitor = (req, res, next) => {
     const start = Date.now();
     const method = req.method;
     const url = req.originalUrl;
-    const requestId = `${Date.now()}-${Math.random()}`;
+    const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Store request start time
     metrics.requests.set(requestId, {
         method,
         url,
         start,
-        ip: req.ip
+        ip: req.ip,
+        userAgent: req.get('user-agent')
     });
+
+    // Clean up old requests (older than 5 minutes)
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    for (const [id, request] of metrics.requests) {
+        if (request.start < fiveMinutesAgo) {
+            metrics.requests.delete(id);
+        }
+    }
 
     // Override res.end to capture response time
     const originalEnd = res.end;
@@ -31,6 +40,27 @@ export const performanceMonitor = (req, res, next) => {
         // Remove from active requests
         metrics.requests.delete(requestId);
 
+        // Update API statistics
+        const apiKey = `${method}_${url.split('?')[0]}`;
+        if (!metrics.apiStats.has(apiKey)) {
+            metrics.apiStats.set(apiKey, {
+                count: 0,
+                totalTime: 0,
+                avgTime: 0,
+                minTime: Infinity,
+                maxTime: 0,
+                errors: 0
+            });
+        }
+
+        const stats = metrics.apiStats.get(apiKey);
+        stats.count++;
+        stats.totalTime += duration;
+        stats.avgTime = stats.totalTime / stats.count;
+        stats.minTime = Math.min(stats.minTime, duration);
+        stats.maxTime = Math.max(stats.maxTime, duration);
+        if (statusCode >= 400) stats.errors++;
+
         // Log slow requests (> 1000ms)
         if (duration > 1000) {
             const slowRequest = {
@@ -38,7 +68,8 @@ export const performanceMonitor = (req, res, next) => {
                 url,
                 duration,
                 statusCode,
-                timestamp: new Date()
+                timestamp: new Date(),
+                userAgent: req.get('user-agent')
             };
             metrics.slowQueries.push(slowRequest);
             
@@ -47,7 +78,7 @@ export const performanceMonitor = (req, res, next) => {
                 metrics.slowQueries.shift();
             }
 
-            logger.warn(`Slow request detected: ${method} ${url} - ${duration}ms - Status: ${statusCode}`);
+            console.warn(`⚠️ Slow request: ${method} ${url} - ${duration}ms - Status: ${statusCode}`);
         }
 
         // Track error rates
@@ -60,9 +91,9 @@ export const performanceMonitor = (req, res, next) => {
         res.setHeader('X-Response-Time', `${duration}ms`);
         res.setHeader('X-Request-ID', requestId);
 
-        // Log all requests in development
-        if (process.env.NODE_ENV === 'development') {
-            logger.info(`${method} ${url} - ${duration}ms - Status: ${statusCode}`);
+        // Log in development
+        if (process.env.NODE_ENV === 'development' && duration > 100) {
+            console.log(`📊 ${method} ${url} - ${duration}ms - Status: ${statusCode}`);
         }
 
         // Call original end
@@ -72,94 +103,76 @@ export const performanceMonitor = (req, res, next) => {
     next();
 };
 
-// Requesting payload size limiter
+// Payload size limiter
 export const payloadSizeLimiter = (maxSize = 10485760) => { // 10MB default
     return (req, res, next) => {
         let size = 0;
-        let aborted = false;
         
         req.on('data', (chunk) => {
-            if (aborted) return;
-            
             size += chunk.length;
             
             if (size > maxSize) {
-                aborted = true;
                 res.status(413).json({
+                    success: false,
                     error: 'Payload too large',
                     maxSize: `${maxSize / 1024 / 1024}MB`,
                     receivedSize: `${(size / 1024 / 1024).toFixed(2)}MB`
                 });
-                req.connection.destroy();
+                req.destroy();
             }
-        });
-
-        req.on('aborted', () => {
-            aborted = true;
         });
         
         next();
     };
 };
 
-// Query complexity analyzer for MongoDB
-export const queryComplexityAnalyzer = (req, res, next) => {
-    if (process.env.NODE_ENV === 'production') {
-        return next();
-    }
+// MongoDB query monitor (development only)
+export const setupQueryMonitoring = () => {
+    if (process.env.NODE_ENV !== 'development') return;
 
-    // Monitor MongoDB queries in development
-    const originalFind = mongoose.Query.prototype.find;
-    const originalFindOne = mongoose.Query.prototype.findOne;
-
-    mongoose.Query.prototype.find = function(...args) {
+    // Monitor slow queries
+    mongoose.set('debug', (collectionName, method, query, doc, options) => {
         const start = Date.now();
-        const result = originalFind.apply(this, args);
         
-        result.then(() => {
+        // Use nextTick to measure after query execution
+        process.nextTick(() => {
             const duration = Date.now() - start;
             if (duration > 100) {
-                logger.warn(`Slow MongoDB query: find() took ${duration}ms`, {
-                    collection: this.model.collection.name,
-                    filter: this.getFilter()
+                console.warn(`⚠️ Slow MongoDB query: ${collectionName}.${method}() took ${duration}ms`, {
+                    query: JSON.stringify(query).slice(0, 200),
+                    options
                 });
             }
         });
-
-        return result;
-    };
-
-    mongoose.Query.prototype.findOne = function(...args) {
-        const start = Date.now();
-        const result = originalFindOne.apply(this, args);
-        
-        result.then(() => {
-            const duration = Date.now() - start;
-            if (duration > 50) {
-                logger.warn(`Slow MongoDB query: findOne() took ${duration}ms`, {
-                    collection: this.model.collection.name,
-                    filter: this.getFilter()
-                });
-            }
-        });
-
-        return result;
-    };
-
-    next();
+    });
 };
 
-// API rate limiting with Redis support (future enhancement)
-export const advancedRateLimiter = (options = {}) => {
+// API rate limiter
+export const apiRateLimiter = (options = {}) => {
     const {
         windowMs = 15 * 60 * 1000, // 15 minutes
-        max = 100, // limit each IP to 100 requests per windowMs
-        keyGenerator = (req) => req.ip,
+        max = 100,
+        message = 'Too many requests',
+        keyGenerator = (req) => req.ip || 'unknown',
         skipSuccessfulRequests = false,
-        skipFailedRequests = false
+        skipFailedRequests = false,
+        handler = null
     } = options;
 
     const hits = new Map();
+
+    // Cleanup old entries periodically
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, timestamps] of hits) {
+            const validTimestamps = timestamps.filter(t => t > now - windowMs);
+            if (validTimestamps.length === 0) {
+                hits.delete(key);
+            } else {
+                hits.set(key, validTimestamps);
+            }
+        }
+    }, windowMs);
 
     return (req, res, next) => {
         const key = keyGenerator(req);
@@ -186,8 +199,13 @@ export const advancedRateLimiter = (options = {}) => {
             res.setHeader('X-RateLimit-Remaining', 0);
             res.setHeader('X-RateLimit-Reset', new Date(validHits[0] + windowMs).toISOString());
 
+            if (handler) {
+                return handler(req, res, next);
+            }
+
             return res.status(429).json({
-                error: 'Too many requests',
+                success: false,
+                error: message,
                 retryAfter: `${retryAfter} seconds`
             });
         }
@@ -200,12 +218,12 @@ export const advancedRateLimiter = (options = {}) => {
         res.setHeader('X-RateLimit-Remaining', max - validHits.length);
         res.setHeader('X-RateLimit-Reset', new Date(now + windowMs).toISOString());
 
-        // Optionally skip counting based on response
+        // Handle skip options
         const originalEnd = res.end;
         res.end = function(...args) {
             if ((skipSuccessfulRequests && res.statusCode < 400) ||
                 (skipFailedRequests && res.statusCode >= 400)) {
-                validHits.pop(); // Remove this request from count
+                validHits.pop();
             }
             originalEnd.apply(res, args);
         };
@@ -214,14 +232,35 @@ export const advancedRateLimiter = (options = {}) => {
     };
 };
 
-// Performance metrics endpoint
+// Performance metrics endpoint handler
 export const getPerformanceMetrics = (req, res) => {
+    const activeRequests = Array.from(metrics.requests.values()).map(r => ({
+        ...r,
+        duration: Date.now() - r.start
+    }));
+
+    const apiStatsSummary = Array.from(metrics.apiStats.entries()).map(([endpoint, stats]) => ({
+        endpoint,
+        ...stats,
+        errorRate: stats.count > 0 ? (stats.errors / stats.count * 100).toFixed(2) + '%' : '0%'
+    }));
+
     res.json({
-        activeRequests: metrics.requests.size,
-        slowQueries: metrics.slowQueries.slice(-20), // Last 20 slow queries
+        server: {
+            uptime: process.uptime(),
+            memoryUsage: process.memoryUsage(),
+            cpuUsage: process.cpuUsage()
+        },
+        requests: {
+            active: activeRequests.length,
+            activeList: activeRequests
+        },
+        slowQueries: metrics.slowQueries.slice(-20),
         errorRates: Object.fromEntries(metrics.errorRates),
-        uptime: process.uptime(),
-        memoryUsage: process.memoryUsage(),
-        cpuUsage: process.cpuUsage()
+        apiStats: apiStatsSummary,
+        database: {
+            connected: mongoose.connection.readyState === 1,
+            state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState]
+        }
     });
 };
