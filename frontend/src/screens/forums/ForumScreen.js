@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
-import { Card, FAB, Portal, Modal, Button, Chip, TextInput, Badge, Provider } from 'react-native-paper';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView, Animated, Platform } from 'react-native';
+import { Card, FAB, Portal, Modal, Button, Chip, TextInput, Badge, Provider, Searchbar } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
+import { useSocket } from '../../store/contexts/SocketContext';
 import forumService from '../../services/forumService';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { forumsStyles as createStyles } from '../../styles/screens/forums/ForumScreenStyles';
 import { colors } from '../../constants/theme';
+import { debounce } from 'lodash';
 
 // Add formatRelativeTime helper function
 const formatRelativeTime = (dateString) => {
@@ -35,81 +37,104 @@ const formatRelativeTime = (dateString) => {
     }
 };
 
-// Group Item Component
-const GroupItem = React.memo(({ item, onPress, styles }) => {
+// Group Item Component with animation
+const GroupItem = React.memo(({ item, onPress, styles, index }) => {
     if (!item || !item._id || !item.title) {
         return null;
     }
 
     const unreadCount = item.unreadCount || 0;
     const onlineCount = item.onlineCount || 0;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            delay: index * 50,
+            useNativeDriver: true,
+        }).start();
+    }, [fadeAnim, index]);
 
     return (
-        <TouchableOpacity
-            onPress={() => onPress(item)}
-            activeOpacity={0.7}
-        >
-            <Card style={styles.forumCard}>
-                <Card.Content>
-                    <View style={styles.forumHeader}>
-                        <View style={styles.forumInfo}>
-                            <View style={styles.titleRow}>
-                                <Text style={styles.forumTitle} numberOfLines={2}>
-                                    {item.title}
-                                </Text>
-                                {unreadCount > 0 && (
-                                    <Badge style={styles.unreadBadge}>
-                                        <Text style={styles.unreadBadgeText}>
-                                            {unreadCount > 99 ? '99+' : unreadCount.toString()}
+        <Animated.View style={{ opacity: fadeAnim }}>
+            <TouchableOpacity
+                onPress={() => onPress(item)}
+                activeOpacity={0.7}
+            >
+                <Card style={styles.forumCard}>
+                    <Card.Content>
+                        <View style={styles.forumHeader}>
+                            <View style={styles.forumInfo}>
+                                <View style={styles.titleRow}>
+                                    <Text style={styles.forumTitle} numberOfLines={2}>
+                                        {item.title}
+                                    </Text>
+                                    {unreadCount > 0 && (
+                                        <Badge style={styles.unreadBadge}>
+                                            <Text style={styles.unreadBadgeText}>
+                                                {unreadCount > 99 ? '99+' : unreadCount.toString()}
+                                            </Text>
+                                        </Badge>
+                                    )}
+                                </View>
+                                
+                                {item.lastMessage ? (
+                                    <Text style={styles.lastMessage} numberOfLines={1}>
+                                        <Text style={styles.lastMessageSender}>
+                                            {item.lastMessage.sender?.name || 'Unknown'}:
                                         </Text>
-                                    </Badge>
-                                )}
-                            </View>
-                            
-                            {item.lastMessage ? (
-                                <Text style={styles.lastMessage} numberOfLines={1}>
-                                    <Text style={styles.lastMessageSender}>
-                                        {item.lastMessage.sender?.name || 'Unknown'}:
+                                        <Text> {item.lastMessage.content || ''}</Text>
                                     </Text>
-                                    <Text> {item.lastMessage.content || ''}</Text>
-                                </Text>
-                            ) : (
-                                <Text style={styles.forumDescription} numberOfLines={2}>
-                                    {item.description || ''}
-                                </Text>
-                            )}
-                            
-                            <View style={styles.forumMeta}>
-                                {item.lastMessage && item.lastMessage.createdAt && (
-                                    <Text style={styles.lastMessageTime}>
-                                        {formatRelativeTime(item.lastMessage.createdAt)}
+                                ) : (
+                                    <Text style={styles.forumDescription} numberOfLines={2}>
+                                        {item.description || ''}
                                     </Text>
                                 )}
-                                <View style={styles.metaItem}>
-                                    <Icon name="account-group" size={14} color={colors.textSecondary} />
-                                    <Text style={styles.metaText}>
-                                        {onlineCount} online
-                                    </Text>
+                                
+                                <View style={styles.forumMeta}>
+                                    {item.lastMessage && item.lastMessage.createdAt && (
+                                        <Text style={styles.lastMessageTime}>
+                                            {formatRelativeTime(item.lastMessage.createdAt)}
+                                        </Text>
+                                    )}
+                                    <View style={styles.metaItem}>
+                                        <Icon name="account-group" size={14} color={colors.textSecondary} />
+                                        <Text style={styles.metaText}>
+                                            {onlineCount} online
+                                        </Text>
+                                    </View>
+                                    {item.messageCount > 0 && (
+                                        <View style={styles.metaItem}>
+                                            <Icon name="message-text" size={14} color={colors.textSecondary} />
+                                            <Text style={styles.metaText}>
+                                                {item.messageCount} messages
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
                             </View>
+                            <Icon name="chevron-right" size={24} color={colors.textSecondary} />
                         </View>
-                        <Icon name="chevron-right" size={24} color={colors.textSecondary} />
-                    </View>
-                </Card.Content>
-            </Card>
-        </TouchableOpacity>
+                    </Card.Content>
+                </Card>
+            </TouchableOpacity>
+        </Animated.View>
     );
 });
 
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
     const { user } = useAuth();
+    const { socket, isConnected } = useSocket();
 
     const [forums, setForums] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
     
     // Form state - kept in parent to avoid losing data
     const [formData, setFormData] = useState({
@@ -121,6 +146,18 @@ const ForumScreen = ({ navigation }) => {
 
     // Memoize styles to prevent recreation
     const styles = useMemo(() => createStyles(theme), [theme]);
+
+    // Filter forums based on search query
+    const filteredForums = useMemo(() => {
+        if (!searchQuery.trim()) return forums;
+        
+        const query = searchQuery.toLowerCase();
+        return forums.filter(forum => 
+            forum.title.toLowerCase().includes(query) ||
+            forum.description.toLowerCase().includes(query) ||
+            (forum.lastMessage?.content || '').toLowerCase().includes(query)
+        );
+    }, [forums, searchQuery]);
 
     // Optimize data fetching with useCallback
     const loadForums = useCallback(async () => {
@@ -143,6 +180,61 @@ const ForumScreen = ({ navigation }) => {
         }
     }, []);
 
+    // Socket event handlers
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        // Listen for real-time updates
+        const handleNewMessage = (data) => {
+            setForums(prevForums => 
+                prevForums.map(forum => {
+                    if (forum._id === data.roomId) {
+                        return {
+                            ...forum,
+                            lastMessage: {
+                                content: data.content,
+                                sender: data.sender,
+                                createdAt: data.createdAt
+                            },
+                            unreadCount: forum.unreadCount + 1,
+                            lastActivity: data.createdAt
+                        };
+                    }
+                    return forum;
+                }).sort((a, b) => 
+                    new Date(b.lastActivity || b.createdAt) - 
+                    new Date(a.lastActivity || a.createdAt)
+                )
+            );
+        };
+
+        const handleRoomUpdate = (data) => {
+            if (data.type === 'online_count') {
+                setForums(prevForums => 
+                    prevForums.map(forum => 
+                        forum._id === data.roomId 
+                            ? { ...forum, onlineCount: data.count }
+                            : forum
+                    )
+                );
+            }
+        };
+
+        const handleNewRoom = (room) => {
+            setForums(prevForums => [room, ...prevForums]);
+        };
+
+        socket.on('new_message', handleNewMessage);
+        socket.on('room_update', handleRoomUpdate);
+        socket.on('new_room', handleNewRoom);
+
+        return () => {
+            socket.off('new_message', handleNewMessage);
+            socket.off('room_update', handleRoomUpdate);
+            socket.off('new_room', handleNewRoom);
+        };
+    }, [socket, isConnected]);
+
     useEffect(() => {
         loadForums();
     }, [loadForums]);
@@ -158,11 +250,28 @@ const ForumScreen = ({ navigation }) => {
             return;
         }
 
+        // Mark messages as read
+        setForums(prevForums => 
+            prevForums.map(f => 
+                f._id === forum._id 
+                    ? { ...f, unreadCount: 0 }
+                    : f
+            )
+        );
+
         navigation.navigate('ChatRoom', {
             roomId: forum._id,
             roomTitle: forum.title
         });
     }, [navigation]);
+
+    // Debounced search handler
+    const handleSearch = useMemo(
+        () => debounce((text) => {
+            setSearchQuery(text);
+        }, 300),
+        []
+    );
 
     // Fixed: Direct state updates without side effects
     const handleTitleChange = useCallback((text) => {
@@ -239,7 +348,7 @@ const ForumScreen = ({ navigation }) => {
         return item._id;
     }, []);
 
-    const renderItem = useCallback(({ item }) => {
+    const renderItem = useCallback(({ item, index }) => {
         if (!item) return null;
         
         return (
@@ -247,6 +356,7 @@ const ForumScreen = ({ navigation }) => {
                 item={item} 
                 onPress={handleForumPress}
                 styles={styles}
+                index={index}
             />
         );
     }, [handleForumPress, styles]);
@@ -257,15 +367,37 @@ const ForumScreen = ({ navigation }) => {
             <Text style={styles.headerSubtitle}>
                 Join conversations and connect in real-time
             </Text>
+            
+            {!isConnected && (
+                <View style={styles.connectionWarning}>
+                    <Icon name="wifi-off" size={16} color={colors.warning} />
+                    <Text style={styles.connectionWarningText}>
+                        Offline - Updates may be delayed
+                    </Text>
+                </View>
+            )}
+            
+            <Searchbar
+                placeholder="Search groups..."
+                onChangeText={handleSearch}
+                value={searchQuery}
+                style={styles.searchBar}
+                iconColor={theme.colors.primary}
+                inputStyle={styles.searchInput}
+                elevation={1}
+            />
         </View>
-    ), [styles]);
+    ), [styles, searchQuery, handleSearch, theme, isConnected]);
 
     const ListEmptyComponent = useMemo(() => (
         <EmptyState
-            icon="forum-outline"
-            title="No groups yet"
-            message="Be the first to create a group!"
-            action={
+            icon={searchQuery ? "magnify" : "forum-outline"}
+            title={searchQuery ? "No groups found" : "No groups yet"}
+            message={searchQuery 
+                ? "Try adjusting your search terms" 
+                : "Be the first to create a group!"
+            }
+            action={!searchQuery && (
                 <Button
                     mode="contained"
                     onPress={() => setModalVisible(true)}
@@ -273,9 +405,9 @@ const ForumScreen = ({ navigation }) => {
                 >
                     <Text>Create Group</Text>
                 </Button>
-            }
+            )}
         />
-    ), []);
+    ), [searchQuery]);
 
     if (loading && !refreshing) {
         return <LoadingSpinner fullScreen text="Loading groups..." />;
@@ -285,7 +417,7 @@ const ForumScreen = ({ navigation }) => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <FlatList
-                    data={forums}
+                    data={filteredForums}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
                     contentContainerStyle={styles.listContent}
