@@ -1,5 +1,6 @@
 // frontend/src/styles/components/ui/HeaderStyles.js
 import { StyleSheet, Platform } from 'react-native';
+
 import { colors, fonts, spacing } from '../../../constants/theme';
 
 export const headerStyles = StyleSheet.create({

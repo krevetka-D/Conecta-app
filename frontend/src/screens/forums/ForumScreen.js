@@ -1,22 +1,46 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, SafeAreaView, Animated, Platform } from 'react-native';
-import { Card, FAB, Portal, Modal, Button, Chip, TextInput, Badge, Provider, Searchbar } from 'react-native-paper';
+import {
+    View,
+    Text,
+    FlatList,
+    TouchableOpacity,
+    RefreshControl,
+    SafeAreaView,
+    Animated,
+    Platform,
+} from 'react-native';
+import {
+    Card,
+    FAB,
+    Portal,
+    Modal,
+    Button,
+    Chip,
+    TextInput,
+    Badge,
+    Provider,
+    Searchbar,
+} from 'react-native-paper';
+
+import EmptyState from '../../components/common/EmptyState';
 import Icon from '../../components/common/Icon.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { colors } from '../../constants/theme';
+import forumService from '../../services/forumService';
+import socketService from '../../services/socketService';
+import apiClient from '../../services/api/client';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
-import socketService from '../../services/socketService';
-import forumService from '../../services/forumService';
-import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
 import { forumsStyles as createStyles } from '../../styles/screens/forums/ForumScreenStyles';
-import { colors } from '../../constants/theme';
+import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import { debounce } from '../../utils/debounce';
+import { devError, devWarn } from '../../utils';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
 
 // Add formatRelativeTime helper function
 const formatRelativeTime = (dateString) => {
     if (!dateString) return '';
-    
+
     try {
         const date = new Date(dateString);
         const now = new Date();
@@ -29,22 +53,16 @@ const formatRelativeTime = (dateString) => {
         if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
         if (diffInHours < 24) return `${diffInHours}h ago`;
         if (diffInDays < 7) return `${diffInDays}d ago`;
-        
+
         return date.toLocaleDateString();
     } catch (error) {
-        console.error('Error formatting date:', error);
+        devError('ForumScreen', 'Error formatting date', error);
         return '';
     }
 };
 
 // Group Item Component with animation
 const GroupItem = React.memo(({ item, onPress, styles, index }) => {
-    if (!item || !item._id || !item.title) {
-        return null;
-    }
-
-    const unreadCount = item.unreadCount || 0;
-    const onlineCount = item.onlineCount || 0;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -56,12 +74,16 @@ const GroupItem = React.memo(({ item, onPress, styles, index }) => {
         }).start();
     }, [fadeAnim, index]);
 
+    if (!item || !item._id || !item.title) {
+        return null;
+    }
+
+    const unreadCount = item.unreadCount || 0;
+    const onlineCount = item.onlineCount || 0;
+
     return (
         <Animated.View style={{ opacity: fadeAnim }}>
-            <TouchableOpacity
-                onPress={() => onPress(item)}
-                activeOpacity={0.7}
-            >
+            <TouchableOpacity onPress={() => onPress(item)} activeOpacity={0.7}>
                 <Card style={styles.forumCard}>
                     <Card.Content>
                         <View style={styles.forumHeader}>
@@ -78,7 +100,7 @@ const GroupItem = React.memo(({ item, onPress, styles, index }) => {
                                         </Badge>
                                     )}
                                 </View>
-                                
+
                                 {item.lastMessage ? (
                                     <Text style={styles.lastMessage} numberOfLines={1}>
                                         <Text style={styles.lastMessageSender}>
@@ -91,7 +113,7 @@ const GroupItem = React.memo(({ item, onPress, styles, index }) => {
                                         {item.description || ''}
                                     </Text>
                                 )}
-                                
+
                                 <View style={styles.forumMeta}>
                                     {item.lastMessage && item.lastMessage.createdAt && (
                                         <Text style={styles.lastMessageTime}>
@@ -99,14 +121,20 @@ const GroupItem = React.memo(({ item, onPress, styles, index }) => {
                                         </Text>
                                     )}
                                     <View style={styles.metaItem}>
-                                        <Icon name="account-group" size={14} color={colors.textSecondary} />
-                                        <Text style={styles.metaText}>
-                                            {onlineCount} online
-                                        </Text>
+                                        <Icon
+                                            name="account-group"
+                                            size={14}
+                                            color={colors.textSecondary}
+                                        />
+                                        <Text style={styles.metaText}>{onlineCount} online</Text>
                                     </View>
                                     {item.messageCount > 0 && (
                                         <View style={styles.metaItem}>
-                                            <Icon name="message-text" size={14} color={colors.textSecondary} />
+                                            <Icon
+                                                name="message-text"
+                                                size={14}
+                                                color={colors.textSecondary}
+                                            />
                                             <Text style={styles.metaText}>
                                                 {item.messageCount} messages
                                             </Text>
@@ -123,6 +151,8 @@ const GroupItem = React.memo(({ item, onPress, styles, index }) => {
     );
 });
 
+GroupItem.displayName = 'GroupItem';
+
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
     const { user } = useAuth();
@@ -134,8 +164,9 @@ const ForumScreen = ({ navigation }) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [displaySearchQuery, setDisplaySearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    
+
     // Form state - kept in parent to avoid losing data
     const [formData, setFormData] = useState({
         title: '',
@@ -150,12 +181,13 @@ const ForumScreen = ({ navigation }) => {
     // Filter forums based on search query
     const filteredForums = useMemo(() => {
         if (!searchQuery.trim()) return forums;
-        
+
         const query = searchQuery.toLowerCase();
-        return forums.filter(forum => 
-            forum.title.toLowerCase().includes(query) ||
-            forum.description.toLowerCase().includes(query) ||
-            (forum.lastMessage?.content || '').toLowerCase().includes(query)
+        return forums.filter(
+            (forum) =>
+                forum.title.toLowerCase().includes(query) ||
+                forum.description.toLowerCase().includes(query) ||
+                (forum.lastMessage?.content || '').toLowerCase().includes(query),
         );
     }, [forums, searchQuery]);
 
@@ -164,15 +196,12 @@ const ForumScreen = ({ navigation }) => {
         try {
             const data = await forumService.getForums();
             const safeData = Array.isArray(data) ? data : [];
-            const validForums = safeData.filter(forum => 
-                forum && 
-                typeof forum === 'object' && 
-                forum._id && 
-                forum.title
+            const validForums = safeData.filter(
+                (forum) => forum && typeof forum === 'object' && forum._id && forum.title,
             );
             setForums(validForums);
         } catch (error) {
-            console.error('Failed to load groups:', error);
+            devError('ForumScreen', 'Failed to load groups', error);
             setForums([]);
         } finally {
             setLoading(false);
@@ -181,62 +210,78 @@ const ForumScreen = ({ navigation }) => {
     }, []);
 
     // Socket event handlers
-    useEffect(() => {
-        if (!socketService || !isConnected) return;
-
-        const socket = socketService.socket;
-        if (!socket) return;
-
-        // Listen for real-time updates
-        const handleNewMessage = (data) => {
-            setForums(prevForums => 
-                prevForums.map(forum => {
-                    if (forum._id === data.roomId) {
-                        return {
-                            ...forum,
-                            lastMessage: {
-                                content: data.content,
-                                sender: data.sender,
-                                createdAt: data.createdAt
-                            },
-                            unreadCount: forum.unreadCount + 1,
-                            lastActivity: data.createdAt
-                        };
-                    }
-                    return forum;
-                }).sort((a, b) => 
-                    new Date(b.lastActivity || b.createdAt) - 
-                    new Date(a.lastActivity || a.createdAt)
-                )
+    const socketEventHandlers = {
+        'new_message': useCallback((data) => {
+            // Clear API cache for forums and messages
+            apiClient.clearCache('/forums');
+            apiClient.clearCache('/messages');
+            apiClient.clearCache('/messages/conversations');
+            if (data.roomId) {
+                apiClient.clearCache(`/chat/rooms/${data.roomId}/messages`);
+            }
+            
+            setForums((prevForums) =>
+                prevForums
+                    .map((forum) => {
+                        if (forum._id === data.roomId) {
+                            return {
+                                ...forum,
+                                lastMessage: {
+                                    content: data.content,
+                                    sender: data.sender,
+                                    createdAt: data.createdAt,
+                                },
+                                unreadCount: forum.unreadCount + 1,
+                                lastActivity: data.createdAt,
+                            };
+                        }
+                        return forum;
+                    })
+                    .sort(
+                        (a, b) =>
+                            new Date(b.lastActivity || b.createdAt) -
+                            new Date(a.lastActivity || a.createdAt),
+                    ),
             );
-        };
-
-        const handleRoomUpdate = (data) => {
+        }, []),
+        
+        'room_update': useCallback((data) => {
             if (data.type === 'online_count') {
-                setForums(prevForums => 
+                setForums((prevForums) =>
+                    prevForums.map((forum) =>
+                        forum._id === data.roomId ? { ...forum, onlineCount: data.count } : forum,
+                    ),
+                );
+            }
+        }, []),
+        
+        'new_room': useCallback((room) => {
+            setForums((prevForums) => [room, ...prevForums]);
+        }, []),
+        
+        'forum_update': useCallback((data) => {
+            // Clear API cache for forums
+            apiClient.clearCache('/forums');
+            if (data.forum?._id) {
+                apiClient.clearCache(`/forums/${data.forum._id}`);
+            }
+            
+            if (data.type === 'create') {
+                // Reload to get fresh data
+                loadForums();
+            } else if (data.type === 'update') {
+                // Update existing forum
+                setForums((prevForums) => 
                     prevForums.map(forum => 
-                        forum._id === data.roomId 
-                            ? { ...forum, onlineCount: data.count }
-                            : forum
+                        forum._id === data.forum._id ? data.forum : forum
                     )
                 );
             }
-        };
-
-        const handleNewRoom = (room) => {
-            setForums(prevForums => [room, ...prevForums]);
-        };
-
-        socketService.on('new_message', handleNewMessage);
-        socketService.on('room_update', handleRoomUpdate);
-        socketService.on('new_room', handleNewRoom);
-
-        return () => {
-            socketService.off('new_message', handleNewMessage);
-            socketService.off('room_update', handleRoomUpdate);
-            socketService.off('new_room', handleNewRoom);
-        };
-    }, [isConnected]);
+        }, [loadForums])
+    };
+    
+    // Use socket events hook
+    useSocketEvents(socketEventHandlers, [loadForums]);
 
     useEffect(() => {
         loadForums();
@@ -247,68 +292,79 @@ const ForumScreen = ({ navigation }) => {
         loadForums();
     }, [loadForums]);
 
-    const handleForumPress = useCallback((forum) => {
-        if (!forum || !forum._id || !forum.title) {
-            console.error('Invalid group data:', forum);
-            return;
-        }
+    const handleForumPress = useCallback(
+        (forum) => {
+            if (!forum || !forum._id || !forum.title) {
+                devError('ForumScreen', 'Invalid group data', forum);
+                return;
+            }
 
-        // Mark messages as read
-        setForums(prevForums => 
-            prevForums.map(f => 
-                f._id === forum._id 
-                    ? { ...f, unreadCount: 0 }
-                    : f
-            )
-        );
+            // Mark messages as read
+            setForums((prevForums) =>
+                prevForums.map((f) => (f._id === forum._id ? { ...f, unreadCount: 0 } : f)),
+            );
 
-        navigation.navigate('ChatRoom', {
-            roomId: forum._id,
-            roomTitle: forum.title
-        });
-    }, [navigation]);
-
-    // Debounced search handler
-    const handleSearch = useMemo(
-        () => debounce((text) => {
-            setSearchQuery(text);
-        }, 300),
-        []
+            navigation.navigate('ChatRoom', {
+                roomId: forum._id,
+                roomTitle: forum.title,
+            });
+        },
+        [navigation],
     );
 
-    // Fixed: Direct state updates without side effects
-    const handleTitleChange = useCallback((text) => {
-        setFormData(prev => ({ ...prev, title: text || '' }));
-        if (formErrors.title) {
-            setFormErrors(prev => ({ ...prev, title: null }));
-        }
-    }, [formErrors.title]);
+    // Debounced search handler - update both display and search query
+    const debouncedSetSearchQuery = useMemo(
+        () =>
+            debounce((text) => {
+                setSearchQuery(text);
+            }, 300),
+        [],
+    );
+    
+    const handleSearch = useCallback((text) => {
+        setDisplaySearchQuery(text); // Update display immediately
+        debouncedSetSearchQuery(text); // Debounce actual search
+    }, [debouncedSetSearchQuery]);
 
-    const handleDescriptionChange = useCallback((text) => {
-        setFormData(prev => ({ ...prev, description: text || '' }));
-        if (formErrors.description) {
-            setFormErrors(prev => ({ ...prev, description: null }));
-        }
-    }, [formErrors.description]);
+    // Fixed: Direct state updates without side effects
+    const handleTitleChange = useCallback(
+        (text) => {
+            setFormData((prev) => ({ ...prev, title: text || '' }));
+            if (formErrors.title) {
+                setFormErrors((prev) => ({ ...prev, title: null }));
+            }
+        },
+        [formErrors.title],
+    );
+
+    const handleDescriptionChange = useCallback(
+        (text) => {
+            setFormData((prev) => ({ ...prev, description: text || '' }));
+            if (formErrors.description) {
+                setFormErrors((prev) => ({ ...prev, description: null }));
+            }
+        },
+        [formErrors.description],
+    );
 
     // Optimize validation
     const validateForm = useCallback(() => {
         const errors = {};
         const trimmedTitle = (formData.title || '').trim();
         const trimmedDescription = (formData.description || '').trim();
-        
+
         if (!trimmedTitle) {
             errors.title = 'Group name is required';
         } else if (trimmedTitle.length < 3) {
             errors.title = 'Name must be at least 3 characters';
         }
-        
+
         if (!trimmedDescription) {
             errors.description = 'Group description is required';
         } else if (trimmedDescription.length < 10) {
             errors.description = 'Description must be at least 10 characters';
         }
-        
+
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     }, [formData.title, formData.description]);
@@ -320,7 +376,7 @@ const ForumScreen = ({ navigation }) => {
         try {
             const title = (formData.title || '').trim();
             const description = (formData.description || '').trim();
-            
+
             await forumService.createForum(title, description);
             showSuccessAlert('Success', 'Group created successfully!');
             setModalVisible(false);
@@ -328,7 +384,7 @@ const ForumScreen = ({ navigation }) => {
             setFormErrors({});
             loadForums();
         } catch (error) {
-            console.error('Failed to create group:', error);
+            devError('ForumScreen', 'Failed to create group', error);
             showErrorAlert('Error', error.message || 'Failed to create group');
         } finally {
             setSubmitting(false);
@@ -345,72 +401,77 @@ const ForumScreen = ({ navigation }) => {
 
     const keyExtractor = useCallback((item) => {
         if (!item || !item._id) {
-            console.warn('Invalid item in groups list:', item);
+            devWarn('ForumScreen', 'Invalid item in groups list', item);
             return String(Math.random());
         }
         return item._id;
     }, []);
 
-    const renderItem = useCallback(({ item, index }) => {
-        if (!item) return null;
-        
-        return (
-            <GroupItem 
-                item={item} 
-                onPress={handleForumPress}
-                styles={styles}
-                index={index}
-            />
-        );
-    }, [handleForumPress, styles]);
+    const renderItem = useCallback(
+        ({ item, index }) => {
+            if (!item) return null;
 
-    const ListHeaderComponent = useMemo(() => (
-        <View style={styles.header}>
-            <Text style={styles.headerTitle}>Chat Groups</Text>
-            <Text style={styles.headerSubtitle}>
-                Join conversations and connect in real-time
-            </Text>
-            
-            {!isConnected && (
-                <View style={styles.connectionWarning}>
-                    <Icon name="wifi-off" size={16} color={colors.warning} />
-                    <Text style={styles.connectionWarningText}>
-                        Offline - Updates may be delayed
-                    </Text>
-                </View>
-            )}
-            
-            <Searchbar
-                placeholder="Search groups..."
-                onChangeText={handleSearch}
-                value={searchQuery}
-                style={styles.searchBar}
-                iconColor={theme.colors.primary}
-                inputStyle={styles.searchInput}
-                elevation={1}
-            />
-        </View>
-    ), [styles, searchQuery, handleSearch, theme, isConnected]);
+            return (
+                <GroupItem item={item} onPress={handleForumPress} styles={styles} index={index} />
+            );
+        },
+        [handleForumPress, styles],
+    );
 
-    const ListEmptyComponent = useMemo(() => (
-        <EmptyState
-            icon={searchQuery ? "magnify" : "forum-outline"}
-            title={searchQuery ? "No groups found" : "No groups yet"}
-            message={searchQuery 
-                ? "Try adjusting your search terms" 
-                : "Be the first to create a group!"
-            }
-            action={!searchQuery && (
-                <Button
-                    mode="contained"
-                    onPress={() => setModalVisible(true)}
-                    icon="plus"
-                >
-                    <Text>Create Group</Text>
-                </Button>
-            )}
-        />
-    ), [searchQuery]);
+    const ListHeaderComponent = useMemo(
+        () => (
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Chat Groups</Text>
+                <Text style={styles.headerSubtitle}>
+                    Join conversations and connect in real-time
+                </Text>
+
+                {!isConnected && (
+                    <View style={styles.connectionWarning}>
+                        <Icon name="wifi-off" size={16} color={colors.warning} />
+                        <Text style={styles.connectionWarningText}>
+                            Offline - Updates may be delayed
+                        </Text>
+                    </View>
+                )}
+
+                <Searchbar
+                    placeholder="Search groups..."
+                    onChangeText={handleSearch}
+                    value={displaySearchQuery}
+                    style={styles.searchBar}
+                    iconColor={theme.colors.primary}
+                    inputStyle={styles.searchInput}
+                    elevation={1}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                />
+            </View>
+        ),
+        [styles, displaySearchQuery, handleSearch, theme, isConnected],
+    );
+
+    const ListEmptyComponent = useMemo(
+        () => (
+            <EmptyState
+                icon={searchQuery ? 'magnify' : 'forum-outline'}
+                title={searchQuery ? 'No groups found' : 'No groups yet'}
+                message={
+                    searchQuery
+                        ? 'Try adjusting your search terms'
+                        : 'Be the first to create a group!'
+                }
+                action={
+                    !searchQuery && (
+                        <Button mode="contained" onPress={() => setModalVisible(true)} icon="plus">
+                            <Text>Create Group</Text>
+                        </Button>
+                    )
+                }
+            />
+        ),
+        [searchQuery],
+    );
 
     if (loading && !refreshing) {
         return <LoadingSpinner fullScreen text="Loading groups..." />;
@@ -440,15 +501,11 @@ const ForumScreen = ({ navigation }) => {
                     windowSize={10}
                     initialNumToRender={10}
                     onError={(error) => {
-                        console.error('FlatList error:', error);
+                        devError('ForumScreen', 'FlatList error', error);
                     }}
                 />
 
-                <FAB
-                    icon="plus"
-                    style={styles.fab}
-                    onPress={() => setModalVisible(true)}
-                />
+                <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} />
 
                 {/* Modal without Provider/Portal wrapper to fix rendering issue */}
                 <Modal
@@ -459,7 +516,7 @@ const ForumScreen = ({ navigation }) => {
                     dismissableBackButton={!submitting}
                 >
                     <Text style={styles.modalTitle}>Create New Group</Text>
-                    
+
                     <TextInput
                         label="Group Name"
                         value={formData.title || ''}
@@ -472,10 +529,8 @@ const ForumScreen = ({ navigation }) => {
                         maxLength={100}
                         autoCorrect={false}
                     />
-                    {formErrors.title && (
-                        <Text style={styles.errorText}>{formErrors.title}</Text>
-                    )}
-                    
+                    {formErrors.title && <Text style={styles.errorText}>{formErrors.title}</Text>}
+
                     <TextInput
                         label="Group Description"
                         value={formData.description || ''}
@@ -496,7 +551,7 @@ const ForumScreen = ({ navigation }) => {
                     {formErrors.description && (
                         <Text style={styles.errorText}>{formErrors.description}</Text>
                     )}
-                    
+
                     <View style={styles.modalButtons}>
                         <Button
                             mode="outlined"

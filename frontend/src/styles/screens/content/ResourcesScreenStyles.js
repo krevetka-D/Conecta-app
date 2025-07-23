@@ -1,6 +1,7 @@
 // frontend/src/styles/screens/resources/ResourcesScreenStyles.js
 
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
 export const resourcesStyles = StyleSheet.create({

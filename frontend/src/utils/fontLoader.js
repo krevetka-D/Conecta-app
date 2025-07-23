@@ -66,11 +66,14 @@ export const getFontFamily = (fontName) => {
         }),
     };
 
-    return systemFonts[fontName] || Platform.select({
-        ios: 'System',
-        android: 'Roboto',
-        default: 'sans-serif',
-    });
+    return (
+        systemFonts[fontName] ||
+        Platform.select({
+            ios: 'System',
+            android: 'Roboto',
+            default: 'sans-serif',
+        })
+    );
 };
 
 export const resetFonts = () => {

@@ -1,11 +1,12 @@
 // frontend/src/navigation/ForumNavigator.js
-import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import ForumScreen from '../screens/forums/ForumScreen';
-import ForumDetailScreen from '../screens/forums/ForumDetailScreen';
-import ThreadDetailScreen from '../screens/forums/ThreadDetailScreen';
+import React from 'react';
+
 import { SCREEN_NAMES } from '../constants/routes';
 import { colors } from '../constants/theme';
+import ForumDetailScreen from '../screens/forums/ForumDetailScreen';
+import ForumScreen from '../screens/forums/ForumScreen';
+import ThreadDetailScreen from '../screens/forums/ThreadDetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -22,26 +23,26 @@ const ForumNavigator = () => {
                 },
             }}
         >
-            <Stack.Screen 
-                name="ForumsList" 
+            <Stack.Screen
+                name="ForumsList"
                 component={ForumScreen}
                 options={{ headerShown: false }}
             />
-            <Stack.Screen 
-                name="ChatRoom" 
+            <Stack.Screen
+                name="ChatRoom"
                 component={ForumDetailScreen}
-                options={({ route }) => ({ 
-                    title: route.params?.roomTitle || 'Chat Room' 
+                options={({ route }) => ({
+                    title: route.params?.roomTitle || 'Chat Room',
                 })}
             />
-            <Stack.Screen 
-                name="ThreadDetail" 
+            <Stack.Screen
+                name="ThreadDetail"
                 component={ThreadDetailScreen}
-                options={({ route }) => ({ 
-                    title: route.params?.threadTitle || 'Thread' 
+                options={({ route }) => ({
+                    title: route.params?.threadTitle || 'Thread',
                 })}
             />
-        </Stack.Navigator>  
+        </Stack.Navigator>
     );
 };
 

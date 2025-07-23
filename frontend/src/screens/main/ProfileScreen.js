@@ -1,63 +1,72 @@
-
-
 import React from 'react';
-import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Card, Avatar, List, Divider } from 'react-native-paper';
+
 import Icon from '../../components/common/Icon.js';
-import { useAuth } from '../../store/contexts/AuthContext';
 import { colors } from '../../constants/theme';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { profileStyles as styles } from '../../styles/screens/main/ProfileScreenStyles';
+import { devLog } from '../../utils';
+import { showSuccessAlert } from '../../utils/alerts';
 
 const ProfileScreen = ({ navigation }) => {
     const { user, logout } = useAuth();
 
     const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Logout', onPress: logout, style: 'destructive' },
-            ]
-        );
+        Alert.alert('Logout', 'Are you sure you want to logout?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', onPress: logout, style: 'destructive' },
+        ]);
     };
 
     const menuItems = [
         {
             title: 'Account Settings',
             icon: 'account-cog',
-            onPress: () => console.log('Account settings'),
+            onPress: () => {
+                devLog('Profile', 'Account settings tapped');
+                showSuccessAlert('Coming Soon', 'Account settings will be available in the next update.');
+            },
         },
         {
             title: 'Notifications',
             icon: 'bell-outline',
-            onPress: () => console.log('Notifications'),
+            onPress: () => {
+                devLog('Profile', 'Notifications tapped');
+                showSuccessAlert('Coming Soon', 'Notification settings will be available in the next update.');
+            },
         },
         {
             title: 'Privacy Policy',
             icon: 'shield-check-outline',
-            onPress: () => console.log('Privacy policy'),
+            onPress: () => {
+                devLog('Profile', 'Privacy policy tapped');
+                showSuccessAlert('Coming Soon', 'Privacy policy will be available in the next update.');
+            },
         },
         {
             title: 'Terms of Service',
             icon: 'file-document-outline',
-            onPress: () => console.log('Terms of service'),
+            onPress: () => {
+                devLog('Profile', 'Terms of service tapped');
+                showSuccessAlert('Coming Soon', 'Terms of service will be available in the next update.');
+            },
         },
         {
             title: 'Help & Support',
             icon: 'help-circle-outline',
-            onPress: () => console.log('Help & support'),
+            onPress: () => {
+                devLog('Profile', 'Help & support tapped');
+                showSuccessAlert('Coming Soon', 'Help & support will be available in the next update.');
+            },
         },
         {
             title: 'About',
             icon: 'information-outline',
-            onPress: () => console.log('About'),
+            onPress: () => {
+                devLog('Profile', 'About tapped');
+                showSuccessAlert('About', 'Conecta Alicante v1.0.0\nConnecting entrepreneurs and freelancers in Alicante.');
+            },
         },
     ];
 

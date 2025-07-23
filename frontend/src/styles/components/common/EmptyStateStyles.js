@@ -1,5 +1,6 @@
 // src/styles/components/common/EmptyStateStyles.js
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts, spacing } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({

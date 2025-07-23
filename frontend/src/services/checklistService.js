@@ -16,7 +16,9 @@ const checklistService = {
     },
 
     updateChecklistItem: async (itemKey, isCompleted) => {
-        const response = await apiClient.put(API_ENDPOINTS.CHECKLIST.UPDATE(itemKey), { isCompleted });
+        const response = await apiClient.put(API_ENDPOINTS.CHECKLIST.UPDATE(itemKey), {
+            isCompleted,
+        });
         return response;
     },
 
@@ -28,10 +30,10 @@ const checklistService = {
                 return { success: true, items: [] };
             }
 
-            const response = await apiClient.post('/checklist/initialize', { 
-                selectedItems 
+            const response = await apiClient.post('/checklist/initialize', {
+                selectedItems,
             });
-            
+
             return response || { success: true };
         } catch (error) {
             console.error('Failed to initialize checklist:', error);

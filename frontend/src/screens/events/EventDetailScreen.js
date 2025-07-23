@@ -1,22 +1,15 @@
-
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    SafeAreaView,
-} from 'react-native';
-import { Card, Button, Chip, Avatar, Menu, Divider } from 'react-native-paper';
-import Icon from '../../components/common/Icon.js';
 import { format } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { Card, Button, Chip, Avatar, Menu, Divider } from 'react-native-paper';
 
+import Icon from '../../components/common/Icon.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import eventService from '../../services/eventService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
-import eventService from '../../services/eventService';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
 import { eventDetailStyles } from '../../styles/screens/events/EventDetailScreenStyles';
+import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
 
 const EventDetailScreen = ({ route, navigation }) => {
     const theme = useTheme();
@@ -86,7 +79,7 @@ const EventDetailScreen = ({ route, navigation }) => {
                 } finally {
                     setActionLoading(false);
                 }
-            }
+            },
         );
     };
 
@@ -103,7 +96,7 @@ const EventDetailScreen = ({ route, navigation }) => {
     }
 
     const isOrganizer = event.organizer?._id === user?._id;
-    const isAttending = event.attendees?.some(att => att._id === user?._id);
+    const isAttending = event.attendees?.some((att) => att._id === user?._id);
     const isFull = event.maxAttendees && event.attendees?.length >= event.maxAttendees;
     const eventDate = new Date(event.date);
 
@@ -120,7 +113,11 @@ const EventDetailScreen = ({ route, navigation }) => {
                             <View style={styles.headerInfo}>
                                 <Text style={styles.title}>{event.title}</Text>
                                 <View style={styles.metaContainer}>
-                                    <Icon name="clock-outline" size={16} color={theme.colors.textSecondary} />
+                                    <Icon
+                                        name="clock-outline"
+                                        size={16}
+                                        color={theme.colors.textSecondary}
+                                    />
                                     <Text style={styles.metaText}>{event.time}</Text>
                                 </View>
                             </View>
@@ -133,7 +130,11 @@ const EventDetailScreen = ({ route, navigation }) => {
                                             onPress={() => setMenuVisible(true)}
                                             style={styles.menuButton}
                                         >
-                                            <Icon name="dots-vertical" size={24} color={theme.colors.text} />
+                                            <Icon
+                                                name="dots-vertical"
+                                                size={24}
+                                                color={theme.colors.text}
+                                            />
                                         </TouchableOpacity>
                                     }
                                 >
@@ -176,7 +177,9 @@ const EventDetailScreen = ({ route, navigation }) => {
                             <View style={styles.locationInfo}>
                                 <Text style={styles.locationName}>{event.location.name}</Text>
                                 {event.location.address && (
-                                    <Text style={styles.locationAddress}>{event.location.address}</Text>
+                                    <Text style={styles.locationAddress}>
+                                        {event.location.address}
+                                    </Text>
                                 )}
                             </View>
                         </View>
@@ -207,11 +210,7 @@ const EventDetailScreen = ({ route, navigation }) => {
 
                 <View style={styles.actionContainer}>
                     {isOrganizer ? (
-                        <Button
-                            mode="contained"
-                            style={styles.actionButton}
-                            disabled
-                        >
+                        <Button mode="contained" style={styles.actionButton} disabled>
                             You're the organizer
                         </Button>
                     ) : isAttending ? (

@@ -1,12 +1,7 @@
 // .eslintrc.js
 module.exports = {
     root: true,
-    extends: [
-        '@react-native-community',
-        'eslint:recommended',
-        'plugin:react/recommended',
-        'plugin:react-hooks/recommended',
-    ],
+    extends: ['eslint:recommended', 'plugin:react/recommended', 'plugin:react-hooks/recommended'],
     parser: '@babel/eslint-parser',
     parserOptions: {
         ecmaVersion: 2021,
@@ -21,12 +16,7 @@ module.exports = {
         jest: true,
         'react-native/react-native': true,
     },
-    plugins: [
-        'react',
-        'react-native',
-        'react-hooks',
-        'import',
-    ],
+    plugins: ['react', 'react-native', 'react-hooks', 'import'],
     rules: {
         // General
         'no-console': ['warn', { allow: ['warn', 'error'] }],
@@ -56,14 +46,7 @@ module.exports = {
         'import/order': [
             'error',
             {
-                groups: [
-                    'builtin',
-                    'external',
-                    'internal',
-                    'parent',
-                    'sibling',
-                    'index',
-                ],
+                groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
                 'newlines-between': 'always',
                 alphabetize: {
                     order: 'asc',
@@ -75,9 +58,9 @@ module.exports = {
 
         // Style
         'comma-dangle': ['error', 'always-multiline'],
-        'quotes': ['error', 'single'],
-        'semi': ['error', 'always'],
-        'indent': ['error', 4],
+        quotes: ['error', 'single'],
+        semi: ['error', 'always'],
+        indent: ['error', 4],
         'object-curly-spacing': ['error', 'always'],
         'array-bracket-spacing': ['error', 'never'],
         'max-len': ['warn', { code: 100, ignoreStrings: true }],

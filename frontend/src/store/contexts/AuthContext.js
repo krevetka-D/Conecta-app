@@ -1,11 +1,14 @@
 // frontend/src/store/contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import authService from '../../services/authService';
-import checklistService from '../../services/checklistService';
-import budgetService from '../../services/budgetService';
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
+
 import apiClient from '../../services/api/client';
+import authService from '../../services/authService';
+import budgetService from '../../services/budgetService';
+import checklistService from '../../services/checklistService';
 import socketService from '../../services/socketService';
+import socketEventManager from '../../utils/socketEventManager';
+import { devLog, devError, devWarn } from '../../utils';
 
 const AuthContext = createContext(null);
 
@@ -25,35 +28,38 @@ export const AuthProvider = ({ children }) => {
 
     // Initialize pending checklist items
     const initializePendingChecklist = useCallback(async () => {
-    try {
-        const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
-        if (pendingItems && user) {
-            const items = JSON.parse(pendingItems);
-            if (items.length > 0) {
-                try {
-                    // Initialize checklist items in backend
-                    await checklistService.initializeChecklist(items);
-                    // Clear pending items after successful initialization
-                    await AsyncStorage.removeItem('pendingChecklistItems');
-                    console.log('Checklist initialized with items:', items);
-                } catch (error) {
-                    // Don't throw - just log the error
-                    console.warn('Checklist initialization deferred:', error.message);
-                    // Keep the pending items for later retry
+        try {
+            const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
+            if (pendingItems && user) {
+                const items = JSON.parse(pendingItems);
+                if (items.length > 0) {
+                    try {
+                        // Initialize checklist items in backend
+                        await checklistService.initializeChecklist(items);
+                        // Clear pending items after successful initialization
+                        await AsyncStorage.removeItem('pendingChecklistItems');
+                        devLog('AuthContext', 'Checklist initialized with items', items);
+                    } catch (error) {
+                        // Don't throw - just log the error
+                        devWarn('AuthContext', 'Checklist initialization deferred', error.message);
+                        // Keep the pending items for later retry
+                    }
                 }
             }
+        } catch (error) {
+            devWarn('AuthContext', 'Failed to process pending checklist', error);
+            // Don't throw - this is not critical for app functionality
         }
-    } catch (error) {
-        console.warn('Failed to process pending checklist:', error);
-        // Don't throw - this is not critical for app functionality
-    }
-}, [user]);
+    }, [user]);
 
     // Load user from storage on mount
     useEffect(() => {
         const loadUserFromStorage = async () => {
             try {
-                const [storedToken, storedUserStr] = await AsyncStorage.multiGet(['userToken', 'user']);
+                const [storedToken, storedUserStr] = await AsyncStorage.multiGet([
+                    'userToken',
+                    'user',
+                ]);
                 const tokenValue = storedToken[1];
                 const userValue = storedUserStr[1];
 
@@ -63,7 +69,7 @@ export const AuthProvider = ({ children }) => {
                     if (apiClient.defaults && apiClient.defaults.headers) {
                         apiClient.defaults.headers.common['Authorization'] = `Bearer ${tokenValue}`;
                     }
-                    
+
                     // Verify token is still valid by fetching current user
                     try {
                         const currentUser = await authService.getCurrentUser();
@@ -72,25 +78,30 @@ export const AuthProvider = ({ children }) => {
                             setUser(currentUser);
                             // Update stored user data with fresh data
                             await AsyncStorage.setItem('user', JSON.stringify(currentUser));
-                            
+
                             // Connect socket service if user is authenticated
                             if (currentUser._id) {
-                                socketService.connect(currentUser._id).catch(err => {
-                                    console.log('Socket connection failed, continuing without realtime features');
-                                });
+                                socketService.connect(currentUser._id)
+                                    .then(() => {
+                                        // Initialize socket event manager after connection
+                                        socketEventManager.initialize();
+                                    })
+                                    .catch((err) => {
+                                        devLog('AuthContext', 'Socket connection failed, continuing without realtime features');
+                                    });
                             }
                         } else {
                             throw new Error('Invalid user data');
                         }
                     } catch (verifyError) {
-                        console.log('Token verification failed, clearing auth data');
+                        devLog('AuthContext', 'Token verification failed, clearing auth data');
                         await clearAuthData();
                     }
                 } else {
-                    console.log('No stored auth data found');
+                    devLog('AuthContext', 'No stored auth data found');
                 }
             } catch (error) {
-                console.error('Failed to load user data from storage', error);
+                devError('AuthContext', 'Failed to load user data from storage', error);
                 await clearAuthData();
             } finally {
                 setLoading(false);
@@ -118,9 +129,11 @@ export const AuthProvider = ({ children }) => {
                 delete apiClient.defaults.headers.common['Authorization'];
             }
             budgetService.clearCategoriesCache();
+            socketEventManager.cleanup();
             socketService.disconnect();
+            apiClient.clearAllCache();
         } catch (error) {
-            console.error('Error clearing auth data:', error);
+            devError('AuthContext', 'Error clearing auth data', error);
         }
     };
 
@@ -144,14 +157,19 @@ export const AuthProvider = ({ children }) => {
 
             await AsyncStorage.multiSet([
                 ['userToken', data.token],
-                ['user', JSON.stringify(data.user)]
+                ['user', JSON.stringify(data.user)],
             ]);
 
             // Connect socket service
             if (data.user._id) {
-                socketService.connect(data.user._id).catch(err => {
-                    console.log('Socket connection failed, continuing without realtime features');
-                });
+                socketService.connect(data.user._id)
+                    .then(() => {
+                        // Initialize socket event manager after connection
+                        socketEventManager.initialize();
+                    })
+                    .catch((err) => {
+                        devLog('AuthContext', 'Socket connection failed, continuing without realtime features');
+                    });
             }
 
             // Initialize pending checklist items after successful login
@@ -162,16 +180,16 @@ export const AuthProvider = ({ children }) => {
                     try {
                         await checklistService.initializeChecklist(items);
                         await AsyncStorage.removeItem('pendingChecklistItems');
-                        console.log('Checklist initialized after login with items:', items);
+                        devLog('AuthContext', 'Checklist initialized after login with items', items);
                     } catch (error) {
-                        console.error('Failed to initialize checklist after login:', error);
+                        devError('AuthContext', 'Failed to initialize checklist after login', error);
                     }
                 }
             }
 
             return data;
         } catch (error) {
-            console.error('Login failed:', error);
+            devError('AuthContext', 'Login failed', error);
             // Clear any partial auth data on login failure
             await clearAuthData();
             throw error;
@@ -187,16 +205,16 @@ export const AuthProvider = ({ children }) => {
 
             // Check if registration requires login (no token returned)
             if (data.requiresLogin) {
-                console.log('Registration successful, but login required');
+                devLog('AuthContext', 'Registration successful, but login required');
                 // Clear any existing auth data
                 await clearAuthData();
-                
+
                 // Return success with a flag indicating login is needed
                 return {
                     success: true,
                     requiresLogin: true,
                     user: data.user,
-                    message: 'Registration successful. Please login to continue.'
+                    message: 'Registration successful. Please login to continue.',
                 };
             }
 
@@ -213,7 +231,7 @@ export const AuthProvider = ({ children }) => {
             // Update user with onboarding status
             const updatedUser = {
                 ...data.user,
-                onboardingStep: professionalPath ? 'CHECKLIST_SELECTION' : 'PATH_SELECTION'
+                onboardingStep: professionalPath ? 'CHECKLIST_SELECTION' : 'PATH_SELECTION',
             };
 
             setUser(updatedUser);
@@ -221,14 +239,19 @@ export const AuthProvider = ({ children }) => {
 
             await AsyncStorage.multiSet([
                 ['userToken', data.token],
-                ['user', JSON.stringify(updatedUser)]
+                ['user', JSON.stringify(updatedUser)],
             ]);
 
             // Connect socket service
             if (data.user._id) {
-                socketService.connect(data.user._id).catch(err => {
-                    console.log('Socket connection failed, continuing without realtime features');
-                });
+                socketService.connect(data.user._id)
+                    .then(() => {
+                        // Initialize socket event manager after connection
+                        socketEventManager.initialize();
+                    })
+                    .catch((err) => {
+                        devLog('AuthContext', 'Socket connection failed, continuing without realtime features');
+                    });
             }
 
             // If we have a token, try to initialize checklist immediately
@@ -239,9 +262,9 @@ export const AuthProvider = ({ children }) => {
                     try {
                         await checklistService.initializeChecklist(items);
                         await AsyncStorage.removeItem('pendingChecklistItems');
-                        console.log('Checklist initialized immediately after registration');
+                        devLog('AuthContext', 'Checklist initialized immediately after registration');
                     } catch (error) {
-                        console.error('Failed to initialize checklist after registration:', error);
+                        devError('AuthContext', 'Failed to initialize checklist after registration', error);
                         // Don't throw - allow registration to complete
                     }
                 }
@@ -249,7 +272,7 @@ export const AuthProvider = ({ children }) => {
 
             return data;
         } catch (error) {
-            console.error('Registration failed:', error);
+            devError('AuthContext', 'Registration failed', error);
             // Clear any partial auth data on registration failure
             await clearAuthData();
             throw error;
@@ -266,13 +289,13 @@ export const AuthProvider = ({ children }) => {
                 try {
                     await authService.logout();
                 } catch (error) {
-                    console.warn('Logout API call failed:', error);
+                    devWarn('AuthContext', 'Logout API call failed', error);
                 }
             }
 
             await clearAuthData();
         } catch (error) {
-            console.error('Logout failed:', error);
+            devError('AuthContext', 'Logout failed', error);
             // Still clear local state even if API call fails
             await clearAuthData();
         } finally {
@@ -293,7 +316,7 @@ export const AuthProvider = ({ children }) => {
                 return true;
             }
         } catch (error) {
-            console.error('Token refresh failed:', error);
+            devError('AuthContext', 'Token refresh failed', error);
             // If refresh fails, clear auth and redirect to login
             await clearAuthData();
             return false;
@@ -302,104 +325,132 @@ export const AuthProvider = ({ children }) => {
         }
     }, [token, isRefreshing]);
 
-    const updateOnboardingPath = useCallback(async (professionalPath) => {
-        try {
-            if (!user) {
-                throw new Error('No user found');
-            }
+    const updateOnboardingPath = useCallback(
+        async (professionalPath) => {
+            try {
+                if (!user) {
+                    throw new Error('No user found');
+                }
 
-            const response = await authService.updateOnboardingPath(professionalPath);
-            const updatedUser = { 
-                ...user, 
-                professionalPath,
-                onboardingStep: response.onboardingStep || 'CHECKLIST_SELECTION'
-            };
-            
-            setUser(updatedUser);
-            await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-            
-            // Clear categories cache when professional path changes
-            budgetService.clearCategoriesCache();
-        } catch (error) {
-            console.error('Failed to update onboarding path:', error);
-            throw error;
-        }
-    }, [user]);
+                const response = await authService.updateOnboardingPath(professionalPath);
+                const updatedUser = {
+                    ...user,
+                    professionalPath,
+                    onboardingStep: response.onboardingStep || 'CHECKLIST_SELECTION',
+                };
 
-    const completeOnboarding = useCallback(async (checklistItems = []) => {
-        try {
-            setIsRefreshing(true);
-            
-            // Complete onboarding with selected checklist items
-            const response = await authService.completeOnboarding(checklistItems);
-            
-            const updatedUser = {
-                ...user,
-                ...response,
-                onboardingStep: 'COMPLETED',
-                hasCompletedOnboarding: true
-            };
+                setUser(updatedUser);
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
 
-            setUser(updatedUser);
-            await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-
-            return updatedUser;
-        } catch (error) {
-            console.error('Failed to complete onboarding:', error);
-            throw error;
-        } finally {
-            setIsRefreshing(false);
-        }
-    }, [user]);
-
-    const updateUser = useCallback(async (userData) => {
-        try {
-            const updatedUser = { ...user, ...userData };
-            setUser(updatedUser);
-            await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-            
-            // Clear categories cache if professional path changed
-            if (userData.professionalPath && userData.professionalPath !== user?.professionalPath) {
+                // Clear categories cache when professional path changes
                 budgetService.clearCategoriesCache();
+            } catch (error) {
+                devError('AuthContext', 'Failed to update onboarding path', error);
+                throw error;
             }
-        } catch (error) {
-            console.error('Failed to update user:', error);
-            throw error;
-        }
-    }, [user]);
+        },
+        [user],
+    );
+
+    const completeOnboarding = useCallback(
+        async (checklistItems = []) => {
+            try {
+                setIsRefreshing(true);
+
+                // Complete onboarding with selected checklist items
+                const response = await authService.completeOnboarding(checklistItems);
+
+                const updatedUser = {
+                    ...user,
+                    ...response,
+                    onboardingStep: 'COMPLETED',
+                    hasCompletedOnboarding: true,
+                };
+
+                setUser(updatedUser);
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+
+                return updatedUser;
+            } catch (error) {
+                devError('AuthContext', 'Failed to complete onboarding', error);
+                throw error;
+            } finally {
+                setIsRefreshing(false);
+            }
+        },
+        [user],
+    );
+
+    const updateUser = useCallback(
+        async (userData) => {
+            try {
+                const updatedUser = { ...user, ...userData };
+                setUser(updatedUser);
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+
+                // Clear categories cache if professional path changed
+                if (
+                    userData.professionalPath &&
+                    userData.professionalPath !== user?.professionalPath
+                ) {
+                    budgetService.clearCategoriesCache();
+                }
+            } catch (error) {
+                devError('AuthContext', 'Failed to update user', error);
+                throw error;
+            }
+        },
+        [user],
+    );
 
     // Update user online status
-    const updateOnlineStatus = useCallback(async (isOnline) => {
-        try {
-            if (user && socketService.isConnected()) {
-                socketService.emit('update_status', { isOnline });
+    const updateOnlineStatus = useCallback(
+        async (isOnline) => {
+            try {
+                if (user && socketService.isConnected()) {
+                    socketService.emit('update_status', { isOnline });
+                }
+            } catch (error) {
+                devError('AuthContext', 'Failed to update online status', error);
             }
-        } catch (error) {
-            console.error('Failed to update online status:', error);
-        }
-    }, [user]);
+        },
+        [user],
+    );
 
     // Memoize the context value to prevent unnecessary re-renders
-    const value = useMemo(() => ({
-        user,
-        token,
-        loading,
-        isRefreshing,
-        login,
-        register,
-        logout,
-        updateOnboardingPath,
-        completeOnboarding,
-        updateUser,
-        updateOnlineStatus,
-        refreshToken,
-        isAuthenticated: !!user && !!token,
-        isOnboardingCompleted: user?.onboardingStep === 'COMPLETED' || user?.hasCompletedOnboarding || false,
-    }), [user, token, loading, isRefreshing, login, register, logout, updateOnboardingPath, completeOnboarding, updateUser, updateOnlineStatus, refreshToken]);
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
+    const value = useMemo(
+        () => ({
+            user,
+            token,
+            loading,
+            isRefreshing,
+            login,
+            register,
+            logout,
+            updateOnboardingPath,
+            completeOnboarding,
+            updateUser,
+            updateOnlineStatus,
+            refreshToken,
+            isAuthenticated: !!user && !!token,
+            isOnboardingCompleted:
+                user?.onboardingStep === 'COMPLETED' || user?.hasCompletedOnboarding || false,
+        }),
+        [
+            user,
+            token,
+            loading,
+            isRefreshing,
+            login,
+            register,
+            logout,
+            updateOnboardingPath,
+            completeOnboarding,
+            updateUser,
+            updateOnlineStatus,
+            refreshToken,
+        ],
     );
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

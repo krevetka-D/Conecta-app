@@ -1,22 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    FlatList,
-    SafeAreaView,
-    RefreshControl,
-} from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, SafeAreaView, RefreshControl } from 'react-native';
 import { Card, Chip, Searchbar } from 'react-native-paper';
+
+import EmptyState from '../../components/common/EmptyState';
 import Icon from '../../components/common/Icon.js';
-import { useAuth } from '../../store/contexts/AuthContext';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { ERROR_MESSAGES } from '../../constants/messages';
 import { colors } from '../../constants/theme';
 import contentService from '../../services/contentService';
-import EmptyState from '../../components/common/EmptyState';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { showErrorAlert } from '../../utils/alerts';
-import { ERROR_MESSAGES } from '../../constants/messages';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { resourcesStyles as styles } from '../../styles/screens/content/ResourcesScreenStyles';
+import { showErrorAlert } from '../../utils/alerts';
 
 const ResourcesScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -81,7 +75,7 @@ const ResourcesScreen = ({ navigation }) => {
 
     const loadGuides = useCallback(async () => {
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             if (activeTab === 'myGuides') {
                 setGuides(mockMyGuides);
             } else {
@@ -120,24 +114,32 @@ const ResourcesScreen = ({ navigation }) => {
     const handleGuidePress = useCallback((guide) => {
         showErrorAlert(
             'Coming Soon',
-            `The guide "${guide.title}" is being prepared and will be available soon!`
+            `The guide "${guide.title}" is being prepared and will be available soon!`,
         );
     }, []);
 
     const renderGuideItem = ({ item }) => (
-        <TouchableOpacity
-            onPress={() => handleGuidePress(item)}
-            activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={() => handleGuidePress(item)} activeOpacity={0.7}>
             <Card style={styles.guideCard}>
                 <Card.Content>
                     <View style={styles.guideContent}>
-                        <View style={[styles.guideIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                            <Icon name={item.icon || 'file-document-outline'} size={24} color={colors.primary} />
+                        <View
+                            style={[
+                                styles.guideIconContainer,
+                                { backgroundColor: colors.primaryLight + '20' },
+                            ]}
+                        >
+                            <Icon
+                                name={item.icon || 'file-document-outline'}
+                                size={24}
+                                color={colors.primary}
+                            />
                         </View>
                         <View style={styles.guideTextContainer}>
                             <View style={styles.guideTitleRow}>
-                                <Text style={styles.guideTitle} numberOfLines={1}>{item.title}</Text>
+                                <Text style={styles.guideTitle} numberOfLines={1}>
+                                    {item.title}
+                                </Text>
                                 {item.isNew && (
                                     <Chip
                                         style={styles.newChip}
@@ -160,8 +162,12 @@ const ResourcesScreen = ({ navigation }) => {
                                     {item.category}
                                 </Chip>
                                 <Text style={styles.readTime}>
-                                    <Icon name="clock-outline" size={14} color={colors.textSecondary} />
-                                    {' '}{item.readTime}
+                                    <Icon
+                                        name="clock-outline"
+                                        size={14}
+                                        color={colors.textSecondary}
+                                    />{' '}
+                                    {item.readTime}
                                 </Text>
                             </View>
                         </View>
@@ -175,11 +181,13 @@ const ResourcesScreen = ({ navigation }) => {
     const getFilteredData = () => {
         if (!searchQuery) return guides;
 
-        return guides.filter(item => {
+        return guides.filter((item) => {
             const searchLower = searchQuery.toLowerCase();
-            return item.title.toLowerCase().includes(searchLower) ||
+            return (
+                item.title.toLowerCase().includes(searchLower) ||
                 item.description.toLowerCase().includes(searchLower) ||
-                item.category.toLowerCase().includes(searchLower);
+                item.category.toLowerCase().includes(searchLower)
+            );
         });
     };
 
@@ -189,7 +197,7 @@ const ResourcesScreen = ({ navigation }) => {
                 <EmptyState
                     icon="magnify"
                     title="No results found"
-                    message={`Try adjusting your search terms`}
+                    message={'Try adjusting your search terms'}
                     style={styles.emptyState}
                 />
             );
@@ -243,10 +251,12 @@ const ResourcesScreen = ({ navigation }) => {
                             color={activeTab === 'myGuides' ? colors.primary : colors.textSecondary}
                             style={styles.tabIcon}
                         />
-                        <Text style={[
-                            styles.tabText,
-                            activeTab === 'myGuides' && styles.activeTabText
-                        ]}>
+                        <Text
+                            style={[
+                                styles.tabText,
+                                activeTab === 'myGuides' && styles.activeTabText,
+                            ]}
+                        >
                             My Guides
                         </Text>
                     </TouchableOpacity>
@@ -259,13 +269,17 @@ const ResourcesScreen = ({ navigation }) => {
                         <Icon
                             name="book-open-variant"
                             size={20}
-                            color={activeTab === 'allGuides' ? colors.primary : colors.textSecondary}
+                            color={
+                                activeTab === 'allGuides' ? colors.primary : colors.textSecondary
+                            }
                             style={styles.tabIcon}
                         />
-                        <Text style={[
-                            styles.tabText,
-                            activeTab === 'allGuides' && styles.activeTabText
-                        ]}>
+                        <Text
+                            style={[
+                                styles.tabText,
+                                activeTab === 'allGuides' && styles.activeTabText,
+                            ]}
+                        >
                             All Guides
                         </Text>
                     </TouchableOpacity>
@@ -280,7 +294,7 @@ const ResourcesScreen = ({ navigation }) => {
                         keyExtractor={(item) => item._id}
                         contentContainerStyle={[
                             styles.listContent,
-                            filteredData.length === 0 && styles.emptyListContent
+                            filteredData.length === 0 && styles.emptyListContent,
                         ]}
                         ListEmptyComponent={renderEmptyState}
                         refreshControl={

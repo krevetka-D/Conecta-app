@@ -1,5 +1,6 @@
 // src/styles/components/ui/ModalStyles.js
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({

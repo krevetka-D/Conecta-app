@@ -1,6 +1,7 @@
 // frontend/src/styles/screens/checklist/ChecklistScreenStyles.js
 
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
 export const checklistStyles = StyleSheet.create({

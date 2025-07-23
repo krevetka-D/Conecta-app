@@ -21,18 +21,18 @@ if (Platform.OS === 'web') {
         console.warn('localStorage not available, using memory storage');
         window.localStorage = {
             _data: {},
-            setItem: function(id, val) {
+            setItem: function (id, val) {
                 this._data[id] = String(val);
             },
-            getItem: function(id) {
-                return this._data.hasOwnProperty(id) ? this._data[id] : null;
+            getItem: function (id) {
+                return Object.prototype.hasOwnProperty.call(this._data, id) ? this._data[id] : null;
             },
-            removeItem: function(id) {
+            removeItem: function (id) {
                 delete this._data[id];
             },
-            clear: function() {
+            clear: function () {
                 this._data = {};
-            }
+            },
         };
     }
 }

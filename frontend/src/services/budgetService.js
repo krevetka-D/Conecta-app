@@ -1,10 +1,9 @@
-
 import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
 
 // Cache for categories to avoid repeated API calls
-let categoriesCache = new Map(); // professionalPath -> categories
-let cacheTimestamp = new Map(); // professionalPath -> timestamp
+const categoriesCache = new Map(); // professionalPath -> categories
+const cacheTimestamp = new Map(); // professionalPath -> timestamp
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Cache for budget entries
@@ -12,11 +11,10 @@ let entriesCache = null;
 let entriesCacheTimestamp = null;
 
 const budgetService = {
-    
-getBudgetEntries: async (filters = {}) => {
+    getBudgetEntries: async (filters = {}) => {
         try {
             const response = await apiClient.get(API_ENDPOINTS.BUDGET.LIST, {
-                params: filters
+                params: filters,
             });
             // Response is now the data directly from interceptor
             return Array.isArray(response) ? response : response?.entries || [];
@@ -25,7 +23,7 @@ getBudgetEntries: async (filters = {}) => {
             throw error;
         }
     },
-    
+
     createBudgetEntry: async (entry) => {
         try {
             const response = await apiClient.post(API_ENDPOINTS.BUDGET.CREATE, entry);
@@ -59,7 +57,7 @@ getBudgetEntries: async (filters = {}) => {
     getBudgetSummary: async (period = 'month') => {
         try {
             const response = await apiClient.get(API_ENDPOINTS.BUDGET.SUMMARY, {
-                params: { period }
+                params: { period },
             });
             return response;
         } catch (error) {
@@ -68,28 +66,30 @@ getBudgetEntries: async (filters = {}) => {
         }
     },
 
- /**
+    /**
      * Fetches budget categories with caching
      */
     getCategories: async (professionalPath) => {
         const cacheKey = professionalPath || 'default';
-        
+
         // Check if we have valid cached data
-        if (categoriesCache.has(cacheKey) && 
-            cacheTimestamp.has(cacheKey) && 
-            (Date.now() - cacheTimestamp.get(cacheKey) < CACHE_DURATION)) {
+        if (
+            categoriesCache.has(cacheKey) &&
+            cacheTimestamp.has(cacheKey) &&
+            Date.now() - cacheTimestamp.get(cacheKey) < CACHE_DURATION
+        ) {
             return categoriesCache.get(cacheKey);
         }
 
         try {
             const response = await apiClient.get('/config/categories', {
-                params: professionalPath ? { professionalPath } : {}
+                params: professionalPath ? { professionalPath } : {},
             });
-            
+
             // Update cache
             categoriesCache.set(cacheKey, response);
             cacheTimestamp.set(cacheKey, Date.now());
-            
+
             return response;
         } catch (error) {
             console.error('Failed to fetch categories from API:', error);
@@ -100,21 +100,49 @@ getBudgetEntries: async (filters = {}) => {
             }
 
             // Return default categories as fallback
-            const defaultCategories = professionalPath === 'ENTREPRENEUR'
-                ? {
-                    income: ['Product Sales', 'Service Revenue', 'Investor Funding', 'Grants', 'Other Income'],
-                    expense: ['Salaries & Payroll', 'Office Rent', 'Legal & Accounting', 'Marketing & Sales', 'R&D', 'Operations', 'Other Expenses']
-                }
-                : {
-                    income: ['Project-Based Income', 'Recurring Clients', 'Passive Income', 'Other Income'],
-                    expense: ['Cuota de Autónomo', 'Office/Coworking', 'Software & Tools', 'Professional Services', 'Marketing', 'Travel & Transport', 'Other Expenses']
-                };
+            const defaultCategories =
+                professionalPath === 'ENTREPRENEUR'
+                    ? {
+                        income: [
+                            'Product Sales',
+                            'Service Revenue',
+                            'Investor Funding',
+                            'Grants',
+                            'Other Income',
+                        ],
+                        expense: [
+                            'Salaries & Payroll',
+                            'Office Rent',
+                            'Legal & Accounting',
+                            'Marketing & Sales',
+                            'R&D',
+                            'Operations',
+                            'Other Expenses',
+                        ],
+                    }
+                    : {
+                        income: [
+                            'Project-Based Income',
+                            'Recurring Clients',
+                            'Passive Income',
+                            'Other Income',
+                        ],
+                        expense: [
+                            'Cuota de Autónomo',
+                            'Office/Coworking',
+                            'Software & Tools',
+                            'Professional Services',
+                            'Marketing',
+                            'Travel & Transport',
+                            'Other Expenses',
+                        ],
+                    };
 
             return defaultCategories;
         }
     },
 
- // Clear categories cache when user changes professional path
+    // Clear categories cache when user changes professional path
     clearCategoriesCache: () => {
         categoriesCache.clear();
         cacheTimestamp.clear();

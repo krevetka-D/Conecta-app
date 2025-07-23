@@ -10,34 +10,38 @@ const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 const forumService = {
     getForums: async (forceRefresh = false) => {
         // Check cache first
-        if (!forceRefresh && groupsCache && cacheTimestamp && 
-            (Date.now() - cacheTimestamp < CACHE_DURATION)) {
+        if (
+            !forceRefresh &&
+            groupsCache &&
+            cacheTimestamp &&
+            Date.now() - cacheTimestamp < CACHE_DURATION
+        ) {
             return groupsCache;
         }
 
         try {
             const response = await apiClient.get(API_ENDPOINTS.FORUM.LIST);
-            
+
             // Update cache
             groupsCache = response;
             cacheTimestamp = Date.now();
-            
+
             return response;
         } catch (error) {
             console.error('Failed to fetch groups:', error);
-            
+
             // Return cached data if available, even if expired
             if (groupsCache) {
                 console.warn('Returning stale cache due to error');
                 return groupsCache;
             }
-            
+
             // In development, return mock data if API fails
             if (__DEV__) {
                 console.log('Using mock groups due to API error');
                 return mockChatService.getRooms();
             }
-            
+
             // Return empty array as fallback
             return [];
         }
@@ -48,17 +52,17 @@ const forumService = {
             const response = await apiClient.post(API_ENDPOINTS.FORUM.CREATE, {
                 title: title.trim(),
                 description: description.trim(),
-                tags: tags.filter(tag => tag.trim()) // Remove empty tags
+                tags: tags.filter((tag) => tag.trim()), // Remove empty tags
             });
-            
+
             // Clear cache after creating group
             groupsCache = null;
             cacheTimestamp = null;
-            
+
             return response;
         } catch (error) {
             console.error('Failed to create group:', error);
-            
+
             // Provide better error messages
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
@@ -78,7 +82,7 @@ const forumService = {
             return response;
         } catch (error) {
             console.error('Failed to fetch group details:', error);
-            
+
             if (error.response?.status === 404) {
                 throw new Error('Group not found');
             }
@@ -92,11 +96,11 @@ const forumService = {
                 title: title.trim(),
                 content: content.trim(),
             });
-            
+
             return response;
         } catch (error) {
             console.error('Failed to create thread:', error);
-            
+
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else if (error.response?.status === 404) {
@@ -117,7 +121,7 @@ const forumService = {
             return response;
         } catch (error) {
             console.error('Failed to create post:', error);
-            
+
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else if (error.response?.status === 404) {
@@ -143,15 +147,15 @@ const forumService = {
     deleteForum: async (forumId) => {
         try {
             const response = await apiClient.delete(API_ENDPOINTS.FORUM.DELETE(forumId));
-            
+
             // Clear cache after deleting group
             groupsCache = null;
             cacheTimestamp = null;
-            
+
             return response;
         } catch (error) {
             console.error('Error deleting group:', error);
-            
+
             if (error.response?.status === 403) {
                 throw new Error('You can only delete groups you created.');
             } else if (error.response?.status === 404) {
@@ -167,7 +171,7 @@ const forumService = {
             return response;
         } catch (error) {
             console.error('Error deleting thread:', error);
-            
+
             if (error.response?.status === 403) {
                 throw new Error('You can only delete threads you created.');
             } else if (error.response?.status === 404) {
@@ -181,7 +185,7 @@ const forumService = {
     clearCache: () => {
         groupsCache = null;
         cacheTimestamp = null;
-    }
+    },
 };
 
 export default forumService;

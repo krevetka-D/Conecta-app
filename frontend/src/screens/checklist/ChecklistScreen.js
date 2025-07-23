@@ -1,4 +1,5 @@
 // frontend/src/screens/checklist/ChecklistScreen.js
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
@@ -10,15 +11,19 @@ import {
     SafeAreaView,
 } from 'react-native';
 import { Card, Checkbox, ProgressBar } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import Icon from '../../components/common/Icon.js';
-import { useAuth } from '../../store/contexts/AuthContext';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
 import { colors } from '../../constants/theme';
 import checklistService from '../../services/checklistService';
-import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import socketService from '../../services/socketService';
+import apiClient from '../../services/api/client';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { checklistStyles as styles } from '../../styles/screens/checklist/ChecklistScreenStyles';
+import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
+import { devLog, devError } from '../../utils/devLog';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
 
 const CHECKLIST_ITEMS = {
     FREELANCER: [
@@ -27,28 +32,28 @@ const CHECKLIST_ITEMS = {
             title: 'Obtain your NIE',
             description: 'Get your foreigner identification number',
             icon: 'card-account-details',
-            infoLink: 'nie-guide'
+            infoLink: 'nie-guide',
         },
         {
             key: 'REGISTER_AUTONOMO',
             title: 'Register as Autónomo',
             description: 'Complete your self-employment registration',
             icon: 'briefcase-account',
-            infoLink: 'autonomo-guide'
+            infoLink: 'autonomo-guide',
         },
         {
             key: 'UNDERSTAND_TAXES',
             title: 'Understand Tax Obligations',
             description: 'Learn about IVA and IRPF requirements',
             icon: 'calculator',
-            infoLink: 'taxes-guide'
+            infoLink: 'taxes-guide',
         },
         {
             key: 'OPEN_BANK_ACCOUNT',
             title: 'Open Spanish Bank Account',
             description: 'Set up your business banking',
             icon: 'bank',
-            infoLink: 'banking-guide'
+            infoLink: 'banking-guide',
         },
     ],
     ENTREPRENEUR: [
@@ -57,28 +62,28 @@ const CHECKLIST_ITEMS = {
             title: 'Obtain your NIE',
             description: 'Get your foreigner identification number',
             icon: 'card-account-details',
-            infoLink: 'nie-guide'
+            infoLink: 'nie-guide',
         },
         {
             key: 'FORM_SL_COMPANY',
             title: 'Form an S.L. Company',
             description: 'Establish your limited liability company',
             icon: 'domain',
-            infoLink: 'company-formation-guide'
+            infoLink: 'company-formation-guide',
         },
         {
             key: 'GET_COMPANY_NIF',
             title: 'Get Company NIF',
             description: 'Obtain your company tax ID',
             icon: 'identifier',
-            infoLink: 'company-nif-guide'
+            infoLink: 'company-nif-guide',
         },
         {
             key: 'RESEARCH_FUNDING',
             title: 'Research Funding Options',
             description: 'Explore grants and investment opportunities',
             icon: 'cash-multiple',
-            infoLink: 'funding-guide'
+            infoLink: 'funding-guide',
         },
     ],
 };
@@ -87,12 +92,7 @@ const ChecklistItem = React.memo(({ item, checklistItem, isUpdating, onToggle, o
     const isCompleted = checklistItem?.isCompleted || false;
 
     return (
-        <Card
-            style={[
-                styles.checklistCard,
-                isCompleted && styles.completedCard,
-            ]}
-        >
+        <Card style={[styles.checklistCard, isCompleted && styles.completedCard]}>
             <TouchableOpacity
                 onPress={() => onToggle(item.key, isCompleted)}
                 disabled={isUpdating}
@@ -122,17 +122,16 @@ const ChecklistItem = React.memo(({ item, checklistItem, isUpdating, onToggle, o
                                 color={isCompleted ? colors.textSecondary : colors.primary}
                                 style={styles.itemIcon}
                             />
-                            <Text style={[
-                                styles.cardTitle,
-                                isCompleted && styles.completedText
-                            ]}>
+                            <Text style={[styles.cardTitle, isCompleted && styles.completedText]}>
                                 {item.title}
                             </Text>
                         </View>
-                        <Text style={[
-                            styles.cardDescription,
-                            isCompleted && styles.completedDescription
-                        ]}>
+                        <Text
+                            style={[
+                                styles.cardDescription,
+                                isCompleted && styles.completedDescription,
+                            ]}
+                        >
                             {item.description}
                         </Text>
                     </View>
@@ -142,17 +141,15 @@ const ChecklistItem = React.memo(({ item, checklistItem, isUpdating, onToggle, o
                         style={styles.infoButton}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <Icon
-                            name="information-outline"
-                            size={24}
-                            color={colors.primary}
-                        />
+                        <Icon name="information-outline" size={24} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>
         </Card>
     );
 });
+
+ChecklistItem.displayName = 'ChecklistItem';
 
 const ChecklistScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -165,7 +162,7 @@ const ChecklistScreen = ({ navigation }) => {
     const loadChecklist = useCallback(async () => {
         try {
             const data = await checklistService.getChecklist();
-            
+
             // If no checklist data and user has pendingChecklistItems, try to initialize
             if ((!data || data.length === 0) && user && !isInitializing) {
                 const pendingItems = await AsyncStorage.getItem('pendingChecklistItems');
@@ -174,7 +171,7 @@ const ChecklistScreen = ({ navigation }) => {
                     if (items.length > 0) {
                         try {
                             setIsInitializing(true);
-                            console.log('Initializing checklist with pending items:', items);
+                            devLog('Checklist', 'Initializing checklist with pending items', items);
                             await checklistService.initializeChecklist(items);
                             await AsyncStorage.removeItem('pendingChecklistItems');
                             // Reload checklist after initialization
@@ -183,22 +180,49 @@ const ChecklistScreen = ({ navigation }) => {
                             setIsInitializing(false);
                             return;
                         } catch (error) {
-                            console.error('Failed to initialize checklist from pending items:', error);
+                            devError('Checklist', 'Failed to initialize checklist from pending items', error);
                             setIsInitializing(false);
                         }
                     }
                 }
             }
-            
+
             setChecklistData(data || []);
         } catch (error) {
-            console.error('Failed to load checklist:', error);
+            devError('Checklist', 'Failed to load checklist', error);
             showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_LOAD_FAILED);
         } finally {
             setLoading(false);
         }
     }, [user, isInitializing]);
 
+    // Socket event handlers
+    const socketEventHandlers = {
+        'checklist_update': useCallback((data) => {
+            devLog('Checklist', 'Received real-time update:', data);
+            
+            // Clear API cache for checklist
+            apiClient.clearCache('/checklist');
+            
+            if (data.type === 'update') {
+                // Update specific item
+                setChecklistData(prevData => 
+                    prevData.map(item => 
+                        item.itemKey === data.item.itemKey 
+                            ? data.item 
+                            : item
+                    )
+                );
+            } else if (data.type === 'create') {
+                // Reload to get fresh data
+                loadChecklist();
+            }
+        }, [loadChecklist])
+    };
+    
+    // Use socket events hook
+    useSocketEvents(socketEventHandlers, [loadChecklist]);
+    
     useEffect(() => {
         loadChecklist();
     }, [loadChecklist]);
@@ -209,57 +233,70 @@ const ChecklistScreen = ({ navigation }) => {
         setRefreshing(false);
     }, [loadChecklist]);
 
-    const handleToggle = useCallback(async (itemKey, currentStatus) => {
-        setUpdating(prev => ({ ...prev, [itemKey]: true }));
+    const handleToggle = useCallback(
+        async (itemKey, currentStatus) => {
+            setUpdating((prev) => ({ ...prev, [itemKey]: true }));
 
-        try {
-            await checklistService.updateChecklistItem(itemKey, !currentStatus);
-            await loadChecklist();
+            try {
+                const updatedItem = await checklistService.updateChecklistItem(itemKey, !currentStatus);
+                
+                // Update the local state immediately for better UX
+                setChecklistData(prevData => 
+                    prevData.map(item => 
+                        item.itemKey === itemKey 
+                            ? { ...item, isCompleted: !currentStatus }
+                            : item
+                    )
+                );
 
-            if (!currentStatus) {
-                showSuccessAlert('Great job!', SUCCESS_MESSAGES.TASK_COMPLETED);
+                if (!currentStatus) {
+                    showSuccessAlert('Great job!', SUCCESS_MESSAGES.TASK_COMPLETED);
+                }
+                
+                // Reload checklist in background to sync with server
+                loadChecklist();
+            } catch (error) {
+                devError('Checklist', 'Failed to update checklist item', error);
+                showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_UPDATE_FAILED);
+                // Reload to revert on error
+                loadChecklist();
+            } finally {
+                setUpdating((prev) => ({ ...prev, [itemKey]: false }));
             }
-        } catch (error) {
-            console.error('Failed to update checklist item:', error);
-            showErrorAlert('Error', ERROR_MESSAGES.CHECKLIST_UPDATE_FAILED);
-        } finally {
-            setUpdating(prev => ({ ...prev, [itemKey]: false }));
-        }
-    }, [loadChecklist]);
+        },
+        [loadChecklist],
+    );
 
     const handleInfoPress = useCallback((infoLink) => {
-        Alert.alert(
-            'Guide Coming Soon',
-            'Detailed guides are being prepared. Check back soon!',
-            [
-                { text: 'OK' }
-            ]
-        );
+        Alert.alert('Guide Coming Soon', 'Detailed guides are being prepared. Check back soon!', [
+            { text: 'OK' },
+        ]);
     }, []);
 
     // Use useMemo for calculations that depend on state/props
     const { items, completedCount, progress } = useMemo(() => {
         // Get all available items for the professional path
-        const allItems = user?.professionalPath === 'FREELANCER'
-            ? CHECKLIST_ITEMS.FREELANCER
-            : CHECKLIST_ITEMS.ENTREPRENEUR;
+        const allItems =
+            user?.professionalPath === 'FREELANCER'
+                ? CHECKLIST_ITEMS.FREELANCER
+                : CHECKLIST_ITEMS.ENTREPRENEUR;
 
         // Filter to show only the items that were selected during registration
         // The checklistData from backend should contain only the selected items
-        const selectedItemKeys = checklistData.map(item => item.itemKey);
-        const items = allItems.filter(item => selectedItemKeys.includes(item.key));
+        const selectedItemKeys = checklistData.map((item) => item.itemKey);
+        const items = allItems.filter((item) => selectedItemKeys.includes(item.key));
 
-        const completedCount = checklistData.filter(item => item.isCompleted).length;
+        const completedCount = checklistData.filter((item) => item.isCompleted).length;
         const progress = items.length > 0 ? completedCount / items.length : 0;
 
         return { items, completedCount, progress };
     }, [user?.professionalPath, checklistData]);
 
     const motivationalMessage = useMemo(() => {
-        if (progress === 0) return "Let's get started! 🚀";
-        if (progress < 0.5) return "Great progress! Keep going! 💪";
-        if (progress < 1) return "Almost there! You're doing amazing! 🌟";
-        return "All done! You're ready to rock! 🎉";
+        if (progress === 0) return 'Let\'s get started! 🚀';
+        if (progress < 0.5) return 'Great progress! Keep going! 💪';
+        if (progress < 1) return 'Almost there! You\'re doing amazing! 🌟';
+        return 'All done! You\'re ready to rock! 🎉';
     }, [progress]);
 
     if (loading || isInitializing) {
@@ -272,7 +309,11 @@ const ChecklistScreen = ({ navigation }) => {
             <SafeAreaView style={styles.safeArea}>
                 <View style={styles.container}>
                     <View style={styles.emptyContainer}>
-                        <Icon name="clipboard-check-outline" size={64} color={colors.textSecondary} />
+                        <Icon
+                            name="clipboard-check-outline"
+                            size={64}
+                            color={colors.textSecondary}
+                        />
                         <Text style={styles.emptyTitle}>No checklist items</Text>
                         <Text style={styles.emptyText}>
                             You haven't selected any checklist items during registration.
@@ -306,9 +347,7 @@ const ChecklistScreen = ({ navigation }) => {
                 <View style={styles.progressSection}>
                     <View style={styles.progressHeader}>
                         <Text style={styles.progressTitle}>Your Progress</Text>
-                        <Text style={styles.progressPercentage}>
-                            {Math.round(progress * 100)}%
-                        </Text>
+                        <Text style={styles.progressPercentage}>{Math.round(progress * 100)}%</Text>
                     </View>
                     <Text style={styles.progressText}>
                         {completedCount} of {items.length} steps completed
@@ -318,18 +357,25 @@ const ChecklistScreen = ({ navigation }) => {
                         color={colors.primary}
                         style={styles.progressBar}
                     />
-                    <Text style={styles.motivationalText}>
-                        {motivationalMessage}
-                    </Text>
+                    <Text style={styles.motivationalText}>{motivationalMessage}</Text>
                 </View>
 
                 <View style={styles.checklistSection}>
                     {items.map((item, index) => {
-                        const checklistItem = checklistData.find(d => d.itemKey === item.key);
+                        const checklistItem = checklistData.find((d) => d.itemKey === item.key);
                         const isUpdating = updating[item.key] || false;
 
                         return (
-                            <View key={item.key} style={index === 0 ? styles.firstCard : index === items.length - 1 ? styles.lastCard : null}>
+                            <View
+                                key={item.key}
+                                style={
+                                    index === 0
+                                        ? styles.firstCard
+                                        : index === items.length - 1
+                                            ? styles.lastCard
+                                            : null
+                                }
+                            >
                                 <ChecklistItem
                                     item={item}
                                     checklistItem={checklistItem}
@@ -351,8 +397,8 @@ const ChecklistScreen = ({ navigation }) => {
                             </View>
                             <Text style={styles.tipText}>
                                 {user?.professionalPath === 'FREELANCER'
-                                    ? "Start with obtaining your NIE - it's required for all other steps! The process usually takes 2-4 weeks, so plan ahead."
-                                    : "Consider consulting with a gestor for company formation - they can handle most of the paperwork and save you time."}
+                                    ? 'Start with obtaining your NIE - it\'s required for all other steps! The process usually takes 2-4 weeks, so plan ahead.'
+                                    : 'Consider consulting with a gestor for company formation - they can handle most of the paperwork and save you time.'}
                             </Text>
                         </Card.Content>
                     </Card>

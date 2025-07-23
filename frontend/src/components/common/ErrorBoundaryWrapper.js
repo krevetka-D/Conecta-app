@@ -1,16 +1,12 @@
 // frontend/src/components/common/ErrorBoundaryWrapper.js
-import React, { Component } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ScrollView,
-    StyleSheet,
-    Platform,
-} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from './Icon';
+import React, { Component } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native';
+
 import { colors, fonts, spacing } from '../../constants/theme';
+
+import Icon from './Icon';
+
 
 class ErrorBoundaryWrapper extends Component {
     constructor(props) {
@@ -36,7 +32,7 @@ class ErrorBoundaryWrapper extends Component {
 
         // Track error count
         const errorCount = this.state.errorCount + 1;
-        
+
         // Store error details
         this.setState({
             error,
@@ -56,11 +52,8 @@ class ErrorBoundaryWrapper extends Component {
                 platform: Platform.OS,
                 version: Platform.Version,
             };
-            
-            await AsyncStorage.setItem(
-                `error_log_${Date.now()}`,
-                JSON.stringify(errorLog)
-            );
+
+            await AsyncStorage.setItem(`error_log_${Date.now()}`, JSON.stringify(errorLog));
         } catch (storageError) {
             console.error('Failed to store error log:', storageError);
         }
@@ -115,13 +108,13 @@ class ErrorBoundaryWrapper extends Component {
                                 color={colors.error}
                                 style={styles.icon}
                             />
-                            
+
                             <Text style={styles.title}>Oops! Something went wrong</Text>
-                            
+
                             <Text style={styles.message}>
                                 {this.state.errorCount > 2
-                                    ? "The app is experiencing repeated errors. Please restart the app."
-                                    : "We're sorry for the inconvenience. The error has been logged and we'll fix it soon."}
+                                    ? 'The app is experiencing repeated errors. Please restart the app.'
+                                    : 'We\'re sorry for the inconvenience. The error has been logged and we\'ll fix it soon.'}
                             </Text>
 
                             <View style={styles.buttonContainer}>
@@ -145,7 +138,7 @@ class ErrorBoundaryWrapper extends Component {
                             {showDetails && this.state.error && (
                                 <View style={styles.errorDetails}>
                                     <Text style={styles.errorTitle}>Error Details (Dev Only)</Text>
-                                    
+
                                     <View style={styles.errorBox}>
                                         <Text style={styles.errorLabel}>Error:</Text>
                                         <Text style={styles.errorText}>
@@ -302,8 +295,10 @@ export const withErrorBoundary = (Component, errorBoundaryProps = {}) => {
         </ErrorBoundaryWrapper>
     );
 
-    WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name || 'Component'})`;
-    
+    WrappedComponent.displayName = `withErrorBoundary(${
+        Component.displayName || Component.name || 'Component'
+    })`;
+
     return WrappedComponent;
 };
 

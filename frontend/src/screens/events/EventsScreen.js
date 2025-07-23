@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -9,15 +10,18 @@ import {
     StyleSheet,
 } from 'react-native';
 import { Card, FAB, Chip, Avatar } from 'react-native-paper';
-import Icon from '../../components/common/Icon.js';
-import { format } from 'date-fns';
 
-import { useAuth } from '../../store/contexts/AuthContext';
+import EmptyState from '../../components/common/EmptyState';
+import Icon from '../../components/common/Icon.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { colors, fonts, spacing } from '../../constants/theme';
 import eventService from '../../services/eventService';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
+import socketService from '../../services/socketService';
+import apiClient from '../../services/api/client';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { showErrorAlert } from '../../utils/alerts';
+import { devLog } from '../../utils/devLog';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
 
 const EventsScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -25,18 +29,14 @@ const EventsScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState('upcoming'); // 'upcoming', 'past', 'myEvents'
-
-    useEffect(() => {
-        loadEvents();
-    }, [filter]);
-
+    
     const loadEvents = useCallback(async () => {
         try {
             const params = {
                 upcoming: filter === 'upcoming' ? 'true' : undefined,
                 myEvents: filter === 'myEvents' ? 'true' : undefined,
             };
-            
+
             const data = await eventService.getEvents(params);
             setEvents(data || []);
         } catch (error) {
@@ -49,6 +49,43 @@ const EventsScreen = ({ navigation }) => {
             setRefreshing(false);
         }
     }, [filter, refreshing]);
+
+    // Socket event handlers
+    const socketEventHandlers = {
+        'event_update': useCallback((data) => {
+            devLog('Events', 'Received real-time update:', data);
+            
+            // Clear API cache for events
+            apiClient.clearCache('/events');
+            if (data.event?._id) {
+                apiClient.clearCache(`/events/${data.event._id}`);
+            }
+            
+            if (data.type === 'create') {
+                // Reload events to get fresh data with proper filtering
+                loadEvents();
+            } else if (data.type === 'update') {
+                // Update existing event
+                setEvents(prevEvents => 
+                    prevEvents.map(event => 
+                        event._id === data.event._id ? data.event : event
+                    )
+                );
+            } else if (data.type === 'delete') {
+                // Remove deleted event
+                setEvents(prevEvents => 
+                    prevEvents.filter(event => event._id !== data.eventId)
+                );
+            }
+        }, [loadEvents])
+    };
+    
+    // Use socket events hook
+    useSocketEvents(socketEventHandlers, [loadEvents]);
+    
+    useEffect(() => {
+        loadEvents();
+    }, [filter, loadEvents]);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
@@ -65,7 +102,7 @@ const EventsScreen = ({ navigation }) => {
 
     const renderEventItem = ({ item }) => {
         const eventDate = new Date(item.date);
-        const isAttending = item.attendees?.some(att => att === user?._id);
+        const isAttending = item.attendees?.some((att) => att === user?._id);
         const isFull = item.maxAttendees && item.attendees?.length >= item.maxAttendees;
 
         return (
@@ -75,20 +112,41 @@ const EventsScreen = ({ navigation }) => {
                         <Card.Content>
                             <View style={styles.eventHeader}>
                                 <View style={styles.eventDateBadge}>
-                                    <Text style={styles.eventDateDay}>{format(eventDate, 'dd')}</Text>
-                                    <Text style={styles.eventDateMonth}>{format(eventDate, 'MMM')}</Text>
+                                    <Text style={styles.eventDateDay}>
+                                        {format(eventDate, 'dd')}
+                                    </Text>
+                                    <Text style={styles.eventDateMonth}>
+                                        {format(eventDate, 'MMM')}
+                                    </Text>
                                 </View>
                                 <View style={styles.eventInfo}>
-                                    <Text style={styles.eventTitle} numberOfLines={2}>{item.title}</Text>
+                                    <Text style={styles.eventTitle} numberOfLines={2}>
+                                        {item.title}
+                                    </Text>
                                     <View style={styles.eventMeta}>
-                                        <Icon name="clock-outline" size={14} color={colors.textSecondary} />
+                                        <Icon
+                                            name="clock-outline"
+                                            size={14}
+                                            color={colors.textSecondary}
+                                        />
                                         <Text style={styles.eventTime}>{item.time}</Text>
-                                        <Icon name="map-marker-outline" size={14} color={colors.textSecondary} style={styles.metaIcon} />
-                                        <Text style={styles.eventLocation} numberOfLines={1}>{item.location.name}</Text>
+                                        <Icon
+                                            name="map-marker-outline"
+                                            size={14}
+                                            color={colors.textSecondary}
+                                            style={styles.metaIcon}
+                                        />
+                                        <Text style={styles.eventLocation} numberOfLines={1}>
+                                            {item.location.name}
+                                        </Text>
                                     </View>
                                     <View style={styles.eventFooter}>
                                         <View style={styles.attendeesPreview}>
-                                            <Icon name="account-group" size={16} color={colors.textSecondary} />
+                                            <Icon
+                                                name="account-group"
+                                                size={16}
+                                                color={colors.textSecondary}
+                                            />
                                             <Text style={styles.attendeesCount}>
                                                 {item.attendees?.length || 0}
                                                 {item.maxAttendees && ` / ${item.maxAttendees}`}
@@ -96,12 +154,18 @@ const EventsScreen = ({ navigation }) => {
                                         </View>
                                         <View style={styles.eventTags}>
                                             {isAttending && (
-                                                <Chip style={styles.attendingChip} textStyle={styles.chipText}>
+                                                <Chip
+                                                    style={styles.attendingChip}
+                                                    textStyle={styles.chipText}
+                                                >
                                                     Attending
                                                 </Chip>
                                             )}
                                             {isFull && !isAttending && (
-                                                <Chip style={styles.fullChip} textStyle={styles.chipText}>
+                                                <Chip
+                                                    style={styles.fullChip}
+                                                    textStyle={styles.chipText}
+                                                >
                                                     Full
                                                 </Chip>
                                             )}
@@ -127,26 +191,50 @@ const EventsScreen = ({ navigation }) => {
                     <Text style={styles.headerTitle}>Events</Text>
                     <View style={styles.filterContainer}>
                         <TouchableOpacity
-                            style={[styles.filterChip, filter === 'upcoming' && styles.filterChipActive]}
+                            style={[
+                                styles.filterChip,
+                                filter === 'upcoming' && styles.filterChipActive,
+                            ]}
                             onPress={() => setFilter('upcoming')}
                         >
-                            <Text style={[styles.filterText, filter === 'upcoming' && styles.filterTextActive]}>
+                            <Text
+                                style={[
+                                    styles.filterText,
+                                    filter === 'upcoming' && styles.filterTextActive,
+                                ]}
+                            >
                                 Upcoming
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.filterChip, filter === 'past' && styles.filterChipActive]}
+                            style={[
+                                styles.filterChip,
+                                filter === 'past' && styles.filterChipActive,
+                            ]}
                             onPress={() => setFilter('past')}
                         >
-                            <Text style={[styles.filterText, filter === 'past' && styles.filterTextActive]}>
+                            <Text
+                                style={[
+                                    styles.filterText,
+                                    filter === 'past' && styles.filterTextActive,
+                                ]}
+                            >
                                 Past
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.filterChip, filter === 'myEvents' && styles.filterChipActive]}
+                            style={[
+                                styles.filterChip,
+                                filter === 'myEvents' && styles.filterChipActive,
+                            ]}
                             onPress={() => setFilter('myEvents')}
                         >
-                            <Text style={[styles.filterText, filter === 'myEvents' && styles.filterTextActive]}>
+                            <Text
+                                style={[
+                                    styles.filterText,
+                                    filter === 'myEvents' && styles.filterTextActive,
+                                ]}
+                            >
                                 My Events
                             </Text>
                         </TouchableOpacity>
@@ -169,12 +257,17 @@ const EventsScreen = ({ navigation }) => {
                     ListEmptyComponent={
                         <EmptyState
                             icon="calendar-blank-outline"
-                            title={filter === 'myEvents' ? "No events yet" : "No upcoming events"}
-                            message={filter === 'myEvents' 
-                                ? "Events you create or join will appear here" 
-                                : "Check back later or create your own event!"}
+                            title={filter === 'myEvents' ? 'No events yet' : 'No upcoming events'}
+                            message={
+                                filter === 'myEvents'
+                                    ? 'Events you create or join will appear here'
+                                    : 'Check back later or create your own event!'
+                            }
                             action={
-                                <TouchableOpacity style={styles.createButton} onPress={handleCreateEvent}>
+                                <TouchableOpacity
+                                    style={styles.createButton}
+                                    onPress={handleCreateEvent}
+                                >
                                     <Text style={styles.createButtonText}>Create Event</Text>
                                 </TouchableOpacity>
                             }

@@ -1,8 +1,9 @@
 // frontend/src/components/common/LoadingSpinner.js
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
-import { styles } from '../../styles/components/common/LoadingSpinnerStyles';
+
 import { colors } from '../../constants/theme';
+import { styles } from '../../styles/components/common/LoadingSpinnerStyles';
 
 const LoadingSpinner = ({
     size = 'large', // ActivityIndicator accepts 'small' or 'large' as strings
@@ -25,14 +26,8 @@ const LoadingSpinner = ({
 
     return (
         <View style={containerStyle}>
-            <ActivityIndicator
-                size={validSize}
-                color={color}
-                style={styles.spinner}
-            />
-            {text ? (
-                <Text style={[styles.text, textStyle]}>{text}</Text>
-            ) : null}
+            <ActivityIndicator size={validSize} color={color} style={styles.spinner} />
+            {text ? <Text style={[styles.text, textStyle]}>{text}</Text> : null}
         </View>
     );
 };

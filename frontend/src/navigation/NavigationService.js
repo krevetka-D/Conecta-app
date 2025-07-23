@@ -1,4 +1,9 @@
-import { createNavigationContainerRef, CommonActions, StackActions } from '@react-navigation/native';
+import {
+    createNavigationContainerRef,
+    CommonActions,
+    StackActions,
+} from '@react-navigation/native';
+
 import { SCREEN_NAMES } from '../constants/routes';
 
 // --- Navigation Reference ---
@@ -43,7 +48,7 @@ export function resetRoot() {
                     CommonActions.reset({
                         index: 0,
                         routes: [{ name: SCREEN_NAMES.WELCOME }],
-                    })
+                    }),
                 );
             } catch (error) {
                 console.error('Failed to reset navigation:', error);
@@ -68,7 +73,7 @@ export function resetToMain() {
                     CommonActions.reset({
                         index: 0,
                         routes: [{ name: SCREEN_NAMES.DASHBOARD }],
-                    })
+                    }),
                 );
             } catch (error) {
                 console.error('Failed to reset to main:', error);

@@ -1,4 +1,3 @@
-
 import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
 
@@ -7,7 +6,7 @@ const eventService = {
         try {
             // Convert the response to handle both array and object responses
             const response = await apiClient.get('/events', { params });
-            
+
             // If response has events property, return that, otherwise assume it's an array
             if (response && response.events) {
                 return response.events;
@@ -42,10 +41,10 @@ const eventService = {
                 location: {
                     name: eventData.location.name,
                     address: eventData.location.address || '',
-                    city: eventData.location.city || 'Alicante'
+                    city: eventData.location.city || 'Alicante',
                 },
                 tags: eventData.tags || [],
-                maxAttendees: eventData.maxAttendees ? parseInt(eventData.maxAttendees) : null
+                maxAttendees: eventData.maxAttendees ? parseInt(eventData.maxAttendees) : null,
             };
 
             const response = await apiClient.post('/events', formattedData);
@@ -124,16 +123,16 @@ const eventService = {
             throw error;
         }
     },
-    
+
     getUpcomingEvents: async (limit = 5) => {
         try {
             const response = await apiClient.get('/events', {
-                params: { 
+                params: {
                     upcoming: 'true',
-                    limit 
-                }
+                    limit,
+                },
             });
-            
+
             if (response && response.events) {
                 return response.events;
             } else if (Array.isArray(response)) {
@@ -145,7 +144,7 @@ const eventService = {
             console.error('Error fetching upcoming events:', error);
             return [];
         }
-    }
+    },
 };
 
 export default eventService;

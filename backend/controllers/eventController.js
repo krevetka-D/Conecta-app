@@ -1,6 +1,8 @@
 
 import asyncHandler from 'express-async-handler';
 import Event from '../models/Event.js';
+import { emitEventCreate, emitEventUpdate, emitEventDelete } from '../socket/realtimeEvents.js';
+import { getIO } from '../websocket.js';
 
 /**
  * @desc    Get all events (with filters)
@@ -58,6 +60,7 @@ export const getEvents = asyncHandler(async (req, res) => {
     
     try {
         const events = await Event.find(query)
+            .select('title description date time location category targetAudience maxAttendees attendees organizer isCancelled tags')
             .populate('organizer', 'name email professionalPath')
             .populate('attendees', 'name')
             .sort({ date: 1 })
@@ -176,6 +179,9 @@ export const createEvent = asyncHandler(async (req, res) => {
             .populate('organizer', 'name email')
             .populate('attendees', 'name');
         
+        // Emit real-time update
+        emitEventCreate(populatedEvent);
+        
         res.status(201).json(populatedEvent);
     } catch (error) {
         console.error('Error creating event:', error);
@@ -238,6 +244,9 @@ export const updateEvent = asyncHandler(async (req, res) => {
             .populate('organizer', 'name email')
             .populate('attendees', 'name');
         
+        // Emit real-time update
+        emitEventUpdate(updatedEvent);
+        
         res.status(200).json(updatedEvent);
     } catch (error) {
         if (error.name === 'CastError') {
@@ -268,6 +277,9 @@ export const joinEvent = asyncHandler(async (req, res) => {
         const updatedEvent = await Event.findById(event._id)
             .populate('organizer', 'name email')
             .populate('attendees', 'name');
+        
+        // Emit real-time update for attendee change
+        emitEventUpdate(updatedEvent);
         
         res.status(200).json(updatedEvent);
     } catch (error) {
@@ -300,6 +312,9 @@ export const leaveEvent = asyncHandler(async (req, res) => {
         const updatedEvent = await Event.findById(event._id)
             .populate('organizer', 'name email')
             .populate('attendees', 'name');
+        
+        // Emit real-time update for attendee change
+        emitEventUpdate(updatedEvent);
         
         res.status(200).json(updatedEvent);
     } catch (error) {
@@ -334,6 +349,9 @@ export const cancelEvent = asyncHandler(async (req, res) => {
         
         event.isCancelled = true;
         await event.save();
+        
+        // Emit real-time update for cancellation
+        emitEventUpdate(event);
         
         res.status(200).json({ 
             message: 'Event cancelled successfully',
@@ -375,6 +393,9 @@ export const deleteEvent = asyncHandler(async (req, res) => {
         }
 
         await Event.findByIdAndDelete(req.params.id);
+        
+        // Emit real-time update for deletion
+        emitEventDelete(req.params.id);
 
         res.status(200).json({ 
             message: 'Event deleted successfully',

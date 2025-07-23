@@ -129,21 +129,51 @@ userSchema.methods.setOnlineStatus = async function(isOnline) {
 
 // Method to add socket ID
 userSchema.methods.addSocketId = async function(socketId) {
-    if (!this.socketIds.includes(socketId)) {
-        this.socketIds.push(socketId);
-        this.isOnline = true;
-        return this.save();
+    try {
+        if (!this.socketIds.includes(socketId)) {
+            this.socketIds.push(socketId);
+            this.isOnline = true;
+            return this.save({ validateModifiedOnly: true });
+        }
+    } catch (error) {
+        // If version error, refetch and retry
+        if (error.name === 'VersionError') {
+            const freshUser = await this.constructor.findById(this._id);
+            if (freshUser && !freshUser.socketIds.includes(socketId)) {
+                freshUser.socketIds.push(socketId);
+                freshUser.isOnline = true;
+                return freshUser.save({ validateModifiedOnly: true });
+            }
+        }
+        throw error;
     }
 };
 
 // Method to remove socket ID
 userSchema.methods.removeSocketId = async function(socketId) {
-    this.socketIds = this.socketIds.filter(id => id !== socketId);
-    if (this.socketIds.length === 0) {
-        this.isOnline = false;
-        this.lastSeen = new Date();
+    try {
+        this.socketIds = this.socketIds.filter(id => id !== socketId);
+        if (this.socketIds.length === 0) {
+            this.isOnline = false;
+            this.lastSeen = new Date();
+        }
+        // Disable version check for this operation to avoid conflicts
+        return this.save({ validateModifiedOnly: true });
+    } catch (error) {
+        // If version error, refetch and retry
+        if (error.name === 'VersionError') {
+            const freshUser = await this.constructor.findById(this._id);
+            if (freshUser) {
+                freshUser.socketIds = freshUser.socketIds.filter(id => id !== socketId);
+                if (freshUser.socketIds.length === 0) {
+                    freshUser.isOnline = false;
+                    freshUser.lastSeen = new Date();
+                }
+                return freshUser.save({ validateModifiedOnly: true });
+            }
+        }
+        throw error;
     }
-    return this.save();
 };
 
 // Virtual for display status

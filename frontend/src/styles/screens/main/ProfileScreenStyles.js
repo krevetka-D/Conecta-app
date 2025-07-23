@@ -1,6 +1,7 @@
 // frontend/src/styles/screens/main/ProfileScreenStyles.js
 
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts, spacing, borderRadius } from '../../../constants/theme';
 
 export const profileStyles = StyleSheet.create({

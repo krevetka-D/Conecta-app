@@ -1,4 +1,3 @@
-
 // src/store/index.js
 // Export contexts
 export { AppContext, AppProvider, useApp } from './contexts/AppContext';

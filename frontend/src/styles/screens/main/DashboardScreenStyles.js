@@ -14,7 +14,7 @@ export const dashboardStyles = (theme) => {
             error: '#EF4444',
             border: '#E5E7EB',
             shadow: '#000000',
-            ...theme?.colors
+            ...theme?.colors,
         },
         spacing: {
             xs: 4,
@@ -22,13 +22,13 @@ export const dashboardStyles = (theme) => {
             m: 16,
             l: 20,
             xl: 30,
-            ...theme?.spacing
+            ...theme?.spacing,
         },
         fonts: {
             regular: 'System',
             medium: 'System',
             bold: 'System',
-            ...theme?.fonts
+            ...theme?.fonts,
         },
         roundness: theme?.roundness || 8,
     };

@@ -1,6 +1,6 @@
-import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 
 const AppContext = createContext({});
 
@@ -21,10 +21,10 @@ export const AppProvider = ({ children }) => {
             try {
                 const hasLaunched = await AsyncStorage.getItem('hasLaunched');
                 if (hasLaunched === null) {
-                    setAppState(prev => ({ ...prev, isFirstLaunch: true }));
+                    setAppState((prev) => ({ ...prev, isFirstLaunch: true }));
                     await AsyncStorage.setItem('hasLaunched', 'true');
                 } else {
-                    setAppState(prev => ({ ...prev, isFirstLaunch: false }));
+                    setAppState((prev) => ({ ...prev, isFirstLaunch: false }));
                 }
             } catch (error) {
                 console.error('Error initializing app:', error);
@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
 
         initializeApp();
 
-        const unsubscribeNetInfo = NetInfo.addEventListener(state => {
+        const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
             setIsOnline(state.isConnected);
         });
 
@@ -45,7 +45,7 @@ export const AppProvider = ({ children }) => {
     const updateLanguage = useCallback(async (language) => {
         try {
             await AsyncStorage.setItem('language', language);
-            setAppState(prev => ({ ...prev, language }));
+            setAppState((prev) => ({ ...prev, language }));
         } catch (error) {
             console.error('Error updating language:', error);
         }
@@ -55,24 +55,23 @@ export const AppProvider = ({ children }) => {
         try {
             const newValue = !appState.notifications;
             await AsyncStorage.setItem('notifications', newValue.toString());
-            setAppState(prev => ({ ...prev, notifications: newValue }));
+            setAppState((prev) => ({ ...prev, notifications: newValue }));
         } catch (error) {
             console.error('Error toggling notifications:', error);
         }
     }, [appState.notifications]);
 
     // useMemo prevents this value object from being recreated on every render.
-    const value = useMemo(() => ({
-        isOnline,
-        loading,
-        appState,
-        updateLanguage,
-        toggleNotifications,
-    }), [isOnline, loading, appState, updateLanguage, toggleNotifications]);
-
-    return (
-        <AppContext.Provider value={value}>
-            {children}
-        </AppContext.Provider>
+    const value = useMemo(
+        () => ({
+            isOnline,
+            loading,
+            appState,
+            updateLanguage,
+            toggleNotifications,
+        }),
+        [isOnline, loading, appState, updateLanguage, toggleNotifications],
     );
+
+    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

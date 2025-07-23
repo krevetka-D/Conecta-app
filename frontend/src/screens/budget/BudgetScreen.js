@@ -10,20 +10,33 @@ import {
     StyleSheet,
     Modal as RNModal,
 } from 'react-native';
-import { Card, FAB, Portal, Modal, TextInput, RadioButton, Button, Provider } from 'react-native-paper';
-import Icon from '../../components/common/Icon.js';
-import WebDateTimePicker from '../../components/common/WebDateTimePicker';
+import {
+    Card,
+    FAB,
+    Portal,
+    Modal,
+    TextInput,
+    RadioButton,
+    Button,
+    Provider,
+} from 'react-native-paper';
 
-import { useAuth } from '../../store/contexts/AuthContext';
+import EmptyState from '../../components/common/EmptyState';
+import Icon from '../../components/common/Icon.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import WebDateTimePicker from '../../components/common/WebDateTimePicker';
+import { OptimizedInput } from '../../components/ui/OptimizedInput';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
 import { colors } from '../../constants/theme';
 import budgetService from '../../services/budgetService';
-import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
-import { formatCurrency, formatDate } from '../../utils/formatting';
-import { OptimizedInput } from '../../components/ui/OptimizedInput';
+import socketService from '../../services/socketService';
+import apiClient from '../../services/api/client';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { budgetStyles as styles } from '../../styles/screens/budget/BudgetScreenStyles';
+import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
+import { formatCurrency, formatDate } from '../../utils/formatting';
+import { devLog, devError } from '../../utils/devLog';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
 
 const BudgetScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -53,9 +66,57 @@ const BudgetScreen = ({ navigation }) => {
         loadCategories(user?.professionalPath || 'FREELANCER');
     }, [user?.professionalPath]);
 
+    // Move loadBudgetEntries up before it's used
+    const loadBudgetEntries = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await budgetService.getBudgetEntries();
+            setEntries(data || []);
+        } catch (error) {
+            devError('Budget', 'Failed to load budget entries', error);
+            if (!refreshing) {
+                showErrorAlert('Error', ERROR_MESSAGES.BUDGET_LOAD_FAILED);
+            }
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, [refreshing]);
+
+    // Socket event handlers
+    const socketEventHandlers = {
+        'budget_update': useCallback((data) => {
+            devLog('Budget', 'Received real-time update:', data);
+            
+            // Clear API cache for budget endpoints
+            apiClient.clearCache('/budget');
+            apiClient.clearCache('/budget/summary');
+            
+            if (data.type === 'create') {
+                // Reload to get fresh data
+                loadBudgetEntries();
+            } else if (data.type === 'update') {
+                // Update existing entry
+                setEntries(prevEntries => 
+                    prevEntries.map(entry => 
+                        entry._id === data.entry._id ? data.entry : entry
+                    )
+                );
+            } else if (data.type === 'delete') {
+                // Remove deleted entry
+                setEntries(prevEntries => 
+                    prevEntries.filter(entry => entry._id !== data.entryId)
+                );
+            }
+        }, [loadBudgetEntries])
+    };
+    
+    // Use socket events hook
+    useSocketEvents(socketEventHandlers, [loadBudgetEntries]);
+    
     useEffect(() => {
         loadBudgetEntries();
-    }, []);
+    }, [loadBudgetEntries]);
 
     const loadCategories = useCallback(async (professionalPath = 'FREELANCER') => {
         try {
@@ -69,36 +130,47 @@ const BudgetScreen = ({ navigation }) => {
                 throw new Error('Invalid categories response');
             }
         } catch (error) {
-            console.error('Failed to load categories:', error);
+            devError('Budget', 'Failed to load categories', error);
             const defaultCategories =
                 professionalPath === 'ENTREPRENEUR'
                     ? {
-                        income: ['Product Sales', 'Service Revenue', 'Investor Funding', 'Grants', 'Other Income'],
-                        expense: ['Salaries & Payroll', 'Office Rent', 'Legal & Accounting', 'Marketing & Sales', 'R&D', 'Operations', 'Other Expenses'],
+                        income: [
+                            'Product Sales',
+                            'Service Revenue',
+                            'Investor Funding',
+                            'Grants',
+                            'Other Income',
+                        ],
+                        expense: [
+                            'Salaries & Payroll',
+                            'Office Rent',
+                            'Legal & Accounting',
+                            'Marketing & Sales',
+                            'R&D',
+                            'Operations',
+                            'Other Expenses',
+                        ],
                     }
                     : {
-                        income: ['Project-Based Income', 'Recurring Clients', 'Passive Income', 'Other Income'],
-                        expense: ['Cuota de Autónomo', 'Office/Coworking', 'Software & Tools', 'Professional Services', 'Marketing', 'Travel & Transport', 'Other Expenses'],
+                        income: [
+                            'Project-Based Income',
+                            'Recurring Clients',
+                            'Passive Income',
+                            'Other Income',
+                        ],
+                        expense: [
+                            'Cuota de Autónomo',
+                            'Office/Coworking',
+                            'Software & Tools',
+                            'Professional Services',
+                            'Marketing',
+                            'Travel & Transport',
+                            'Other Expenses',
+                        ],
                     };
             setCategories(defaultCategories);
         }
     }, []);
-
-    const loadBudgetEntries = useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await budgetService.getBudgetEntries();
-            setEntries(data || []);
-        } catch (error) {
-            console.error('Failed to load budget entries:', error);
-            if (!refreshing) {
-                showErrorAlert('Error', ERROR_MESSAGES.BUDGET_LOAD_FAILED);
-            }
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [refreshing]);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
@@ -111,7 +183,8 @@ const BudgetScreen = ({ navigation }) => {
     const validateForm = () => {
         const errors = {};
         if (!formData.category) errors.category = 'Please select a category';
-        if (!formData.amount || parseFloat(formData.amount) <= 0) errors.amount = 'Please enter a valid amount';
+        if (!formData.amount || parseFloat(formData.amount) <= 0)
+            errors.amount = 'Please enter a valid amount';
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -120,13 +193,21 @@ const BudgetScreen = ({ navigation }) => {
         if (!validateForm()) return;
         try {
             const entryData = { ...formData, amount: parseFloat(formData.amount) };
-            await budgetService.createBudgetEntry(entryData);
+            const newEntry = await budgetService.createBudgetEntry(entryData);
+            
+            // Update local state immediately for better UX
+            if (newEntry) {
+                setEntries(prevEntries => [newEntry, ...prevEntries]);
+            }
+            
             showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_ADDED);
             setModalVisible(false);
             resetForm();
+            
+            // Reload in background to sync
             loadBudgetEntries();
         } catch (error) {
-            console.error('Failed to add budget entry:', error);
+            devError('Budget', 'Failed to add budget entry', error);
             showErrorAlert('Error', ERROR_MESSAGES.BUDGET_ENTRY_FAILED);
         }
     };
@@ -135,11 +216,19 @@ const BudgetScreen = ({ navigation }) => {
         showConfirmAlert('Delete Entry', 'Are you sure?', async () => {
             try {
                 await budgetService.deleteBudgetEntry(entryId);
+                
+                // Update local state immediately
+                setEntries(prevEntries => prevEntries.filter(entry => entry._id !== entryId));
+                
                 showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_DELETED);
+                
+                // Reload in background to sync
                 loadBudgetEntries();
             } catch (error) {
-                console.error('Failed to delete entry:', error);
+                devError('Budget', 'Failed to delete entry', error);
                 showErrorAlert('Error', ERROR_MESSAGES.BUDGET_DELETE_FAILED);
+                // Reload to revert on error
+                loadBudgetEntries();
             }
         });
     };
@@ -148,13 +237,13 @@ const BudgetScreen = ({ navigation }) => {
         // Ensure the initial date is today or earlier
         const today = new Date();
         today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
-        
-        setFormData({ 
-            type: 'EXPENSE', 
-            category: '', 
-            amount: '', 
-            description: '', 
-            entryDate: today 
+
+        setFormData({
+            type: 'EXPENSE',
+            category: '',
+            amount: '',
+            description: '',
+            entryDate: today,
         });
         setFormErrors({});
     };
@@ -168,7 +257,7 @@ const BudgetScreen = ({ navigation }) => {
             const today = new Date();
             today.setHours(23, 59, 59, 999);
             const selected = new Date(selectedDate);
-            
+
             if (selected <= today) {
                 setFormData({ ...formData, entryDate: selected });
             } else {
@@ -179,8 +268,12 @@ const BudgetScreen = ({ navigation }) => {
     };
 
     const calculateSummary = () => {
-        const income = entries.filter((e) => e.type === 'INCOME').reduce((sum, e) => sum + e.amount, 0);
-        const expenses = entries.filter((e) => e.type === 'EXPENSE').reduce((sum, e) => sum + e.amount, 0);
+        const income = entries
+            .filter((e) => e.type === 'INCOME')
+            .reduce((sum, e) => sum + e.amount, 0);
+        const expenses = entries
+            .filter((e) => e.type === 'EXPENSE')
+            .reduce((sum, e) => sum + e.amount, 0);
         return { income, expenses, balance: income - expenses };
     };
 
@@ -192,16 +285,28 @@ const BudgetScreen = ({ navigation }) => {
                         <View style={styles.entryHeader}>
                             <View style={styles.entryInfo}>
                                 <Text style={styles.entryCategory}>{item.category}</Text>
-                                {item.description && <Text style={styles.entryDescription}>{item.description}</Text>}
+                                {item.description && (
+                                    <Text style={styles.entryDescription}>{item.description}</Text>
+                                )}
                                 <Text style={styles.entryDate}>{formatDate(item.entryDate)}</Text>
                             </View>
-                            <Text style={[styles.entryAmount, item.type === 'INCOME' ? styles.incomeAmount : styles.expenseAmount]}>
-                                {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
+                            <Text
+                                style={[
+                                    styles.entryAmount,
+                                    item.type === 'INCOME'
+                                        ? styles.incomeAmount
+                                        : styles.expenseAmount,
+                                ]}
+                            >
+                                {item.type === 'INCOME' ? '+' : '-'}
+                                {formatCurrency(item.amount)}
                             </Text>
                         </View>
                     </Card.Content>
                     <Card.Actions>
-                        <Button onPress={() => handleDelete(item._id)} textColor={colors.error}>Delete</Button>
+                        <Button onPress={() => handleDelete(item._id)} textColor={colors.error}>
+                            Delete
+                        </Button>
                     </Card.Actions>
                 </Card>
             </View>
@@ -220,7 +325,13 @@ const BudgetScreen = ({ navigation }) => {
             <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={colors.primary}
+                    />
+                }
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.summaryContainer}>
@@ -229,7 +340,9 @@ const BudgetScreen = ({ navigation }) => {
                             <Card style={styles.summaryCard}>
                                 <View style={styles.summaryCardInner}>
                                     <Text style={styles.summaryLabel}>Income</Text>
-                                    <Text style={[styles.summaryAmount, styles.incomeAmountColor]}>{formatCurrency(income)}</Text>
+                                    <Text style={[styles.summaryAmount, styles.incomeAmountColor]}>
+                                        {formatCurrency(income)}
+                                    </Text>
                                 </View>
                             </Card>
                         </View>
@@ -240,7 +353,9 @@ const BudgetScreen = ({ navigation }) => {
                             <Card style={styles.summaryCard}>
                                 <View style={styles.summaryCardInner}>
                                     <Text style={styles.summaryLabel}>Expenses</Text>
-                                    <Text style={[styles.summaryAmount, styles.expenseAmountColor]}>{formatCurrency(expenses)}</Text>
+                                    <Text style={[styles.summaryAmount, styles.expenseAmountColor]}>
+                                        {formatCurrency(expenses)}
+                                    </Text>
                                 </View>
                             </Card>
                         </View>
@@ -251,7 +366,14 @@ const BudgetScreen = ({ navigation }) => {
                             <Card style={styles.summaryCard}>
                                 <View style={styles.summaryCardInner}>
                                     <Text style={styles.summaryLabel}>Balance</Text>
-                                    <Text style={[styles.summaryAmount, balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>
+                                    <Text
+                                        style={[
+                                            styles.summaryAmount,
+                                            balance >= 0
+                                                ? styles.positiveBalance
+                                                : styles.negativeBalance,
+                                        ]}
+                                    >
                                         {formatCurrency(balance)}
                                     </Text>
                                 </View>
@@ -263,21 +385,23 @@ const BudgetScreen = ({ navigation }) => {
                 <View style={styles.entriesSection}>
                     <Text style={styles.sectionTitle}>Recent Transactions</Text>
                     {entries.length === 0 ? (
-                        <EmptyState 
-                            icon="cash-remove" 
-                            title="No transactions yet" 
-                            message="Add your first entry to get started" 
+                        <EmptyState
+                            icon="cash-remove"
+                            title="No transactions yet"
+                            message="Add your first entry to get started"
                             action={
-                                <Button mode="contained" onPress={() => setModalVisible(true)} icon="plus">
+                                <Button
+                                    mode="contained"
+                                    onPress={() => setModalVisible(true)}
+                                    icon="plus"
+                                >
                                     Add Entry
                                 </Button>
-                            } 
+                            }
                         />
                     ) : (
                         entries.map((entry) => (
-                            <View key={entry._id}>
-                                {renderEntryCard({ item: entry })}
-                            </View>
+                            <View key={entry._id}>{renderEntryCard({ item: entry })}</View>
                         ))
                     )}
                 </View>
@@ -291,76 +415,111 @@ const BudgetScreen = ({ navigation }) => {
     return (
         <Provider>
             {mainContent}
-            
+
             <Portal>
-                <Modal 
-                    visible={modalVisible} 
-                    onDismiss={() => { setModalVisible(false); resetForm(); }} 
+                <Modal
+                    visible={modalVisible}
+                    onDismiss={() => {
+                        setModalVisible(false);
+                        resetForm();
+                    }}
                     contentContainerStyle={styles.modalContainer}
                 >
                     <View style={styles.modalContent}>
                         <ScrollView showsVerticalScrollIndicator={false}>
                             <Text style={styles.modalTitle}>Add New Entry</Text>
-                            
-                            <RadioButton.Group 
-                                onValueChange={(value) => setFormData({ ...formData, type: value, category: '' })} 
+
+                            <RadioButton.Group
+                                onValueChange={(value) =>
+                                    setFormData({ ...formData, type: value, category: '' })
+                                }
                                 value={formData.type}
                             >
                                 <View style={styles.radioGroup}>
-                                    <RadioButton.Item label="Income" value="INCOME" color={colors.success} />
-                                    <RadioButton.Item label="Expense" value="EXPENSE" color={colors.error} />
+                                    <RadioButton.Item
+                                        label="Income"
+                                        value="INCOME"
+                                        color={colors.success}
+                                    />
+                                    <RadioButton.Item
+                                        label="Expense"
+                                        value="EXPENSE"
+                                        color={colors.error}
+                                    />
                                 </View>
                             </RadioButton.Group>
-                            
-                            <TouchableOpacity 
-                                style={[styles.categorySelector, formErrors.category && styles.categorySelectorError]} 
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.categorySelector,
+                                    formErrors.category && styles.categorySelectorError,
+                                ]}
                                 onPress={() => setShowCategoryPicker(true)}
                             >
-                                <Text style={[styles.categorySelectorText, !formData.category && styles.placeholderText]}>
+                                <Text
+                                    style={[
+                                        styles.categorySelectorText,
+                                        !formData.category && styles.placeholderText,
+                                    ]}
+                                >
                                     {formData.category || 'Select Category'}
                                 </Text>
                                 <Icon name="chevron-down" size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
-                            {formErrors.category && <Text style={styles.errorText}>{formErrors.category}</Text>}
-                            
-                            <TextInput 
-                                label="Amount (€)" 
-                                value={formData.amount} 
-                                onChangeText={(text) => setFormData({ ...formData, amount: text })} 
-                                mode="outlined" 
-                                keyboardType="decimal-pad" 
-                                style={styles.input} 
-                                error={!!formErrors.amount} 
-                                theme={{ colors: { primary: colors.primary } }} 
+                            {formErrors.category && (
+                                <Text style={styles.errorText}>{formErrors.category}</Text>
+                            )}
+
+                            <TextInput
+                                label="Amount (€)"
+                                value={formData.amount}
+                                onChangeText={(text) => setFormData({ ...formData, amount: text })}
+                                mode="outlined"
+                                keyboardType="decimal-pad"
+                                style={styles.input}
+                                error={!!formErrors.amount}
+                                theme={{ colors: { primary: colors.primary } }}
                             />
-                            {formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
-                            
+                            {formErrors.amount && (
+                                <Text style={styles.errorText}>{formErrors.amount}</Text>
+                            )}
+
                             <OptimizedInput
                                 label="Description (Optional)"
                                 value={formData.description}
-                                onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                                onChangeText={(text) =>
+                                    setFormData((prev) => ({ ...prev, description: text }))
+                                }
                                 multiline
                                 numberOfLines={3}
                                 maxLength={200}
                                 placeholder="Enter description..."
                             />
 
-                            <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
+                            <TouchableOpacity
+                                style={styles.dateSelector}
+                                onPress={() => setShowDatePicker(true)}
+                            >
                                 <Icon name="calendar" size={24} color={colors.primary} />
-                                <Text style={styles.dateSelectorText}>{formatDate(formData.entryDate)}</Text>
+                                <Text style={styles.dateSelectorText}>
+                                    {formatDate(formData.entryDate)}
+                                </Text>
                             </TouchableOpacity>
-                            
+
                             <View style={styles.modalButtons}>
-                                <Button 
-                                    mode="outlined" 
-                                    onPress={() => { setModalVisible(false); resetForm(); }} 
+                                <Button
+                                    mode="outlined"
+                                    onPress={() => {
+                                        setModalVisible(false);
+                                        resetForm();
+                                    }}
                                     style={styles.modalButton}
                                 >
                                     Cancel
                                 </Button>
-                                <Button 
-                                    mode="contained" 
-                                    onPress={handleSubmit} 
+                                <Button
+                                    mode="contained"
+                                    onPress={handleSubmit}
                                     style={styles.modalButton}
                                 >
                                     Add Entry
@@ -378,7 +537,7 @@ const BudgetScreen = ({ navigation }) => {
                 animationType="fade"
                 onRequestClose={() => setShowCategoryPicker(false)}
             >
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={{
                         flex: 1,
                         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -388,7 +547,7 @@ const BudgetScreen = ({ navigation }) => {
                     activeOpacity={1}
                     onPress={() => setShowCategoryPicker(false)}
                 >
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         activeOpacity={1}
                         style={{
                             backgroundColor: colors.surface,
@@ -407,12 +566,12 @@ const BudgetScreen = ({ navigation }) => {
                         <Text style={styles.modalTitle}>Select Category</Text>
                         <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
                             {(categories[formData.type.toLowerCase()] || []).map((category) => (
-                                <TouchableOpacity 
-                                    key={category} 
-                                    style={styles.categoryOption} 
-                                    onPress={() => { 
-                                        setFormData({ ...formData, category }); 
-                                        setShowCategoryPicker(false); 
+                                <TouchableOpacity
+                                    key={category}
+                                    style={styles.categoryOption}
+                                    onPress={() => {
+                                        setFormData({ ...formData, category });
+                                        setShowCategoryPicker(false);
                                     }}
                                 >
                                     <Text style={styles.categoryOptionText}>{category}</Text>
@@ -422,7 +581,7 @@ const BudgetScreen = ({ navigation }) => {
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={{
                                 marginTop: 16,
                                 paddingVertical: 12,
@@ -432,7 +591,11 @@ const BudgetScreen = ({ navigation }) => {
                             }}
                             onPress={() => setShowCategoryPicker(false)}
                         >
-                            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>Close</Text>
+                            <Text
+                                style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}
+                            >
+                                Close
+                            </Text>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </TouchableOpacity>
@@ -446,12 +609,12 @@ const BudgetScreen = ({ navigation }) => {
                     animationType="slide"
                     onRequestClose={() => setShowDatePicker(false)}
                 >
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.datePickerOverlay}
                         activeOpacity={1}
                         onPress={() => setShowDatePicker(false)}
                     >
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             activeOpacity={1}
                             style={styles.datePickerContent}
                             onPress={(e) => e.stopPropagation()}
@@ -465,27 +628,30 @@ const BudgetScreen = ({ navigation }) => {
                                     <Text style={styles.datePickerDone}>Done</Text>
                                 </TouchableOpacity>
                             </View>
-                            <DateTimePicker 
-                                value={formData.entryDate} 
-                                mode="date" 
-                                display="spinner" 
+                            <WebDateTimePicker
+                                value={formData.entryDate}
+                                mode="date"
+                                display="spinner"
                                 onChange={(event, selectedDate) => {
                                     if (selectedDate) {
                                         // Ensure the selected date is not in the future
                                         const today = new Date();
                                         today.setHours(23, 59, 59, 999);
                                         const selected = new Date(selectedDate);
-                                        
+
                                         if (selected <= today) {
                                             setFormData({ ...formData, entryDate: selected });
                                         } else {
                                             // If future date selected, set to today
-                                            showErrorAlert('Invalid Date', 'You cannot select a future date');
+                                            showErrorAlert(
+                                                'Invalid Date',
+                                                'You cannot select a future date',
+                                            );
                                             setFormData({ ...formData, entryDate: new Date() });
                                         }
                                     }
-                                }} 
-                                maximumDate={new Date()} 
+                                }}
+                                maximumDate={new Date()}
                                 minimumDate={new Date(2020, 0, 1)} // Set a reasonable minimum date
                                 style={styles.datePicker}
                                 themeVariant="light"
@@ -497,12 +663,12 @@ const BudgetScreen = ({ navigation }) => {
 
             {/* Android Date Picker */}
             {showDatePicker && Platform.OS === 'android' && (
-                <DateTimePicker 
-                    value={formData.entryDate} 
-                    mode="date" 
-                    display="default" 
-                    onChange={handleDateChange} 
-                    maximumDate={new Date()} 
+                <WebDateTimePicker
+                    value={formData.entryDate}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
                 />
             )}
         </Provider>

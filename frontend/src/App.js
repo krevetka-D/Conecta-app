@@ -1,10 +1,10 @@
 import 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useCallback } from 'react';
 import { LogBox, Platform, View, Text, AppState } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import web polyfills first - ONLY for web
 if (Platform.OS === 'web') {
@@ -12,23 +12,24 @@ if (Platform.OS === 'web') {
 }
 
 // Apply global patches
+import ErrorBoundaryWrapper from './components/common/ErrorBoundaryWrapper';
+import RootNavigator from './navigation/RootNavigator';
+import optimizedApiClient from './services/api/client';
+import { AppProvider } from './store/contexts/AppContext';
+import { AuthProvider } from './store/contexts/AuthContext';
+import { ThemeProvider } from './store/contexts/ThemeContext';
+import { devLog, devError, devWarn } from './utils';
+import { showErrorAlert } from './utils/alerts';
+import appStability, { getPerformanceReport } from './utils/appStability';
+import { cache } from './utils/cacheManager';
+import { loadFonts } from './utils/fontLoader';
 import { applyGlobalPatches } from './utils/globalPatches';
+import { onNetworkChange } from './utils/networkRetry';
+
 applyGlobalPatches();
 
 // Enable screens for better performance
 enableScreens();
-
-import RootNavigator from './navigation/RootNavigator';
-import { AuthProvider } from './store/contexts/AuthContext';
-import { ThemeProvider } from './store/contexts/ThemeContext';
-import { AppProvider } from './store/contexts/AppContext';
-import ErrorBoundaryWrapper from './components/common/ErrorBoundaryWrapper';
-import { loadFonts } from './utils/fontLoader';
-import appStability, { getPerformanceReport } from './utils/appStability';
-import { cache } from './utils/cacheManager';
-import optimizedApiClient from './services/api/client';
-import { onNetworkChange } from './utils/networkRetry';
-import { showErrorAlert } from './utils/alerts';
 
 // Ignore specific warnings
 LogBox.ignoreLogs([
@@ -49,25 +50,29 @@ if (Platform.OS !== 'web') {
 // Global error handler
 const globalErrorHandler = (error, isFatal) => {
     if (__DEV__) {
-        console.error('Global error:', error, 'Fatal:', isFatal);
+        devError('App', 'Global error', { error, isFatal });
     }
-    
+
     // Log to error tracking service
     // Sentry.captureException(error);
-    
+
     if (isFatal) {
         showErrorAlert(
             'Application Error',
             'The app encountered a critical error and needs to restart.',
             () => {
                 // Restart app or navigate to safe screen
-            }
+            },
         );
     }
 };
 
 // Set global error handlers
-ErrorUtils.setGlobalHandler(globalErrorHandler);
+// eslint-disable-next-line no-undef
+if (typeof ErrorUtils !== 'undefined') {
+    // eslint-disable-next-line no-undef
+    ErrorUtils.setGlobalHandler(globalErrorHandler);
+}
 
 export default function App() {
     const [appIsReady, setAppIsReady] = React.useState(false);
@@ -86,13 +91,15 @@ export default function App() {
 
                 // Load fonts (will handle web gracefully)
                 await loadFonts();
-                
+
                 // Set up API client authorization header if token exists
                 const token = await AsyncStorage.getItem('userToken');
                 if (token) {
-                    optimizedApiClient.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    optimizedApiClient.client.defaults.headers.common[
+                        'Authorization'
+                    ] = `Bearer ${token}`;
                 }
-                
+
                 // Preload critical cache data
                 await cache.preload([
                     {
@@ -101,16 +108,16 @@ export default function App() {
                             // Fetch app configuration
                             return { version: '1.0.0', features: {} };
                         },
-                        options: { ttl: 24 * 60 * 60 * 1000, persistent: true }
-                    }
+                        options: { ttl: 24 * 60 * 60 * 1000, persistent: true },
+                    },
                 ]);
-                
+
                 // Add artificial delay for splash screen (native only)
                 if (Platform.OS !== 'web') {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
             } catch (e) {
-                console.warn('App initialization error:', e);
+                devWarn('App', 'App initialization error', e);
                 setInitError(e);
             } finally {
                 setAppIsReady(true);
@@ -120,14 +127,11 @@ export default function App() {
         prepare();
 
         // Monitor app state changes
-        const subscription = AppState.addEventListener('change', nextAppState => {
-            if (
-                appStateRef.current.match(/inactive|background/) &&
-                nextAppState === 'active'
-            ) {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
                 // App has come to the foreground
-                console.log('App has come to the foreground!');
-                
+                devLog('App', 'App has come to the foreground!');
+
                 // Refresh critical data
                 if (global.refreshUserData) {
                     global.refreshUserData();
@@ -138,11 +142,11 @@ export default function App() {
 
         // Monitor network changes
         const unsubscribeNetwork = onNetworkChange((isOnline) => {
-            console.log('Network status:', isOnline ? 'Online' : 'Offline');
-            
+            devLog('App', `Network status: ${isOnline ? 'Online' : 'Offline'}`);
+
             // Set global network status
             global.isOnline = isOnline;
-            
+
             // Show/hide offline banner
             if (global.setOfflineBanner) {
                 global.setOfflineBanner(!isOnline);
@@ -173,7 +177,7 @@ export default function App() {
         if (__DEV__) {
             const interval = setInterval(() => {
                 const report = getPerformanceReport();
-                console.log('Performance Report:', report);
+                devLog('App', 'Performance Report', report);
             }, 60000); // Every minute
 
             return () => clearInterval(interval);
@@ -188,12 +192,14 @@ export default function App() {
     if (initError) {
         return (
             <SafeAreaProvider>
-                <View style={{ 
-                    flex: 1, 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
-                    padding: 20 
-                }}>
+                <View
+                    style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: 20,
+                    }}
+                >
                     <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
                         Initialization Error
                     </Text>

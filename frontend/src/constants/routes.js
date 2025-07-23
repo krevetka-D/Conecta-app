@@ -43,7 +43,7 @@ export const SCREEN_NAMES = {
     // Event screens
     EVENTS: 'Events',
     EVENT_DETAIL: 'EventDetail',
-    
+
     // Personal Chat screens
     PERSONAL_CHAT_LIST: 'PersonalChatList',
     PERSONAL_CHAT_DETAIL: 'PersonalChatDetail',

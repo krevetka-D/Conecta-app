@@ -1,18 +1,16 @@
 // frontend/src/components/common/VirtualizedList.js
-import React from 'react';
-import { FlatList, View, Text } from 'react-native';
+import React, { useCallback } from 'react';
+import { FlatList } from 'react-native';
 
-export const VirtualizedList = ({ 
-    data, 
-    renderItem, 
-    itemHeight,
-    ...props 
-}) => {
-    const getItemLayout = useCallback((data, index) => ({
-        length: itemHeight,
-        offset: itemHeight * index,
-        index,
-    }), [itemHeight]);
+export const VirtualizedList = ({ data, renderItem, itemHeight, ...props }) => {
+    const getItemLayout = useCallback(
+        (data, index) => ({
+            length: itemHeight,
+            offset: itemHeight * index,
+            index,
+        }),
+        [itemHeight],
+    );
 
     return (
         <FlatList

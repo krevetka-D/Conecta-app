@@ -2,6 +2,7 @@
 import asyncHandler from 'express-async-handler';
 import BudgetEntry from '../models/BudgetEntry.js';
 import { cacheMiddleware, clearCache } from '../middleware/cacheMiddleware.js';
+import { emitBudgetCreate, emitBudgetUpdate, emitBudgetDelete } from '../socket/realtimeEvents.js';
 
 /**
  * @desc    Get user's budget entries
@@ -123,6 +124,9 @@ export const setBudget = asyncHandler(async (req, res) => {
 
     // Clear cache for this user's budget data
     clearCache(`budget_${req.user._id}`);
+    
+    // Emit real-time update
+    emitBudgetCreate(req.user._id, budgetEntry);
 
     res.status(201).json(budgetEntry);
 });
@@ -173,6 +177,9 @@ export const updateBudget = asyncHandler(async (req, res) => {
 
     // Clear cache
     clearCache(`budget_${req.user._id}`);
+    
+    // Emit real-time update
+    emitBudgetUpdate(req.user._id, updatedEntry);
 
     res.status(200).json(updatedEntry);
 });
@@ -200,6 +207,9 @@ export const deleteBudget = asyncHandler(async (req, res) => {
 
     // Clear cache
     clearCache(`budget_${req.user._id}`);
+    
+    // Emit real-time update
+    emitBudgetDelete(req.user._id, req.params.id);
 
     res.status(200).json({
         message: 'Budget entry deleted successfully',

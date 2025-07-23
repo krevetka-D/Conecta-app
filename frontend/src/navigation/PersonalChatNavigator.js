@@ -1,11 +1,12 @@
 // frontend/src/navigation/PersonalChatNavigator.js
-import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import PersonalChatListScreen from '../screens/personalChat/PersonalChatListScreen';
-import PersonalChatDetailScreen from '../screens/personalChat/PersonalChatDetailScreen';
-import UserProfileScreen from '../screens/personalChat/UserProfileScreen';
-import { colors } from '../constants/theme';
+import React from 'react';
+
 import { SCREEN_NAMES } from '../constants/routes';
+import { colors } from '../constants/theme';
+import PersonalChatDetailScreen from '../screens/personalChat/PersonalChatDetailScreen';
+import PersonalChatListScreen from '../screens/personalChat/PersonalChatListScreen';
+import UserProfileScreen from '../screens/personalChat/UserProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -22,27 +23,27 @@ const PersonalChatNavigator = () => {
                 },
             }}
         >
-            <Stack.Screen 
+            <Stack.Screen
                 name={SCREEN_NAMES.PERSONAL_CHAT_LIST}
                 component={PersonalChatListScreen}
-                options={{ 
+                options={{
                     title: 'Messages',
-                    headerShown: false 
+                    headerShown: false,
                 }}
             />
-            <Stack.Screen 
+            <Stack.Screen
                 name={SCREEN_NAMES.PERSONAL_CHAT_DETAIL}
                 component={PersonalChatDetailScreen}
-                options={({ route }) => ({ 
+                options={({ route }) => ({
                     title: route.params?.userName || 'Chat',
-                    headerBackTitle: 'Back'
+                    headerBackTitle: 'Back',
                 })}
             />
-            <Stack.Screen 
+            <Stack.Screen
                 name={SCREEN_NAMES.USER_PROFILE}
                 component={UserProfileScreen}
-                options={({ route }) => ({ 
-                    title: route.params?.userName || 'Profile' 
+                options={({ route }) => ({
+                    title: route.params?.userName || 'Profile',
                 })}
             />
         </Stack.Navigator>

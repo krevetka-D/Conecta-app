@@ -1,8 +1,8 @@
 // frontend/src/components/common/CachedImage.js
+import * as Crypto from 'expo-crypto';
+import * as FileSystem from 'expo-file-system';
 import React, { useState, useEffect } from 'react';
 import { Image, View, ActivityIndicator } from 'react-native';
-import * as FileSystem from 'expo-file-system';
-import * as Crypto from 'expo-crypto';
 
 const IMAGE_CACHE_DIR = `${FileSystem.cacheDirectory}images/`;
 
@@ -22,20 +22,20 @@ export const CachedImage = ({ source, style, ...props }) => {
 
         try {
             // Create cache directory if it doesn't exist
-            await FileSystem.makeDirectoryAsync(IMAGE_CACHE_DIR, { 
-                intermediates: true 
+            await FileSystem.makeDirectoryAsync(IMAGE_CACHE_DIR, {
+                intermediates: true,
             });
 
             // Generate cache key
             const hash = await Crypto.digestStringAsync(
                 Crypto.CryptoDigestAlgorithm.MD5,
-                source.uri
+                source.uri,
             );
             const cachedPath = `${IMAGE_CACHE_DIR}${hash}.jpg`;
 
             // Check if cached
             const info = await FileSystem.getInfoAsync(cachedPath);
-            
+
             if (info.exists) {
                 setImageUri(cachedPath);
             } else {
@@ -59,11 +59,5 @@ export const CachedImage = ({ source, style, ...props }) => {
         );
     }
 
-    return (
-        <Image
-            {...props}
-            source={{ uri: imageUri }}
-            style={style}
-        />
-    );
+    return <Image {...props} source={{ uri: imageUri }} style={style} />;
 };

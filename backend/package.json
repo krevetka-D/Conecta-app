@@ -35,6 +35,8 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "axios": "^1.10.0",
+    "colors": "^1.4.0",
     "jest": "^30.0.4",
     "nodemon": "^2.0.22",
     "supertest": "^7.1.3"

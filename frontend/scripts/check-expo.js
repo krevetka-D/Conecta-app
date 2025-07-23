@@ -5,11 +5,11 @@ console.log('Checking Expo configuration...\n');
 try {
     // Check if Expo CLI is installed
     execSync('expo --version', { stdio: 'inherit' });
-    
+
     // Run expo doctor
     console.log('\nRunning Expo Doctor...\n');
     execSync('expo doctor', { stdio: 'inherit' });
-    
+
     // Check network configuration
     console.log('\n✅ Expo configuration looks good!');
     console.log('\nTo start the app:');

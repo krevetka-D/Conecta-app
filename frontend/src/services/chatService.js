@@ -1,7 +1,9 @@
-import apiClient from './api/client';
-import socketService from './socketService';
-import mockChatService from './mockChatService';
 import { USE_MOCK, devLog } from '../config/development';
+import { devWarn, devError } from '../utils/devLog';
+
+import apiClient from './api/client';
+import mockChatService from './mockChatService';
+import socketService from './socketService';
 
 const chatService = {
     // Initialize chat connection
@@ -31,58 +33,58 @@ const chatService = {
         try {
             const params = {
                 limit: options.limit || 50,
-                ...(options.before && { before: options.before })
+                ...(options.before && { before: options.before }),
             };
 
             // Fixed: Use correct endpoint structure
             const response = await apiClient.get(`/chat/rooms/${roomId}/messages`, { params });
-            
-            // Debug log to see the response structure
-            console.log('getRoomMessages raw response:', response);
-            
+
             // Handle different response structures from backend
             let messages = [];
-            
+
             // If backend returns wrapped response: { data: { messages: [...] } }
             if (response && response.data && Array.isArray(response.data.messages)) {
-                console.log('Found messages in response.data.messages:', response.data.messages.length);
+                devLog('ChatService', `Retrieved ${response.data.messages.length} messages from response.data.messages`);
                 messages = response.data.messages;
             }
             // If backend returns: { messages: [...] }
             else if (response && Array.isArray(response.messages)) {
-                console.log('Found messages in response.messages:', response.messages.length);
+                devLog('ChatService', `Retrieved ${response.messages.length} messages from response.messages`);
                 messages = response.messages;
             }
             // If backend returns array directly
             else if (Array.isArray(response)) {
-                console.log('Response is already an array:', response.length);
+                devLog('ChatService', `Retrieved ${response.length} messages (array response)`);
                 messages = response;
             }
             // Fallback: check if response itself looks like a message array
             else if (response && response.length !== undefined) {
-                console.log('Response might be array-like');
+                devLog('ChatService', 'Converting array-like response to array');
                 messages = Array.from(response);
             }
-            
+
             // Validate messages have required structure
-            const validMessages = messages.filter(msg => 
-                msg && msg._id && msg.sender && msg.content !== undefined
+            const validMessages = messages.filter(
+                (msg) => msg && msg._id && msg.sender && msg.content !== undefined,
             );
-            
+
             if (validMessages.length !== messages.length) {
-                console.warn(`Filtered out ${messages.length - validMessages.length} invalid messages`);
+                devWarn(
+                    'ChatService',
+                    `Filtered out ${messages.length - validMessages.length} invalid messages`
+                );
             }
-            
+
             return validMessages;
         } catch (error) {
-            console.error('Error fetching messages:', error);
-            
+            devError('ChatService', 'Error fetching messages', error);
+
             // Fallback to mock data in development
             if (__DEV__) {
-                console.log('Using mock messages due to API error');
+                devLog('ChatService', 'Using mock messages due to API error');
                 return mockChatService.getRoomMessages(roomId);
             }
-            
+
             return [];
         }
     },
@@ -95,7 +97,7 @@ const chatService = {
                 roomId,
                 content,
                 type,
-                attachments
+                attachments,
             });
             return;
         }
@@ -106,7 +108,7 @@ const chatService = {
             const response = await apiClient.post(`/chat/rooms/${roomId}/messages`, {
                 content,
                 type,
-                attachments
+                attachments,
             });
             return response;
         } catch (error) {
@@ -126,13 +128,13 @@ const chatService = {
             return response || [];
         } catch (error) {
             console.error('Error fetching chat rooms:', error);
-            
+
             // Fallback to mock data in development
             if (__DEV__) {
                 console.log('Using mock rooms due to API error');
                 return mockChatService.getRooms();
             }
-            
+
             return [];
         }
     },
@@ -142,7 +144,7 @@ const chatService = {
         if (socketService.isConnected()) {
             socketService.joinRoom(roomId);
         }
-        
+
         // Always return messages regardless of socket status
         return this.getRoomMessages(roomId);
     },
@@ -162,7 +164,7 @@ const chatService = {
     // Cleanup
     disconnect() {
         socketService.disconnect();
-    }
+    },
 };
 
 export default chatService;

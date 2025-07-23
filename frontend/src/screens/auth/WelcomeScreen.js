@@ -1,22 +1,17 @@
-
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { welcomeStyles as styles } from '../../styles/screens/auth/WelcomeScreenStyles';
-import { colors } from '../../constants/theme';
+
 import { SCREEN_NAMES } from '../../constants/routes';
+import { colors } from '../../constants/theme';
+import { welcomeStyles as styles } from '../../styles/screens/auth/WelcomeScreenStyles';
 
 const WelcomeScreen = ({ navigation }) => {
     return (
-        <LinearGradient
-            colors={[colors.primary, colors.secondary]}
-            style={styles.container}
-        >
+        <LinearGradient colors={[colors.primary, colors.secondary]} style={styles.container}>
             <View style={styles.content}>
                 <Text style={styles.title}>Conecta Alicante</Text>
-                <Text style={styles.subtitle}>
-                    Your professional companion in Alicante
-                </Text>
+                <Text style={styles.subtitle}>Your professional companion in Alicante</Text>
 
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity

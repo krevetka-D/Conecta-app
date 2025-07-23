@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import Forum from '../models/Forum.js';
 import ChatMessage from '../models/ChatMessage.js';
 import { cacheMiddleware, clearCache } from '../middleware/cacheMiddleware.js';
+import { emitForumCreate, emitForumUpdate, emitForumMessage } from '../socket/realtimeEvents.js';
 
 /**
  * @desc    Get all chat rooms (forums)
@@ -31,6 +32,7 @@ const getForums = asyncHandler(async (req, res) => {
                     roomId: forum._id,
                     deleted: false 
                 })
+                .select('content sender createdAt')
                 .populate('sender', 'name')
                 .sort('-createdAt')
                 .lean();
@@ -139,6 +141,9 @@ const createForum = asyncHandler(async (req, res) => {
 
         // Clear cache when new forum is created
         clearCache('forums');
+        
+        // Emit real-time update
+        emitForumCreate(populatedForum);
 
         res.status(201).json({
             success: true,
@@ -358,6 +363,9 @@ const updateForum = asyncHandler(async (req, res) => {
     // Clear cache
     clearCache('forums');
     clearCache(`forum_${req.params.id}`);
+    
+    // Emit real-time update
+    emitForumUpdate(updatedForum);
 
     res.json(updatedForum);
 });

@@ -1,7 +1,8 @@
 // src/utils/security.js
+import { Buffer } from 'buffer';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
-import { Buffer } from 'buffer';
 
 // Polyfill for btoa/atob in React Native
 global.Buffer = Buffer;
@@ -73,7 +74,7 @@ export const secureStorage = {
     clear: async () => {
         try {
             const keys = await AsyncStorage.getAllKeys();
-            const secureKeys = keys.filter(key => key.startsWith('@secure_'));
+            const secureKeys = keys.filter((key) => key.startsWith('@secure_'));
             await AsyncStorage.multiRemove(secureKeys);
         } catch (error) {
             console.error('Secure storage clear error:', error);
@@ -87,15 +88,10 @@ export const generateSecureToken = async (length = 32) => {
     try {
         const randomBytes = await Crypto.getRandomBytesAsync(length);
         const base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(randomBytes)));
-        return base64
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=/g, '');
+        return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     } catch (error) {
         // Fallback to Math.random (less secure)
-        return Array.from({ length }, () =>
-            Math.random().toString(36).charAt(2)
-        ).join('');
+        return Array.from({ length }, () => Math.random().toString(36).charAt(2)).join('');
     }
 };
 
@@ -123,10 +119,7 @@ export const isValidUrl = (url) => {
 // Hash sensitive data
 export const hashData = async (data) => {
     try {
-        const digest = await Crypto.digestStringAsync(
-            Crypto.CryptoDigestAlgorithm.SHA256,
-            data
-        );
+        const digest = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, data);
         return digest;
     } catch (error) {
         console.error('Hashing error:', error);

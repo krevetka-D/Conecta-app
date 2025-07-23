@@ -86,13 +86,13 @@ export const API_ENDPOINTS = {
         CONVERSATIONS: '/messages/conversations',
         GET: '/messages',
         SEND: '/messages',
-        MARK_READ: '/messages/read'
+        MARK_READ: '/messages/read',
     },
 
     // Stats
     STATS: {
         USER: '/stats/user',
-        DASHBOARD: '/stats/dashboard'
+        DASHBOARD: '/stats/dashboard',
     },
 
     // Config

@@ -20,7 +20,7 @@ const personalChatService = {
             const params = {
                 userId,
                 limit,
-                ...(before && { before })
+                ...(before && { before }),
             };
             const response = await apiClient.get('/messages', { params });
             return response || [];
@@ -37,7 +37,7 @@ const personalChatService = {
             socketService.sendPersonalMessage({
                 recipientId,
                 content,
-                type
+                type,
             });
             return;
         }
@@ -47,7 +47,7 @@ const personalChatService = {
             const response = await apiClient.post('/messages', {
                 recipientId,
                 content,
-                type
+                type,
             });
             return response;
         } catch (error) {
@@ -60,7 +60,7 @@ const personalChatService = {
     async markAsRead(conversationId) {
         try {
             const response = await apiClient.post('/messages/read', {
-                conversationId
+                conversationId,
             });
             return response;
         } catch (error) {
@@ -73,7 +73,7 @@ const personalChatService = {
         try {
             // This creates or retrieves an existing conversation
             const response = await apiClient.post('/messages/conversations', {
-                userId
+                userId,
             });
             return response;
         } catch (error) {
@@ -95,28 +95,30 @@ const personalChatService = {
 
     // Get user profile
     async getUserProfile(userId) {
-    try {
-        // Changed from /users/${userId}/profile to /messages/users/${userId}/profile
-        const response = await apiClient.get(`/messages/users/${userId}/profile`);
-        return response;
-    } catch (error) {
-        console.error('Error fetching user profile:', error);
-        throw error;
-    }
-},
+        try {
+            // Changed from /users/${userId}/profile to /messages/users/${userId}/profile
+            const response = await apiClient.get(`/messages/users/${userId}/profile`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            throw error;
+        }
+    },
 
     // Block/unblock user
     async toggleBlockUser(userId, block = true) {
-    try {
-        // Changed from /users/${userId}/block to /messages/users/${userId}/block
-        const endpoint = block ? `/messages/users/${userId}/block` : `/messages/users/${userId}/unblock`;
-        const response = await apiClient.post(endpoint);
-        return response;
-    } catch (error) {
-        console.error('Error toggling block status:', error);
-        throw error;
-    }
-}
+        try {
+            // Changed from /users/${userId}/block to /messages/users/${userId}/block
+            const endpoint = block
+                ? `/messages/users/${userId}/block`
+                : `/messages/users/${userId}/unblock`;
+            const response = await apiClient.post(endpoint);
+            return response;
+        } catch (error) {
+            console.error('Error toggling block status:', error);
+            throw error;
+        }
+    },
 };
 
 export default personalChatService;

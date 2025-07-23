@@ -1,6 +1,7 @@
 // frontend/src/store/contexts/ThemeContext.js
 import React, { createContext, useState, useContext } from 'react';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
+
 import { theme as customTheme, colors, fonts, spacing } from '../../constants/theme';
 
 const ThemeContext = createContext(null);
@@ -42,7 +43,7 @@ export const ThemeProvider = ({ children }) => {
     const currentTheme = createTheme(isDarkTheme);
 
     const toggleTheme = () => {
-        setIsDarkTheme(prev => !prev);
+        setIsDarkTheme((prev) => !prev);
     };
 
     const themeValue = {
@@ -56,16 +57,14 @@ export const ThemeProvider = ({ children }) => {
 
     return (
         <ThemeContext.Provider value={themeValue}>
-            <PaperProvider theme={currentTheme}>
-                {children}
-            </PaperProvider>
+            <PaperProvider theme={currentTheme}>{children}</PaperProvider>
         </ThemeContext.Provider>
     );
 };
 
 export const useTheme = () => {
     const context = useContext(ThemeContext);
-    
+
     if (!context) {
         // Return a default theme structure if context is not available
         const defaultTheme = createTheme(false);

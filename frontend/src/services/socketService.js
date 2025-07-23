@@ -1,9 +1,10 @@
 // frontend/src/services/socketService.js
-import io from 'socket.io-client';
-import { API_BASE_URL } from '../config/network';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import io from 'socket.io-client';
+
 import { USE_WEBSOCKET, devLog } from '../config/development';
+import { API_BASE_URL } from '../config/network';
 
 class SocketService {
     constructor() {
@@ -26,7 +27,7 @@ class SocketService {
     async connect(userId) {
         // Always attempt connection in production, skip only in development if disabled
         const shouldConnect = __DEV__ ? USE_WEBSOCKET : true;
-        
+
         if (!shouldConnect) {
             devLog('Socket', 'WebSocket disabled in configuration');
             return Promise.resolve();
@@ -68,23 +69,23 @@ class SocketService {
                 timeout: 20000,
                 autoConnect: false,
                 forceNew: true,
-                
+
                 // Platform-specific options
                 ...(Platform.OS === 'android' && {
                     jsonp: false,
-                    forceBase64: true
+                    forceBase64: true,
                 }),
-                
+
                 // Query parameters
                 query: {
                     platform: Platform.OS,
                     version: '1.0.0',
-                    userId: userId
-                }
+                    userId: userId,
+                },
             });
 
             this.setupEventHandlers();
-            
+
             // Connect socket
             this.socket.connect();
 
@@ -105,16 +106,16 @@ class SocketService {
                     this.isConnecting = false;
                     this.connectionState = 'connected';
                     this.reconnectAttempts = 0;
-                    
+
                     // Start heartbeat
                     this.startHeartbeat();
-                    
+
                     // Authenticate
                     this.authenticate(userId);
-                    
+
                     // Update user status to online
                     this.updateUserStatus(true);
-                    
+
                     resolve();
                 });
 
@@ -122,7 +123,10 @@ class SocketService {
                     clearTimeout(this.connectionTimeout);
                     this.isConnecting = false;
                     this.connectionState = 'disconnected';
-                    devLog('Socket', `Connection error: ${error.message} - continuing without socket`);
+                    devLog(
+                        'Socket',
+                        `Connection error: ${error.message} - continuing without socket`,
+                    );
                     resolve(); // Resolve instead of reject to allow app to continue
                 });
             });
@@ -137,7 +141,7 @@ class SocketService {
     getSocketUrl() {
         // Remove /api suffix from base URL
         const baseUrl = API_BASE_URL.replace('/api', '');
-        
+
         if (__DEV__) {
             // Development URLs
             if (Platform.OS === 'ios') {
@@ -146,7 +150,7 @@ class SocketService {
                 return baseUrl.replace('localhost', '10.0.2.2');
             }
         }
-        
+
         // Production or web
         return baseUrl.replace('http:', 'ws:').replace('https:', 'wss:');
     }
@@ -158,12 +162,12 @@ class SocketService {
         this.socket.on('connect', () => {
             this.connectionState = 'connected';
             devLog('Socket', `Connected with ID: ${this.socket.id}`);
-            
+
             // Re-authenticate on reconnection
             if (this.userId) {
                 this.authenticate(this.userId);
             }
-            
+
             this.updateUserStatus(true);
             this.flushMessageQueue();
             this.notifyConnectionStateChange('connected');
@@ -176,7 +180,7 @@ class SocketService {
             this.isAuthenticated = false;
             this.updateUserStatus(false);
             this.notifyConnectionStateChange('disconnected');
-            
+
             // Auto-reconnect for certain disconnect reasons
             if (reason === 'io server disconnect' || reason === 'transport close') {
                 setTimeout(() => {
@@ -208,7 +212,7 @@ class SocketService {
             devLog('Socket', 'Authenticated successfully');
             this.isAuthenticated = true;
             this.emit('authenticated', data);
-            
+
             // Update online status after authentication
             this.updateUserStatus(true);
         });
@@ -290,16 +294,16 @@ class SocketService {
     subscribeToUserStatus(userId, callback) {
         const id = `${userId}_${Date.now()}`;
         this.statusUpdateCallbacks.set(id, { userId, callback });
-        
+
         // Also add to legacy listeners for backward compatibility
         const listenerId = `${userId}_${Date.now()}_legacy`;
         this.userStatusListeners.set(listenerId, callback);
-        
+
         // Request current status
         if (this.isConnected()) {
             this.socket.emit('get_user_status', { userId });
         }
-        
+
         // Return unsubscribe function
         return () => {
             this.statusUpdateCallbacks.delete(id);
@@ -469,19 +473,22 @@ class SocketService {
 
     disconnect() {
         this.stopHeartbeat();
-        
+
         if (this.connectionTimeout) {
             clearTimeout(this.connectionTimeout);
             this.connectionTimeout = null;
         }
-        
+
         if (this.socket) {
             // Update status to offline before disconnecting
             this.updateUserStatus(false);
+
+            // Remove all socket event listeners
+            this.socket.removeAllListeners();
             
-            // Remove all listeners
+            // Remove all custom listeners
             this.listeners.forEach((callbacks, event) => {
-                callbacks.forEach(callback => {
+                callbacks.forEach((callback) => {
                     this.socket.off(event, callback);
                 });
             });
@@ -496,11 +503,14 @@ class SocketService {
             this.socket.disconnect();
             this.socket = null;
         }
-        
+
+        // Clear all references
         this.isAuthenticated = false;
         this.isConnecting = false;
         this.connectionState = 'disconnected';
         this.userId = null;
+        this.currentRoom = null;
+        this.typingTimeout = null;
     }
 
     isConnected() {
@@ -519,11 +529,11 @@ class SocketService {
 
         const backoffDelay = Math.min(
             this.reconnectDelay * Math.pow(2, this.reconnectAttempts),
-            30000 // Max 30 seconds
+            30000, // Max 30 seconds
         );
 
         devLog('Socket', `Retrying connection in ${backoffDelay}ms`);
-        
+
         setTimeout(async () => {
             if (this.userId) {
                 try {

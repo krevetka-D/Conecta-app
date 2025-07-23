@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import ChecklistItem from '../models/ChecklistItem.js';
 import User from '../models/User.js';
+import { emitChecklistUpdate, emitChecklistCreate } from '../socket/realtimeEvents.js';
 
 const FREELANCER_CHECKLIST = [ 'OBTAIN_NIE', 'REGISTER_AUTONOMO', 'UNDERSTAND_TAXES', 'OPEN_BANK_ACCOUNT' ];
 const ENTREPRENEUR_CHECKLIST = [ 'OBTAIN_NIE', 'FORM_SL_COMPANY', 'GET_COMPANY_NIF', 'RESEARCH_FUNDING' ];
@@ -44,6 +45,9 @@ const initializeChecklist = asyncHandler(async (req, res) => {
         // Create new items
         const createdItems = await ChecklistItem.insertMany(itemsToCreate);
         
+        // Emit real-time update
+        emitChecklistCreate(req.user._id, createdItems);
+        
         res.status(201).json(createdItems);
     } catch (error) {
         console.error('Error initializing checklist:', error);
@@ -80,6 +84,9 @@ const updateChecklistItem = asyncHandler(async (req, res) => {
     } else {
         item.isCompleted = isCompleted;
         await item.save();
+        
+        // Emit real-time update
+        emitChecklistUpdate(req.user._id, item);
     }
 
     res.status(200).json(item);

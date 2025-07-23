@@ -10,19 +10,19 @@ import {
     Alert,
 } from 'react-native';
 import { Card, Avatar, Button, Chip } from 'react-native-paper';
-import Icon from '../../components/common/Icon.js';
 
-import { useAuth } from '../../store/contexts/AuthContext';
+import Icon from '../../components/common/Icon.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { SCREEN_NAMES } from '../../constants/routes';
 import { colors, spacing, fonts } from '../../constants/theme';
 import personalChatService from '../../services/personalChatService';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
-import { SCREEN_NAMES } from '../../constants/routes';
 
 const UserProfileScreen = ({ route, navigation }) => {
     const { user: currentUser } = useAuth();
     const { userId, userName } = route.params;
-    
+
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isBlocked, setIsBlocked] = useState(false);
@@ -48,7 +48,7 @@ const UserProfileScreen = ({ route, navigation }) => {
         try {
             // Start or get existing conversation
             const conversation = await personalChatService.startConversation(userId);
-            
+
             // Navigate to chat detail
             navigation.replace(SCREEN_NAMES.PERSONAL_CHAT_DETAIL, {
                 userId: userId,
@@ -64,28 +64,28 @@ const UserProfileScreen = ({ route, navigation }) => {
     const handleBlockUser = async () => {
         Alert.alert(
             isBlocked ? 'Unblock User' : 'Block User',
-            isBlocked 
+            isBlocked
                 ? `Are you sure you want to unblock ${userName}?`
                 : `Are you sure you want to block ${userName}? You won't receive messages from them.`,
             [
                 { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: isBlocked ? 'Unblock' : 'Block', 
+                {
+                    text: isBlocked ? 'Unblock' : 'Block',
                     style: isBlocked ? 'default' : 'destructive',
                     onPress: async () => {
                         try {
                             await personalChatService.toggleBlockUser(userId, !isBlocked);
                             setIsBlocked(!isBlocked);
                             showSuccessAlert(
-                                'Success', 
-                                isBlocked ? 'User unblocked' : 'User blocked'
+                                'Success',
+                                isBlocked ? 'User unblocked' : 'User blocked',
                             );
                         } catch (error) {
                             showErrorAlert('Error', 'Failed to update block status');
                         }
-                    }
+                    },
                 },
-            ]
+            ],
         );
     };
 
@@ -106,19 +106,25 @@ const UserProfileScreen = ({ route, navigation }) => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 <Card style={styles.profileCard}>
                     <View style={styles.profileHeader}>
-                        <Avatar.Text 
-                            size={100} 
-                            label={userProfile.name.charAt(0).toUpperCase()} 
+                        <Avatar.Text
+                            size={100}
+                            label={userProfile.name.charAt(0).toUpperCase()}
                             style={styles.avatar}
                         />
                         <Text style={styles.userName}>{userProfile.name}</Text>
                         <Text style={styles.userEmail}>{userProfile.email}</Text>
-                        
+
                         <View style={styles.statusContainer}>
-                            <View style={[
-                                styles.statusDot,
-                                { backgroundColor: userProfile.isOnline ? colors.success : colors.textSecondary }
-                            ]} />
+                            <View
+                                style={[
+                                    styles.statusDot,
+                                    {
+                                        backgroundColor: userProfile.isOnline
+                                            ? colors.success
+                                            : colors.textSecondary,
+                                    },
+                                ]}
+                            />
                             <Text style={styles.statusText}>
                                 {userProfile.isOnline ? 'Online' : 'Offline'}
                             </Text>
@@ -127,9 +133,15 @@ const UserProfileScreen = ({ route, navigation }) => {
                         <Chip
                             style={styles.pathChip}
                             textStyle={styles.pathChipText}
-                            icon={userProfile.professionalPath === 'FREELANCER' ? 'briefcase' : 'rocket'}
+                            icon={
+                                userProfile.professionalPath === 'FREELANCER'
+                                    ? 'briefcase'
+                                    : 'rocket'
+                            }
                         >
-                            {userProfile.professionalPath === 'FREELANCER' ? 'Freelancer' : 'Entrepreneur'}
+                            {userProfile.professionalPath === 'FREELANCER'
+                                ? 'Freelancer'
+                                : 'Entrepreneur'}
                         </Chip>
                     </View>
                 </Card>
@@ -137,17 +149,15 @@ const UserProfileScreen = ({ route, navigation }) => {
                 <Card style={styles.infoCard}>
                     <Card.Content>
                         <Text style={styles.sectionTitle}>About</Text>
-                        <Text style={styles.bioText}>
-                            {userProfile.bio || 'No bio available'}
-                        </Text>
-                        
+                        <Text style={styles.bioText}>{userProfile.bio || 'No bio available'}</Text>
+
                         {userProfile.location && (
                             <View style={styles.infoRow}>
                                 <Icon name="map-marker" size={20} color={colors.textSecondary} />
                                 <Text style={styles.infoText}>{userProfile.location}</Text>
                             </View>
                         )}
-                        
+
                         {userProfile.joinedDate && (
                             <View style={styles.infoRow}>
                                 <Icon name="calendar" size={20} color={colors.textSecondary} />
@@ -175,7 +185,7 @@ const UserProfileScreen = ({ route, navigation }) => {
                         onPress={handleBlockUser}
                         style={styles.blockButton}
                         textColor={isBlocked ? colors.primary : colors.error}
-                        icon={isBlocked ? "account-check" : "account-cancel"}
+                        icon={isBlocked ? 'account-check' : 'account-cancel'}
                     >
                         {isBlocked ? 'Unblock User' : 'Block User'}
                     </Button>

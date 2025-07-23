@@ -1,6 +1,6 @@
 // frontend/src/utils/performance.js
-import { InteractionManager, Text } from 'react-native';
 import React, { useCallback, useRef, useMemo } from 'react';
+import { InteractionManager, Text } from 'react-native';
 
 export const runAfterInteractions = (callback) => {
     return InteractionManager.runAfterInteractions(() => {
@@ -26,11 +26,11 @@ export const debounce = (func, wait, immediate = false) => {
 
 export const throttle = (func, limit) => {
     let inThrottle;
-    return function(...args) {
+    return function (...args) {
         if (!inThrottle) {
             func.apply(this, args);
             inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+            setTimeout(() => (inThrottle = false), limit);
         }
     };
 };
@@ -42,7 +42,7 @@ export const useDebounce = (callback, delay) => {
 
     return useCallback(
         debounce((...args) => callbackRef.current(...args), delay),
-        [delay]
+        [delay],
     );
 };
 
@@ -52,7 +52,7 @@ export const useThrottle = (callback, delay) => {
 
     return useCallback(
         throttle((...args) => callbackRef.current(...args), delay),
-        [delay]
+        [delay],
     );
 };
 
@@ -76,11 +76,13 @@ const areArgumentsEqual = (args1, args2) => {
 };
 
 // FlatList optimization helpers
-export const getItemLayout = (itemHeight, separatorHeight = 0) => (data, index) => ({
-    length: itemHeight,
-    offset: (itemHeight + separatorHeight) * index,
-    index,
-});
+export const getItemLayout =
+    (itemHeight, separatorHeight = 0) =>
+        (data, index) => ({
+            length: itemHeight,
+            offset: (itemHeight + separatorHeight) * index,
+            index,
+        });
 
 export const keyExtractor = (item, index) => {
     if (item && typeof item === 'object') {
@@ -101,18 +103,18 @@ export const optimizeImageUri = (uri, width, height, quality = 0.8) => {
 // Bundle splitting helper
 export const loadComponentAsync = (importFunction) => {
     return React.lazy(() =>
-        importFunction().catch(error => {
+        importFunction().catch((error) => {
             console.error('Failed to load component:', error);
             // Return a fallback component
             return { default: () => <Text>Failed to load component</Text> };
-        })
+        }),
     );
 };
 
 // Memory management
 export const cleanupResources = (...resources) => {
     return () => {
-        resources.forEach(resource => {
+        resources.forEach((resource) => {
             if (resource && typeof resource.cleanup === 'function') {
                 resource.cleanup();
             } else if (resource && typeof resource.remove === 'function') {

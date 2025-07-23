@@ -2,6 +2,8 @@ import asyncHandler from 'express-async-handler';
 import ChatMessage from '../models/ChatMessage.js';
 import Forum from '../models/Forum.js';
 import User from '../models/User.js';
+import { getIO } from '../websocket.js';
+import { emitForumMessage } from '../socket/realtimeEvents.js';
 
 /**
  * @desc    Get messages for a room with pagination
@@ -112,6 +114,28 @@ export const sendMessage = asyncHandler(async (req, res) => {
     await Forum.findByIdAndUpdate(roomId, {
         lastActivity: new Date()
     });
+
+    // Emit real-time message event
+    const io = getIO();
+    if (io) {
+        // Emit to room
+        io.to(`room_${roomId}`).emit('new_message', {
+            roomId,
+            message: populatedMessage,
+            timestamp: new Date()
+        });
+        
+        // Also emit general new_message event for ForumScreen updates
+        io.emit('new_message', {
+            roomId,
+            content: populatedMessage.content,
+            sender: populatedMessage.sender,
+            createdAt: populatedMessage.createdAt
+        });
+    }
+    
+    // Emit forum message event
+    emitForumMessage(roomId, populatedMessage);
 
     res.status(201).json(populatedMessage);
 });

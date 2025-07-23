@@ -1,8 +1,9 @@
 // frontend/src/components/common/OnlineStatusIndicator.js
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import socketService from '../../services/socketService';
+
 import { colors } from '../../constants/theme';
+import socketService from '../../services/socketService';
 
 export const OnlineStatusIndicator = ({ userId, showText = false, size = 12 }) => {
     const [isOnline, setIsOnline] = useState(false);
@@ -25,7 +26,7 @@ export const OnlineStatusIndicator = ({ userId, showText = false, size = 12 }) =
         const now = new Date();
         const seen = new Date(date);
         const diffMinutes = Math.floor((now - seen) / 60000);
-        
+
         if (diffMinutes < 1) return 'Just now';
         if (diffMinutes < 60) return `${diffMinutes}m ago`;
         if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h ago`;
@@ -34,14 +35,16 @@ export const OnlineStatusIndicator = ({ userId, showText = false, size = 12 }) =
 
     return (
         <View style={styles.container}>
-            <View style={[
-                styles.indicator,
-                { 
-                    width: size, 
-                    height: size,
-                    backgroundColor: isOnline ? colors.success : colors.textSecondary 
-                }
-            ]} />
+            <View
+                style={[
+                    styles.indicator,
+                    {
+                        width: size,
+                        height: size,
+                        backgroundColor: isOnline ? colors.success : colors.textSecondary,
+                    },
+                ]}
+            />
             {showText && (
                 <Text style={styles.text}>
                     {isOnline ? 'Online' : `Last seen ${formatLastSeen(lastSeen)}`}

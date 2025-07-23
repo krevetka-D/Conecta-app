@@ -1,22 +1,15 @@
-import React, { useState } from 'react';
-import {
-    View,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    Platform,
-    SafeAreaView,
-} from 'react-native';
-import { TextInput, Button, Chip, Portal, Modal } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Icon from '../../components/common/Icon.js';
+import React, { useState } from 'react';
+import { View, ScrollView, Text, TouchableOpacity, Platform, SafeAreaView } from 'react-native';
+import { TextInput, Button, Chip, Portal, Modal } from 'react-native-paper';
 
+import Icon from '../../components/common/Icon.js';
+import eventService from '../../services/eventService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
-import eventService from '../../services/eventService';
+import { createEventStyles } from '../../styles/screens/events/CreateEventScreenStyles';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import { formatDate } from '../../utils/formatting';
-import { createEventStyles } from '../../styles/screens/events/CreateEventScreenStyles';
 
 const CreateEventScreen = ({ navigation }) => {
     const theme = useTheme();
@@ -28,7 +21,7 @@ const CreateEventScreen = ({ navigation }) => {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [showAudienceModal, setShowAudienceModal] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -66,7 +59,7 @@ const CreateEventScreen = ({ navigation }) => {
 
     const validateForm = () => {
         const errors = {};
-        
+
         if (!formData.title.trim()) {
             errors.title = 'Title is required';
         }
@@ -76,7 +69,7 @@ const CreateEventScreen = ({ navigation }) => {
         if (!formData.location.name.trim()) {
             errors.locationName = 'Location name is required';
         }
-        
+
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -89,14 +82,16 @@ const CreateEventScreen = ({ navigation }) => {
             // Format time from Date object to string
             const hours = formData.time.getHours();
             const minutes = formData.time.getMinutes();
-            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes
+                .toString()
+                .padStart(2, '0')}`;
+
             const eventData = {
                 ...formData,
                 time: timeString,
                 maxAttendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
             };
-            
+
             await eventService.createEvent(eventData);
             showSuccessAlert('Success', 'Event created successfully!');
             navigation.goBack();
@@ -143,12 +138,12 @@ const CreateEventScreen = ({ navigation }) => {
     const handleRemoveTag = (tag) => {
         setFormData({
             ...formData,
-            tags: formData.tags.filter(t => t !== tag),
+            tags: formData.tags.filter((t) => t !== tag),
         });
     };
 
-    const selectedCategory = categories.find(cat => cat.value === formData.category);
-    const selectedAudience = audiences.find(aud => aud.value === formData.targetAudience);
+    const selectedCategory = categories.find((cat) => cat.value === formData.category);
+    const selectedAudience = audiences.find((aud) => aud.value === formData.targetAudience);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -158,7 +153,7 @@ const CreateEventScreen = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 <Text style={styles.sectionTitle}>Event Details</Text>
-                
+
                 <TextInput
                     label="Event Title"
                     value={formData.title}
@@ -168,9 +163,7 @@ const CreateEventScreen = ({ navigation }) => {
                     error={!!formErrors.title}
                     theme={{ colors: { primary: theme.colors.primary } }}
                 />
-                {formErrors.title && (
-                    <Text style={styles.errorText}>{formErrors.title}</Text>
-                )}
+                {formErrors.title && <Text style={styles.errorText}>{formErrors.title}</Text>}
 
                 <TextInput
                     label="Description"
@@ -210,10 +203,12 @@ const CreateEventScreen = ({ navigation }) => {
                 <TextInput
                     label="Location Name"
                     value={formData.location.name}
-                    onChangeText={(text) => setFormData({ 
-                        ...formData, 
-                        location: { ...formData.location, name: text }
-                    })}
+                    onChangeText={(text) =>
+                        setFormData({
+                            ...formData,
+                            location: { ...formData.location, name: text },
+                        })
+                    }
                     mode="outlined"
                     style={styles.input}
                     error={!!formErrors.locationName}
@@ -226,10 +221,12 @@ const CreateEventScreen = ({ navigation }) => {
                 <TextInput
                     label="Address (Optional)"
                     value={formData.location.address}
-                    onChangeText={(text) => setFormData({ 
-                        ...formData, 
-                        location: { ...formData.location, address: text }
-                    })}
+                    onChangeText={(text) =>
+                        setFormData({
+                            ...formData,
+                            location: { ...formData.location, address: text },
+                        })
+                    }
                     mode="outlined"
                     style={styles.input}
                     theme={{ colors: { primary: theme.colors.primary } }}
@@ -365,22 +362,29 @@ const CreateEventScreen = ({ navigation }) => {
                             key={category.value}
                             style={[
                                 styles.modalOption,
-                                formData.category === category.value && styles.modalOptionSelected
+                                formData.category === category.value && styles.modalOptionSelected,
                             ]}
                             onPress={() => {
                                 setFormData({ ...formData, category: category.value });
                                 setShowCategoryModal(false);
                             }}
                         >
-                            <Icon name={category.icon} size={24} color={
-                                formData.category === category.value 
-                                    ? theme.colors.primary 
-                                    : theme.colors.textSecondary
-                            } />
-                            <Text style={[
-                                styles.modalOptionText,
-                                formData.category === category.value && styles.modalOptionTextSelected
-                            ]}>
+                            <Icon
+                                name={category.icon}
+                                size={24}
+                                color={
+                                    formData.category === category.value
+                                        ? theme.colors.primary
+                                        : theme.colors.textSecondary
+                                }
+                            />
+                            <Text
+                                style={[
+                                    styles.modalOptionText,
+                                    formData.category === category.value &&
+                                        styles.modalOptionTextSelected,
+                                ]}
+                            >
                                 {category.label}
                             </Text>
                             {formData.category === category.value && (
@@ -404,17 +408,21 @@ const CreateEventScreen = ({ navigation }) => {
                             key={audience.value}
                             style={[
                                 styles.modalOption,
-                                formData.targetAudience === audience.value && styles.modalOptionSelected
+                                formData.targetAudience === audience.value &&
+                                    styles.modalOptionSelected,
                             ]}
                             onPress={() => {
                                 setFormData({ ...formData, targetAudience: audience.value });
                                 setShowAudienceModal(false);
                             }}
                         >
-                            <Text style={[
-                                styles.modalOptionText,
-                                formData.targetAudience === audience.value && styles.modalOptionTextSelected
-                            ]}>
+                            <Text
+                                style={[
+                                    styles.modalOptionText,
+                                    formData.targetAudience === audience.value &&
+                                        styles.modalOptionTextSelected,
+                                ]}
+                            >
                                 {audience.label}
                             </Text>
                             {formData.targetAudience === audience.value && (

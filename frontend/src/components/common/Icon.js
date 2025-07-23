@@ -4,22 +4,22 @@ import { Platform, Text, View } from 'react-native';
 // Icon mapping for web
 const WEB_ICON_MAP = {
     // Navigation & UI
-    'home': '🏠',
+    home: '🏠',
     'home-outline': '🏠',
-    'message': '💬',
+    message: '💬',
     'message-outline': '💬',
     'view-dashboard': '📊',
     'view-dashboard-outline': '📊',
-    'finance': '💰',
+    finance: '💰',
     'book-open-page-variant': '📚',
     'book-open-page-variant-outline': '📚',
-    'forum': '👥',
+    forum: '👥',
     'forum-outline': '👥',
     'calendar-month': '📅',
     'calendar-month-outline': '📅',
     'account-circle': '👤',
     'account-circle-outline': '👤',
-    
+
     // Common actions
     'chevron-right': '›',
     'chevron-left': '‹',
@@ -27,44 +27,44 @@ const WEB_ICON_MAP = {
     'chevron-up': '⌃',
     'arrow-left': '←',
     'arrow-right': '→',
-    'close': '✕',
-    'plus': '+',
+    close: '✕',
+    plus: '+',
     'plus-circle': '⊕',
-    'minus': '-',
-    'check': '✓',
+    minus: '-',
+    check: '✓',
     'check-all': '✓✓',
     'dots-vertical': '⋮',
     'dots-horizontal': '⋯',
-    'menu': '☰',
-    'magnify': '🔍',
-    'filter': '▽',
-    'sort': '↕',
-    
+    menu: '☰',
+    magnify: '🔍',
+    filter: '▽',
+    sort: '↕',
+
     // Status & Info
     'alert-circle-outline': '⚠',
     'information-outline': '📣',
     'help-circle-outline': '?',
     'bell-outline': '🔔',
-    'bell': '🔔',
-    'star': '★',
+    bell: '🔔',
+    star: '★',
     'star-outline': '☆',
-    'heart': '❤',
+    heart: '❤',
     'heart-outline': '♡',
-    
+
     // Business & Professional
     'briefcase-account': '💼',
     'lightbulb-on': '💡',
     'lightbulb-outline': '💡',
     'rocket-launch': '🚀',
-    'laptop': '💻',
-    'calculator': '🧮',
-    'bank': '🏦',
-    'wallet': '💳',
+    laptop: '💻',
+    calculator: '🧮',
+    bank: '🏦',
+    wallet: '💳',
     'cash-remove': '💸',
     'currency-eur': '€',
-    
+
     // Social & Communication
-    'account': '👤',
+    account: '👤',
     'account-group': '👥',
     'account-group-outline': '👥',
     'account-plus': '👤+',
@@ -72,73 +72,78 @@ const WEB_ICON_MAP = {
     'account-cancel': '👤✕',
     'message-plus': '💬+',
     'message-text-outline': '💬',
-    'send': '📤',
-    'email': '✉',
-    
+    send: '📤',
+    email: '✉',
+
     // Files & Documents
     'file-document-outline': '📄',
-    'folder': '📁',
+    folder: '📁',
     'clipboard-check': '📋✓',
     'clipboard-check-outline': '📋',
     'clipboard-text': '📋',
     'card-account-details': '🆔',
-    
+
     // Location & Time
     'map-marker': '📍',
     'map-marker-outline': '📍',
     'clock-outline': '🕐',
-    'calendar': '📅',
+    calendar: '📅',
     'calendar-blank-outline': '📅',
     'calendar-plus': '📅+',
-    
+
     // Actions & Settings
-    'settings': '⚙',
-    'cog': '⚙',
+    settings: '⚙',
+    cog: '⚙',
     'account-cog': '👤⚙',
-    'logout': '🚪',
-    'login': '🔑',
-    'pencil': '✏',
-    'delete': '🗑',
+    logout: '🚪',
+    login: '🔑',
+    pencil: '✏',
+    delete: '🗑',
     'trash-can-outline': '🗑',
-    'refresh': '🔄',
-    'download': '⬇',
-    'upload': '⬆',
-    'share': '🔗',
-    
+    refresh: '🔄',
+    download: '⬇',
+    upload: '⬆',
+    share: '🔗',
+
     // Forms & Input
-    'eye': '👁',
+    eye: '👁',
     'eye-off': '👁‍🗨',
-    'lock': '🔒',
+    lock: '🔒',
     'lock-open': '🔓',
     'shield-check-outline': '🛡✓',
-    
+
     // Business Specific
-    'domain': '🏢',
-    'identifier': '🆔',
+    domain: '🏢',
+    identifier: '🆔',
     'cash-multiple': '💵',
-    'finance': '📈',
-    'briefcase': '💼',
-    'school': '🎓',
+    'finance-chart': '📈',
+    briefcase: '💼',
+    school: '🎓',
     'party-popper': '🎉',
-    'coffee': '☕',
-    'presentation': '📊',
-    
+    coffee: '☕',
+    presentation: '📊',
+
     // Default fallback
-    'default': '•'
+    default: '•',
 };
 
 const Icon = ({ name, size = 24, color = '#000', style, ...props }) => {
     // For web, always use emoji/text icons
     if (Platform.OS === 'web') {
         const iconChar = WEB_ICON_MAP[name] || WEB_ICON_MAP.default;
-        
+
         return (
-            <View style={[{ 
-                width: size, 
-                height: size, 
-                justifyContent: 'center', 
-                alignItems: 'center' 
-            }, style]}>
+            <View
+                style={[
+                    {
+                        width: size,
+                        height: size,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    },
+                    style,
+                ]}
+            >
                 <Text
                     style={{
                         fontSize: size * 0.8,
@@ -157,7 +162,8 @@ const Icon = ({ name, size = 24, color = '#000', style, ...props }) => {
 
     // Native platform code
     try {
-        const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
+        const MaterialCommunityIcons =
+            require('react-native-vector-icons/MaterialCommunityIcons').default;
         return (
             <MaterialCommunityIcons
                 name={name}
@@ -171,7 +177,12 @@ const Icon = ({ name, size = 24, color = '#000', style, ...props }) => {
         // Fallback for native if vector icons fail
         const iconChar = WEB_ICON_MAP[name] || WEB_ICON_MAP.default;
         return (
-            <View style={[{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }, style]}>
+            <View
+                style={[
+                    { width: size, height: size, justifyContent: 'center', alignItems: 'center' },
+                    style,
+                ]}
+            >
                 <Text style={{ fontSize: size * 0.8, color, textAlign: 'center' }}>{iconChar}</Text>
             </View>
         );

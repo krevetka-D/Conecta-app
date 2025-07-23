@@ -1,5 +1,6 @@
 // src/styles/components/ui/InputStyles.js
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({
@@ -33,4 +34,3 @@ export const styles = StyleSheet.create({
         marginTop: 4,
     },
 });
-

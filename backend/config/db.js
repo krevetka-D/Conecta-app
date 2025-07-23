@@ -12,9 +12,9 @@ const connectDB = async () => {
         socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT_MS) || 45000,
         family: 4, // Use IPv4, skip trying IPv6
 
-        // Connection pool settings
-        maxPoolSize: parseInt(process.env.DB_POOL_SIZE) || 10,
-        minPoolSize: parseInt(process.env.DB_POOL_MIN) || 2,
+        // Connection pool settings - optimized for better performance
+        maxPoolSize: parseInt(process.env.DB_POOL_SIZE) || 50,
+        minPoolSize: parseInt(process.env.DB_POOL_MIN) || 10,
         maxIdleTimeMS: 10000,
         waitQueueTimeoutMS: 10000,
 
@@ -53,6 +53,27 @@ const connectDB = async () => {
             const { host, port, name } = conn.connection;
             console.log(`✅ MongoDB Connected: ${host}:${port}/${name}`);
             console.log(`📊 Connection state: ${conn.connection.readyState}`);
+            
+            // Import models to ensure they're registered
+            await import('../models/User.js');
+            await import('../models/Event.js');
+            await import('../models/Forum.js');
+            await import('../models/ChatMessage.js');
+            await import('../models/BudgetEntry.js');
+            await import('../models/ChecklistItem.js');
+            await import('../models/Guide.js');
+            
+            // Create indexes in background
+            if (process.env.CREATE_INDEXES === 'true') {
+                const { createDatabaseIndexes } = await import('../utils/databaseOptimization.js');
+                createDatabaseIndexes().catch(console.error);
+            }
+            
+            // Enable slow query logging in development
+            if (process.env.NODE_ENV === 'development') {
+                const { enableSlowQueryLogging } = await import('../utils/databaseOptimization.js');
+                enableSlowQueryLogging();
+            }
 
             // Connection event handlers
             mongoose.connection.on('connected', () => {

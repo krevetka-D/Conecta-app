@@ -1,11 +1,12 @@
-
-import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { useAuth } from '../store/contexts/AuthContext';
+import React from 'react';
+
+import FullScreenLoader from '../components/common/LoadingSpinner';
 import { useApp } from '../store/contexts/AppContext';
+import { useAuth } from '../store/contexts/AuthContext';
+
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator'; // Corrected from AppNavigator
-import FullScreenLoader from '../components/common/LoadingSpinner';
 import { navigationRef } from './NavigationService'; // Import the ref
 
 const RootNavigator = () => {

@@ -45,6 +45,22 @@ export const validationRules = {
             .isISO8601().withMessage('Must be a valid date'),
     ],
 
+    updateBudget: [
+        body('type')
+            .optional()
+            .isIn(['INCOME', 'EXPENSE']).withMessage('Type must be INCOME or EXPENSE'),
+        body('category')
+            .optional()
+            .trim(),
+        body('amount')
+            .optional()
+            .isNumeric().withMessage('Amount must be a number')
+            .custom(value => value > 0).withMessage('Amount must be positive'),
+        body('entryDate')
+            .optional()
+            .isISO8601().withMessage('Must be a valid date'),
+    ],
+
     // Checklist validation
     updateChecklist: [
         param('itemKey')
@@ -93,7 +109,12 @@ export const eventValidationRules = {
         body('date')
             .notEmpty().withMessage('Date is required')
             .isISO8601().withMessage('Invalid date format')
-            .custom(value => new Date(value) > new Date()).withMessage('Event date must be in the future'),
+            .custom(value => {
+                const eventDate = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return eventDate >= today;
+            }).withMessage('Event date cannot be in the past'),
         body('time')
             .notEmpty().withMessage('Time is required')
             .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Time must be in HH:MM format'),

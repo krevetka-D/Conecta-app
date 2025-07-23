@@ -1,17 +1,11 @@
-
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { 
-    FlatList, 
-    RefreshControl, 
-    View, 
-    Text, 
-    InteractionManager,
-    Platform 
-} from 'react-native';
+import { FlatList, RefreshControl, View, Text, InteractionManager, Platform } from 'react-native';
+
 import { FLATLIST_CONFIG } from '../../config/performance';
+import { colors } from '../../constants/theme';
+
 import EmptyState from './EmptyState';
 import LoadingSpinner from './LoadingSpinner';
-import { colors } from '../../constants/theme';
 
 const OptimizedList = ({
     data,
@@ -45,38 +39,32 @@ const OptimizedList = ({
     }, []);
 
     // Memoize keyExtractor with fallback
-    const memoizedKeyExtractor = useCallback(
-        keyExtractor || FLATLIST_CONFIG.keyExtractor,
-        []
-    );
+    const memoizedKeyExtractor = useCallback(keyExtractor || FLATLIST_CONFIG.keyExtractor, []);
 
     // Enhanced render item with interaction handling
-    const enhancedRenderItem = useCallback((props) => {
-        if (!enableOptimizations) {
-            return renderItem(props);
-        }
+    const enhancedRenderItem = useCallback(
+        (props) => {
+            if (!enableOptimizations) {
+                return renderItem(props);
+            }
 
-        return (
-            <InteractionOptimizedItem
-                {...props}
-                renderItem={renderItem}
-                isInitialLoad={isInitialLoad}
-            />
-        );
-    }, [renderItem, enableOptimizations, isInitialLoad]);
+            return (
+                <InteractionOptimizedItem
+                    {...props}
+                    renderItem={renderItem}
+                    isInitialLoad={isInitialLoad}
+                />
+            );
+        },
+        [renderItem, enableOptimizations, isInitialLoad],
+    );
 
     // Memoize empty component
     const ListEmptyComponent = useMemo(() => {
         if (loading) {
             return <LoadingSpinner />;
         }
-        return (
-            <EmptyState
-                icon={emptyIcon}
-                title={emptyTitle}
-                message={emptyMessage}
-            />
-        );
+        return <EmptyState icon={emptyIcon} title={emptyTitle} message={emptyMessage} />;
     }, [loading, emptyIcon, emptyTitle, emptyMessage]);
 
     // Memoize refresh control
@@ -96,9 +84,7 @@ const OptimizedList = ({
     // Optimize content container style
     const optimizedContentStyle = useMemo(() => {
         const baseStyle = { flexGrow: data?.length === 0 ? 1 : 0 };
-        return contentContainerStyle 
-            ? [baseStyle, contentContainerStyle]
-            : baseStyle;
+        return contentContainerStyle ? [baseStyle, contentContainerStyle] : baseStyle;
     }, [data?.length, contentContainerStyle]);
 
     // Calculate estimated item layout if size provided
@@ -173,12 +159,15 @@ const OptimizedList = ({
             scrollEventThrottle={enableOptimizations ? 16 : undefined}
             onLayout={handleLayout}
             viewabilityConfig={viewConfigRef.current}
-            maintainVisibleContentPosition={maintainVisibleContentPosition || (
-                Platform.OS === 'ios' && enableOptimizations ? {
-                    minIndexForVisible: 0,
-                    autoscrollToTopThreshold: 100,
-                } : undefined
-            )}
+            maintainVisibleContentPosition={
+                maintainVisibleContentPosition ||
+                (Platform.OS === 'ios' && enableOptimizations
+                    ? {
+                        minIndexForVisible: 0,
+                        autoscrollToTopThreshold: 100,
+                    }
+                    : undefined)
+            }
             // Performance optimizations
             drawDistance={enableOptimizations ? 250 : undefined}
             legacyImplementation={false}
@@ -192,11 +181,7 @@ const OptimizedList = ({
 };
 
 // Optimized item wrapper component
-const InteractionOptimizedItem = React.memo(({ 
-    renderItem, 
-    isInitialLoad, 
-    ...props 
-}) => {
+const InteractionOptimizedItem = React.memo(({ renderItem, isInitialLoad, ...props }) => {
     const [shouldRender, setShouldRender] = useState(!isInitialLoad);
 
     useEffect(() => {
@@ -211,13 +196,22 @@ const InteractionOptimizedItem = React.memo(({
         // Render placeholder during initial load
         return (
             <View style={{ height: 80, justifyContent: 'center', alignItems: 'center' }}>
-                <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
+                <View
+                    style={{
+                        width: 40,
+                        height: 4,
+                        backgroundColor: colors.border,
+                        borderRadius: 2,
+                    }}
+                />
             </View>
         );
     }
 
     return renderItem(props);
 });
+
+InteractionOptimizedItem.displayName = 'InteractionOptimizedItem';
 
 // Export enhanced list with additional methods
 export default React.forwardRef((props, ref) => {

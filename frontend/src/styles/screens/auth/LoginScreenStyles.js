@@ -1,6 +1,7 @@
 // frontend/src/styles/screens/auth/LoginScreenStyles.js
 
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts } from '../../../constants/theme';
 
 export const loginStyles = StyleSheet.create({

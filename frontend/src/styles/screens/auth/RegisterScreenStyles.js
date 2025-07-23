@@ -1,6 +1,7 @@
 // frontend/src/styles/screens/auth/RegisterScreenStyles.js
 
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
 export const registerStyles = StyleSheet.create({
@@ -72,7 +73,7 @@ export const registerStyles = StyleSheet.create({
         marginBottom: 10,
         marginLeft: 5,
     },
-    
+
     // Professional Path Selection Styles
     pathSection: {
         marginTop: spacing.lg,
@@ -133,7 +134,7 @@ export const registerStyles = StyleSheet.create({
         color: colors.textSecondary,
         lineHeight: fonts.sizes.sm * fonts.lineHeights.normal,
     },
-    
+
     // Checklist Selection Styles
     checklistContainer: {
         maxHeight: 400,

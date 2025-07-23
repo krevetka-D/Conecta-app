@@ -2,23 +2,23 @@
 export const DEV_CONFIG = {
     // Set to true to use mock services instead of real backend
     USE_MOCK_SERVICES: false,
-    
+
     // Set to true to attempt WebSocket connections
     USE_WEBSOCKET: true,
-    
+
     // Mock user for development
     MOCK_USER: {
         _id: 'current-user',
         name: 'Test User',
         email: 'test@example.com',
-        professionalPath: 'FREELANCER'
+        professionalPath: 'FREELANCER',
     },
-    
+
     // Development API endpoints
     API_ENDPOINTS: {
         // Override specific endpoints for development if needed
     },
-    
+
     // Console logging
     ENABLE_LOGGING: true,
     LOG_NETWORK_REQUESTS: true,

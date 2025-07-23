@@ -8,18 +8,14 @@ class CacheManager {
         this.defaultTTL = 5 * 60 * 1000; // 5 minutes
         this.maxMemoryCacheSize = 50; // Maximum items in memory
         this.persistentKeys = new Set(); // Keys that should persist across sessions
-        
+
         // Start periodic cleanup
         this.startCleanupTimer();
     }
 
     // Set cache with TTL
     async set(key, value, options = {}) {
-        const {
-            ttl = this.defaultTTL,
-            persistent = false,
-            skipMemory = false,
-        } = options;
+        const { ttl = this.defaultTTL, persistent = false, skipMemory = false } = options;
 
         const cacheData = {
             value,
@@ -36,10 +32,7 @@ class CacheManager {
         if (persistent) {
             this.persistentKeys.add(key);
             try {
-                await AsyncStorage.setItem(
-                    `cache_${key}`,
-                    JSON.stringify(cacheData)
-                );
+                await AsyncStorage.setItem(`cache_${key}`, JSON.stringify(cacheData));
             } catch (error) {
                 console.error('Failed to persist cache:', error);
             }
@@ -90,7 +83,7 @@ class CacheManager {
     // Get or set pattern
     async getOrSet(key, fetcher, options = {}) {
         const cached = await this.get(key, { forceRefresh: options.forceRefresh });
-        
+
         if (cached !== null && cached !== undefined) {
             return cached;
         }
@@ -122,7 +115,7 @@ class CacheManager {
     // Get from memory cache
     getFromMemoryCache(key) {
         const cacheData = this.memoryCache.get(key);
-        
+
         if (!cacheData) {
             return null;
         }
@@ -184,9 +177,7 @@ class CacheManager {
             }
         });
 
-        await Promise.all(
-            keysToInvalidate.map(key => this.invalidate(key))
-        );
+        await Promise.all(keysToInvalidate.map((key) => this.invalidate(key)));
     }
 
     // Clear all cache
@@ -197,7 +188,7 @@ class CacheManager {
         // Clear persistent cache
         try {
             const keys = await AsyncStorage.getAllKeys();
-            const cacheKeys = keys.filter(key => key.startsWith('cache_'));
+            const cacheKeys = keys.filter((key) => key.startsWith('cache_'));
             await AsyncStorage.multiRemove(cacheKeys);
             this.persistentKeys.clear();
         } catch (error) {
@@ -217,7 +208,7 @@ class CacheManager {
             } else {
                 expiredCount++;
             }
-            
+
             // Rough size estimation
             totalSize += JSON.stringify(cacheData.value).length;
         });
@@ -248,7 +239,7 @@ class CacheManager {
             }
         });
 
-        keysToDelete.forEach(key => {
+        keysToDelete.forEach((key) => {
             this.memoryCache.delete(key);
             this.cacheTimestamps.delete(key);
         });
@@ -261,7 +252,7 @@ class CacheManager {
     // Preload cache for critical data
     async preload(entries) {
         const promises = entries.map(({ key, fetcher, options }) =>
-            this.getOrSet(key, fetcher, { ...options, forceRefresh: true })
+            this.getOrSet(key, fetcher, { ...options, forceRefresh: true }),
         );
 
         try {

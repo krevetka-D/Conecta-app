@@ -1,30 +1,26 @@
-
+import React, { useState, useEffect } from 'react';
+import { ScrollView, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { styles } from '../../styles/screens/content/GuideDetailScreenStyles';
+
+import EmptyState from '../../components/common/EmptyState';
+import Icon from '../../components/common/Icon.js'; // Add this
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { Button } from '../../components/ui/Button'; // Add this
+import { SCREEN_NAMES } from '../../constants/routes';
+import { colors } from '../../constants/theme'; // Add this
 import { useApi } from '../../hooks/useApi';
 import contentService from '../../services/contentService';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
+import { styles } from '../../styles/screens/content/GuideDetailScreenStyles';
 import { showErrorAlert } from '../../utils/alerts';
-import React, { useState, useEffect } from 'react';
-import {
-    ScrollView,
-    View,
-    Text,
-    ActivityIndicator,
-    TouchableOpacity,
-} from 'react-native';
-import Icon from '../../components/common/Icon.js'; // Add this
-import { Button } from '../../components/ui/Button'; // Add this
-import { colors } from '../../constants/theme'; // Add this
-import { SCREEN_NAMES } from '../../constants/routes';
 const GuideDetailScreen = ({ route, navigation }) => {
     const { slug, title } = route.params || {};
     const [guide, setGuide] = useState(null);
 
-    const { execute: fetchGuide, loading, error } = useApi(
-        () => contentService.getGuideBySlug(slug)
-    );
+    const {
+        execute: fetchGuide,
+        loading,
+        error,
+    } = useApi(() => contentService.getGuideBySlug(slug));
 
     useEffect(() => {
         if (slug) {
@@ -61,11 +57,7 @@ const GuideDetailScreen = ({ route, navigation }) => {
                 title="Guide Not Found"
                 message="The guide you're looking for could not be loaded."
                 action={
-                    <Button
-                        title="Go Back"
-                        onPress={() => navigation.goBack()}
-                        variant="outline"
-                    />
+                    <Button title="Go Back" onPress={() => navigation.goBack()} variant="outline" />
                 }
             />
         );
@@ -123,10 +115,12 @@ const GuideDetailScreen = ({ route, navigation }) => {
                         <TouchableOpacity
                             key={related._id}
                             style={styles.relatedCard}
-                            onPress={() => navigation.push(SCREEN_NAMES.GUIDE_DETAIL, {
-                                slug: related.slug,
-                                title: related.title,
-                            })}
+                            onPress={() =>
+                                navigation.push(SCREEN_NAMES.GUIDE_DETAIL, {
+                                    slug: related.slug,
+                                    title: related.title,
+                                })
+                            }
                         >
                             <Text style={styles.relatedCardTitle}>{related.title}</Text>
                             <Icon name="chevron-right" size={20} color={colors.textSecondary} />

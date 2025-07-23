@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
     View,
@@ -10,29 +9,30 @@ import {
     Pressable,
 } from 'react-native';
 import Modal from 'react-native-modal';
-import Icon from '../common/Icon.js';
-import { styles } from '../../styles/components/ui/ModalStyles';
+
 import { colors } from '../../constants/theme';
+import { styles } from '../../styles/components/ui/ModalStyles';
+import Icon from '../common/Icon.js';
 
 export const CustomModal = ({
-                                visible,
-                                onClose,
-                                title,
-                                children,
-                                showCloseButton = true,
-                                closeOnBackdrop = true,
-                                closeOnBackButton = true,
-                                scrollable = true,
-                                fullScreen = false,
-                                position = 'center', // 'center', 'bottom', 'top'
-                                showHandle = false, // for bottom sheet style
-                                animationType = 'slide', // 'slide', 'fade'
-                                style,
-                                contentStyle,
-                                headerStyle,
-                                titleStyle,
-                                bodyStyle,
-                            }) => {
+    visible,
+    onClose,
+    title,
+    children,
+    showCloseButton = true,
+    closeOnBackdrop = true,
+    closeOnBackButton = true,
+    scrollable = true,
+    fullScreen = false,
+    position = 'center', // 'center', 'bottom', 'top'
+    showHandle = false, // for bottom sheet style
+    animationType = 'slide', // 'slide', 'fade'
+    style,
+    contentStyle,
+    headerStyle,
+    titleStyle,
+    bodyStyle,
+}) => {
     const modalStyle = [
         styles.modal,
         position === 'bottom' && styles.bottomModal,
@@ -50,11 +50,13 @@ export const CustomModal = ({
     ];
 
     const ContentWrapper = scrollable ? ScrollView : View;
-    const contentProps = scrollable ? {
-        showsVerticalScrollIndicator: false,
-        keyboardShouldPersistTaps: 'handled',
-        contentContainerStyle: styles.scrollContent,
-    } : {};
+    const contentProps = scrollable
+        ? {
+            showsVerticalScrollIndicator: false,
+            keyboardShouldPersistTaps: 'handled',
+            contentContainerStyle: styles.scrollContent,
+        }
+        : {};
 
     return (
         <Modal
@@ -73,9 +75,7 @@ export const CustomModal = ({
                 style={styles.keyboardAvoid}
             >
                 <View style={containerStyle}>
-                    {showHandle && position === 'bottom' && (
-                        <View style={styles.handle} />
-                    )}
+                    {showHandle && position === 'bottom' && <View style={styles.handle} />}
 
                     {(title || showCloseButton) && (
                         <View style={[styles.header, headerStyle]}>
@@ -103,29 +103,11 @@ export const CustomModal = ({
 
 // Convenience components for common modal types
 export const BottomSheet = (props) => (
-    <CustomModal
-        {...props}
-        position="bottom"
-        showHandle={true}
-        closeOnBackdrop={true}
-    />
+    <CustomModal {...props} position="bottom" showHandle={true} closeOnBackdrop={true} />
 );
 
-export const AlertModal = ({
-                               visible,
-                               onClose,
-                               title,
-                               message,
-                               actions = [],
-                               ...props
-                           }) => (
-    <CustomModal
-        visible={visible}
-        onClose={onClose}
-        title={title}
-        scrollable={false}
-        {...props}
-    >
+export const AlertModal = ({ visible, onClose, title, message, actions = [], ...props }) => (
+    <CustomModal visible={visible} onClose={onClose} title={title} scrollable={false} {...props}>
         <Text style={styles.alertMessage}>{message}</Text>
         <View style={styles.alertActions}>
             {actions.map((action, index) => (
@@ -138,11 +120,13 @@ export const AlertModal = ({
                     ]}
                     onPress={action.onPress}
                 >
-                    <Text style={[
-                        styles.alertButtonText,
-                        action.style === 'cancel' && styles.alertButtonTextCancel,
-                        action.style === 'destructive' && styles.alertButtonTextDestructive,
-                    ]}>
+                    <Text
+                        style={[
+                            styles.alertButtonText,
+                            action.style === 'cancel' && styles.alertButtonTextCancel,
+                            action.style === 'destructive' && styles.alertButtonTextDestructive,
+                        ]}
+                    >
                         {action.text}
                     </Text>
                 </TouchableOpacity>

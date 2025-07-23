@@ -17,7 +17,7 @@ export const DATE_FORMATS = {
     display: 'MMM d, yyyy',
     displayWithTime: 'MMM d, yyyy h:mm a',
     input: 'yyyy-MM-dd',
-    api: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+    api: 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'',
     relative: 'relative',
 };
 

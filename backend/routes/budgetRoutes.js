@@ -39,7 +39,7 @@ router.get('/summary',
 router.put('/:id',
     protect,
     validationRules.mongoId,
-    validationRules.createBudget,
+    validationRules.updateBudget,
     handleValidationErrors,
     updateBudget
 );

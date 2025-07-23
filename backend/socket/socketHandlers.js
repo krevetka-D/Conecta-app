@@ -18,6 +18,7 @@ const socketHandlers = (io) => {
             try {
                 // Store socket-user mapping
                 socketUsers.set(socket.id, userId);
+                socket.userId = userId; // Store userId on socket for easier access
                 
                 // Add socket to user's socket set
                 if (!userSockets.has(userId)) {
@@ -32,6 +33,9 @@ const socketHandlers = (io) => {
                     $addToSet: { socketIds: socket.id }
                 });
 
+                // Join user-specific room for targeted updates
+                socket.join(`user_${userId}`);
+                
                 socket.emit('authenticated', { userId });
                 
                 // Broadcast user came online
@@ -40,7 +44,8 @@ const socketHandlers = (io) => {
                     isOnline: true
                 });
 
-                console.log(`User ${userId} authenticated with socket ${socket.id}`);
+                console.log(`✅ User ${userId} authenticated with socket ${socket.id}`);
+                console.log(`📊 Active connections: ${userSockets.size} users`);
             } catch (error) {
                 console.error('Authentication error:', error);
                 socket.emit('auth_error', { message: 'Authentication failed' });
@@ -104,6 +109,21 @@ const socketHandlers = (io) => {
         socket.on('get_online_users', () => {
             const onlineUserIds = Array.from(userSockets.keys());
             socket.emit('online_users', { users: onlineUserIds });
+        });
+        
+        // Join/leave chat rooms
+        socket.on('joinRoom', (roomId) => {
+            if (roomId) {
+                socket.join(`room_${roomId}`);
+                console.log(`Socket ${socket.id} joined room ${roomId}`);
+            }
+        });
+        
+        socket.on('leaveRoom', (roomId) => {
+            if (roomId) {
+                socket.leave(`room_${roomId}`);
+                console.log(`Socket ${socket.id} left room ${roomId}`);
+            }
         });
     });
 

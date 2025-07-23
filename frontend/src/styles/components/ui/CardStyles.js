@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+
 import { colors, shadows, borderRadius, spacing } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({
@@ -11,7 +12,7 @@ export const styles = StyleSheet.create({
         borderRadius: borderRadius.md,
         // overflow will be set dynamically
     },
-    
+
     // Variants
     elevated: {
         ...shadows.lg,
@@ -27,7 +28,7 @@ export const styles = StyleSheet.create({
         shadowOpacity: 0,
         backgroundColor: 'transparent',
     },
-    
+
     // Padding variants
     paddingSmall: {
         padding: spacing.sm,
@@ -41,7 +42,7 @@ export const styles = StyleSheet.create({
     paddingNone: {
         padding: 0,
     },
-    
+
     // States
     disabled: {
         opacity: 0.6,

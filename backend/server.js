@@ -5,6 +5,7 @@ import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import connectDB from './config/db.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import socketHandlers from './socket/socketHandlers.js';
@@ -151,39 +152,21 @@ app.get('/api/health', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-// Socket.IO configuration
-const io = new Server(httpServer, {
-    cors: corsOptions,
-    transports: ['websocket', 'polling'],
-    pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
-    pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000,
-    connectTimeout: 45000,
-    maxHttpBufferSize: parseInt(process.env.SOCKET_MAX_HTTP_BUFFER_SIZE) || 1e6,
-    path: '/socket.io/',
-    allowEIO3: true,
-    perMessageDeflate: {
-        threshold: 1024,
-        zlibDeflateOptions: {
-            chunkSize: 16 * 1024,
-        },
-        zlibInflateOptions: {
-            chunkSize: 10 * 1024,
-        },
-        clientNoContextTakeover: true,
-        serverNoContextTakeover: true,
-        serverMaxWindowBits: 10,
-        concurrencyLimit: 10,
-    }
-});
+// Initialize WebSocket
+import { initializeWebSocket, getIO } from './websocket.js';
+const io = initializeWebSocket(httpServer, corsOptions);
 
 // Socket authentication middleware
 io.use(async (socket, next) => {
     try {
         const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+        const userId = socket.handshake.query?.userId;
         
         if (!token) {
-            if (process.env.NODE_ENV === 'development') {
-                socket.userId = 'anonymous-' + Date.now();
+            if (process.env.NODE_ENV === 'development' && userId) {
+                // Allow connection with just userId in development
+                socket.userId = userId;
+                console.log(`🔧 Dev mode: Socket ${socket.id} connected with userId: ${userId}`);
                 return next();
             }
             return next(new Error('Authentication required'));
@@ -201,8 +184,9 @@ io.use(async (socket, next) => {
         next();
     } catch (error) {
         console.error('Socket authentication error:', error.message);
-        if (process.env.NODE_ENV === 'development') {
-            socket.userId = 'anonymous-' + Date.now();
+        if (process.env.NODE_ENV === 'development' && socket.handshake.query?.userId) {
+            socket.userId = socket.handshake.query.userId;
+            console.log(`🔧 Dev mode fallback: Socket ${socket.id} connected with userId: ${socket.userId}`);
             return next();
         }
         next(new Error('Authentication failed'));

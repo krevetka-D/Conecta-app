@@ -8,21 +8,21 @@ class NetworkRetryManager {
         this.maxRetries = 3;
         this.retryDelay = 1000;
         this.listeners = new Map();
-        
+
         // Start monitoring network status
         this.initNetworkListener();
     }
 
     initNetworkListener() {
-        NetInfo.addEventListener(state => {
+        NetInfo.addEventListener((state) => {
             const wasOffline = !this.isOnline;
             this.isOnline = state.isConnected;
-            
+
             if (wasOffline && this.isOnline) {
                 console.log('Network restored, processing retry queue');
                 this.processRetryQueue();
             }
-            
+
             // Notify listeners
             this.notifyListeners(this.isOnline);
         });
@@ -37,7 +37,7 @@ class NetworkRetryManager {
         } = options;
 
         let lastError;
-        
+
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 // Check network status before attempting
@@ -45,15 +45,15 @@ class NetworkRetryManager {
                     // Add to retry queue for later
                     return this.addToRetryQueue(fn, options);
                 }
-                
+
                 const result = await fn();
                 return result;
             } catch (error) {
                 lastError = error;
-                
+
                 if (attempt < maxRetries && shouldRetry(error)) {
                     onRetry(attempt + 1, error);
-                    
+
                     // Exponential backoff
                     const delay = retryDelay * Math.pow(2, attempt);
                     await this.delay(delay);
@@ -62,7 +62,7 @@ class NetworkRetryManager {
                 }
             }
         }
-        
+
         throw lastError;
     }
 
@@ -71,18 +71,18 @@ class NetworkRetryManager {
         if (!error.response) {
             return true;
         }
-        
+
         // Retry on 5xx server errors
         if (error.response && error.response.status >= 500) {
             return true;
         }
-        
+
         // Retry on specific status codes
         const retryableCodes = [408, 429, 503, 504];
         if (error.response && retryableCodes.includes(error.response.status)) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -101,7 +101,7 @@ class NetworkRetryManager {
     async processRetryQueue() {
         const queue = [...this.retryQueue];
         this.retryQueue = [];
-        
+
         for (const item of queue) {
             try {
                 const result = await this.executeWithRetry(item.fn, item.options);
@@ -113,17 +113,17 @@ class NetworkRetryManager {
     }
 
     delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     // Subscribe to network status changes
     addNetworkListener(callback) {
         const id = Date.now().toString();
         this.listeners.set(id, callback);
-        
+
         // Call immediately with current status
         callback(this.isOnline);
-        
+
         // Return unsubscribe function
         return () => {
             this.listeners.delete(id);
@@ -131,7 +131,7 @@ class NetworkRetryManager {
     }
 
     notifyListeners(isOnline) {
-        this.listeners.forEach(callback => {
+        this.listeners.forEach((callback) => {
             try {
                 callback(isOnline);
             } catch (error) {
@@ -147,7 +147,7 @@ class NetworkRetryManager {
 
     // Clear retry queue
     clearRetryQueue() {
-        this.retryQueue.forEach(item => {
+        this.retryQueue.forEach((item) => {
             item.reject(new Error('Retry queue cleared'));
         });
         this.retryQueue = [];

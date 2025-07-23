@@ -1,7 +1,5 @@
 // frontend/src/screens/forums/ForumDetailScreen.js
-import { Menu, Divider } from 'react-native-paper';
-import { SCREEN_NAMES } from '../../constants/routes';
-import personalChatService from '../../services/personalChatService';
+import { format } from 'date-fns';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
@@ -15,16 +13,19 @@ import {
     ActivityIndicator,
     Alert,
 } from 'react-native';
+import { Menu, Divider } from 'react-native-paper';
 import { Avatar, Badge } from 'react-native-paper';
-import Icon from '../../components/common/Icon.js';
-import { format } from 'date-fns';
 
+import Icon from '../../components/common/Icon.js';
+import { SCREEN_NAMES } from '../../constants/routes';
+import chatService from '../../services/chatService';
+import personalChatService from '../../services/personalChatService';
+import socketService from '../../services/socketService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
-import socketService from '../../services/socketService';
-import chatService from '../../services/chatService';
-import { showErrorAlert } from '../../utils/alerts';
 import { chatRoomStyles } from '../../styles/screens/chat/ChatRoomStyles';
+import { showErrorAlert } from '../../utils/alerts';
+import { devLog, devError } from '../../utils';
 
 const ForumDetailScreen = ({ route, navigation }) => {
     const theme = useTheme();
@@ -41,7 +42,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [connectionError, setConnectionError] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('connecting');
-    
+
     const flatListRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
@@ -95,7 +96,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
         try {
             // Start or get existing conversation
             const conversation = await personalChatService.startConversation(senderId);
-            
+
             // Navigate to personal chat
             navigation.navigate(SCREEN_NAMES.PERSONAL_CHAT, {
                 screen: SCREEN_NAMES.PERSONAL_CHAT_DETAIL,
@@ -103,10 +104,10 @@ const ForumDetailScreen = ({ route, navigation }) => {
                     userId: senderId,
                     userName: senderName,
                     conversationId: conversation.conversationId,
-                }
+                },
             });
         } catch (error) {
-            console.error('Failed to start conversation:', error);
+            devError('ForumDetail', 'Failed to start conversation', error);
             showErrorAlert('Error', 'Failed to start conversation');
         }
     };
@@ -114,34 +115,34 @@ const ForumDetailScreen = ({ route, navigation }) => {
     const initializeChat = async () => {
         try {
             setConnectionError(false);
-            
+
             // In development with mock mode, skip socket connection
             if (__DEV__ && !socketService.isConnected()) {
-                console.log('Development mode: Using mock data');
+                devLog('ForumDetail', 'Development mode: Using mock data');
                 setConnectionError(false);
-                
+
                 // Load initial messages from API/Mock
                 try {
                     const initialMessages = await chatService.getRoomMessages(roomId);
                     // Ensure messages is always an array
                     setMessages(Array.isArray(initialMessages) ? initialMessages : []);
                 } catch (error) {
-                    console.error('Failed to load messages:', error);
+                    devError('ForumDetail', 'Failed to load messages', error);
                     setMessages([]);
                 }
-                
+
                 setLoading(false);
                 return;
             }
-            
+
             // Production mode or when socket is needed
             if (!socketService.isConnected()) {
-                console.log('Attempting to connect socket...');
+                devLog('ForumDetail', 'Attempting to connect socket...');
                 try {
                     await socketService.connect(user._id);
-                    console.log('Socket connected successfully');
+                    devLog('ForumDetail', 'Socket connected successfully');
                 } catch (error) {
-                    console.error('Socket connection failed:', error);
+                    devError('ForumDetail', 'Socket connection failed', error);
                     setConnectionError(true);
                     // Continue anyway to load messages from API
                 }
@@ -160,13 +161,13 @@ const ForumDetailScreen = ({ route, navigation }) => {
                 // Ensure messages is always an array
                 setMessages(Array.isArray(initialMessages) ? initialMessages : []);
             } catch (error) {
-                console.error('Failed to load messages:', error);
+                devError('ForumDetail', 'Failed to load messages', error);
                 setMessages([]);
             }
 
             setLoading(false);
         } catch (error) {
-            console.error('Failed to initialize chat:', error);
+            devError('ForumDetail', 'Failed to initialize chat', error);
             setLoading(false);
             setConnectionError(true);
             setMessages([]);
@@ -188,7 +189,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
     };
 
     const handleNewMessage = useCallback((message) => {
-        setMessages(prev => {
+        setMessages((prev) => {
             // Ensure prev is an array
             const prevMessages = Array.isArray(prev) ? prev : [];
             return [...prevMessages, message];
@@ -199,23 +200,23 @@ const ForumDetailScreen = ({ route, navigation }) => {
     }, []);
 
     const handleMessageDeleted = useCallback(({ messageId }) => {
-        setMessages(prev => {
+        setMessages((prev) => {
             // Ensure prev is an array
             const prevMessages = Array.isArray(prev) ? prev : [];
-            return prevMessages.map(msg => 
-                msg._id === messageId ? { ...msg, deleted: true } : msg
+            return prevMessages.map((msg) =>
+                msg._id === messageId ? { ...msg, deleted: true } : msg,
             );
         });
     }, []);
 
     const handleUserTyping = useCallback(({ userId, isTyping }) => {
-        setTypingUsers(prev => {
+        setTypingUsers((prev) => {
             // Ensure prev is an array
             const prevUsers = Array.isArray(prev) ? prev : [];
             if (isTyping) {
                 return prevUsers.includes(userId) ? prevUsers : [...prevUsers, userId];
             } else {
-                return prevUsers.filter(id => id !== userId);
+                return prevUsers.filter((id) => id !== userId);
             }
         });
     }, []);
@@ -237,7 +238,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
                 socketService.sendMessage({
                     roomId,
                     content: messageText,
-                    type: 'text'
+                    type: 'text',
                 });
             } else {
                 // Fallback to API
@@ -247,7 +248,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
                 setMessages(Array.isArray(updatedMessages) ? updatedMessages : []);
             }
         } catch (error) {
-            console.error('Failed to send message:', error);
+            devError('ForumDetail', 'Failed to send message', error);
             showErrorAlert('Error', 'Failed to send message');
             setInputText(messageText);
         } finally {
@@ -274,14 +275,16 @@ const ForumDetailScreen = ({ route, navigation }) => {
 
     const renderMessage = ({ item, index }) => {
         if (!item || !item.sender || !user) return null;
-        
+
         const isOwnMessage = item.sender._id === user._id;
         const messageList = Array.isArray(messages) ? messages : [];
         const showAvatar = index === 0 || messageList[index - 1]?.sender._id !== item.sender._id;
-        
+
         // Group messages by time (5 minute intervals)
-        const showTimestamp = index === 0 || 
-            (messageList[index - 1] && new Date(item.createdAt) - new Date(messageList[index - 1]?.createdAt) > 300000);
+        const showTimestamp =
+            index === 0 ||
+            (messageList[index - 1] &&
+                new Date(item.createdAt) - new Date(messageList[index - 1]?.createdAt) > 300000);
 
         if (item.deleted) {
             return (
@@ -300,17 +303,23 @@ const ForumDetailScreen = ({ route, navigation }) => {
                         </Text>
                     </View>
                 )}
-                
+
                 <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
                     {showAvatar && !isOwnMessage && (
                         <Menu
                             visible={menuVisible[item._id] || false}
-                            onDismiss={() => setMenuVisible(prev => ({ ...prev, [item._id]: false }))}
+                            onDismiss={() =>
+                                setMenuVisible((prev) => ({ ...prev, [item._id]: false }))
+                            }
                             anchor={
                                 <TouchableOpacity
                                     style={styles.avatarContainer}
-                                    onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
-                                    onLongPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                                    onPress={() =>
+                                        setMenuVisible((prev) => ({ ...prev, [item._id]: true }))
+                                    }
+                                    onLongPress={() =>
+                                        setMenuVisible((prev) => ({ ...prev, [item._id]: true }))
+                                    }
                                 >
                                     <View style={styles.avatar}>
                                         <Text style={styles.avatarText}>
@@ -323,10 +332,10 @@ const ForumDetailScreen = ({ route, navigation }) => {
                         >
                             <Menu.Item
                                 onPress={() => {
-                                    setMenuVisible(prev => ({ ...prev, [item._id]: false }));
+                                    setMenuVisible((prev) => ({ ...prev, [item._id]: false }));
                                     navigation.navigate(SCREEN_NAMES.USER_PROFILE, {
                                         userId: item.sender._id,
-                                        userName: item.sender.name
+                                        userName: item.sender.name,
                                     });
                                 }}
                                 title="View Profile"
@@ -335,7 +344,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
                             <Divider />
                             <Menu.Item
                                 onPress={() => {
-                                    setMenuVisible(prev => ({ ...prev, [item._id]: false }));
+                                    setMenuVisible((prev) => ({ ...prev, [item._id]: false }));
                                     handleStartChat(item.sender._id, item.sender.name);
                                 }}
                                 title="Start Chatting"
@@ -343,30 +352,34 @@ const ForumDetailScreen = ({ route, navigation }) => {
                             />
                         </Menu>
                     )}
-                    
-                    <View style={[
-                        styles.messageBubble,
-                        isOwnMessage && styles.ownMessageBubble,
-                        !showAvatar && !isOwnMessage && styles.messageBubbleWithoutAvatar
-                    ]}>
+
+                    <View
+                        style={[
+                            styles.messageBubble,
+                            isOwnMessage && styles.ownMessageBubble,
+                            !showAvatar && !isOwnMessage && styles.messageBubbleWithoutAvatar,
+                        ]}
+                    >
                         {!isOwnMessage && showAvatar && (
                             <TouchableOpacity
-                                onPress={() => setMenuVisible(prev => ({ ...prev, [item._id]: true }))}
+                                onPress={() =>
+                                    setMenuVisible((prev) => ({ ...prev, [item._id]: true }))
+                                }
                             >
                                 <Text style={styles.senderName}>{item.sender.name}</Text>
                             </TouchableOpacity>
                         )}
-                        
+
                         <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
                             {item.content}
                         </Text>
-                        
+
                         {isOwnMessage && (
                             <View style={styles.messageStatus}>
-                                <Icon 
-                                    name={item.readBy?.length > 1 ? "check-all" : "check"} 
-                                    size={16} 
-                                    color={item.readBy?.length > 1 ? "#60A5FA" : "#FFFFFF99"}
+                                <Icon
+                                    name={item.readBy?.length > 1 ? 'check-all' : 'check'}
+                                    size={16}
+                                    color={item.readBy?.length > 1 ? '#60A5FA' : '#FFFFFF99'}
                                 />
                             </View>
                         )}
@@ -388,7 +401,9 @@ const ForumDetailScreen = ({ route, navigation }) => {
                     <View style={[styles.dot, styles.dot3]} />
                 </View>
                 <Text style={styles.typingText}>
-                    {typingUsersList.length === 1 ? 'Someone is typing' : 'Multiple people are typing'}
+                    {typingUsersList.length === 1
+                        ? 'Someone is typing'
+                        : 'Multiple people are typing'}
                 </Text>
             </View>
         );
@@ -414,8 +429,8 @@ const ForumDetailScreen = ({ route, navigation }) => {
                     </Text>
                 </View>
             )}
-            
-            <KeyboardAvoidingView 
+
+            <KeyboardAvoidingView
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
@@ -427,7 +442,9 @@ const ForumDetailScreen = ({ route, navigation }) => {
                     keyExtractor={(item) => item?._id || String(Math.random())}
                     contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                    onContentSizeChange={() =>
+                        flatListRef.current?.scrollToEnd({ animated: false })
+                    }
                     ListFooterComponent={renderTypingIndicator}
                     extraData={menuVisible}
                 />
@@ -445,16 +462,23 @@ const ForumDetailScreen = ({ route, navigation }) => {
                             onSubmitEditing={sendMessage}
                             blurOnSubmit={false}
                         />
-                        
+
                         <TouchableOpacity
                             onPress={sendMessage}
                             disabled={!inputText.trim() || sending}
-                            style={[styles.sendButton, (!inputText.trim() || sending) && styles.sendButtonDisabled]}
+                            style={[
+                                styles.sendButton,
+                                (!inputText.trim() || sending) && styles.sendButtonDisabled,
+                            ]}
                         >
-                            <Icon 
-                                name="send" 
-                                size={24} 
-                                color={inputText.trim() && !sending ? theme.colors.primary : theme.colors.disabled} 
+                            <Icon
+                                name="send"
+                                size={24}
+                                color={
+                                    inputText.trim() && !sending
+                                        ? theme.colors.primary
+                                        : theme.colors.disabled
+                                }
                             />
                         </TouchableOpacity>
                     </View>

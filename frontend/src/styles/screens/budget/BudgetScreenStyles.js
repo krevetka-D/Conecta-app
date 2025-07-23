@@ -1,6 +1,7 @@
 // frontend/src/styles/screens/budget/BudgetScreenStyles.js
 
 import { StyleSheet, Platform } from 'react-native';
+
 import { colors, fonts, spacing, borderRadius, shadows } from '../../../constants/theme';
 
 export const budgetStyles = StyleSheet.create({

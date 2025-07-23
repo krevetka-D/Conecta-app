@@ -1,18 +1,12 @@
-
-import React from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    SafeAreaView,
-    ActivityIndicator,
-} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+
 import Icon from '../../components/common/Icon.js';
-import { useAuth } from '../../store/contexts/AuthContext';
-import { SCREEN_NAMES } from '../../constants/routes';
 import { PROFESSIONAL_PATHS } from '../../constants/config';
+import { SCREEN_NAMES } from '../../constants/routes';
 import { colors } from '../../constants/theme';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { styles } from '../../styles/screens/onboarding/PathSelectionScreenStyles';
 
 const PathSelectionScreen = () => {
@@ -58,7 +52,12 @@ const PathSelectionScreen = () => {
                     style={styles.pathCard}
                     onPress={() => handleSelectPath(PROFESSIONAL_PATHS.FREELANCER)}
                 >
-                    <Icon name="briefcase-account" size={40} color={colors.primary} style={styles.pathIcon} />
+                    <Icon
+                        name="briefcase-account"
+                        size={40}
+                        color={colors.primary}
+                        style={styles.pathIcon}
+                    />
                     <Text style={styles.pathTitle}>I'm a Freelancer</Text>
                     <Text style={styles.pathDescription}>
                         Looking to register as 'autónomo' and find clients.
@@ -69,7 +68,12 @@ const PathSelectionScreen = () => {
                     style={styles.pathCard}
                     onPress={() => handleSelectPath(PROFESSIONAL_PATHS.ENTREPRENEUR)}
                 >
-                    <Icon name="lightbulb-on" size={40} color={colors.primary} style={styles.pathIcon} />
+                    <Icon
+                        name="lightbulb-on"
+                        size={40}
+                        color={colors.primary}
+                        style={styles.pathIcon}
+                    />
                     <Text style={styles.pathTitle}>I'm an Entrepreneur</Text>
                     <Text style={styles.pathDescription}>
                         Planning to start a company and build a team.

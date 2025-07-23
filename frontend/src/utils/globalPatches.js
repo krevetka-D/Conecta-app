@@ -17,19 +17,25 @@ let patchesApplied = false;
 
 // === PATCH 1: ActivityIndicator Size Fix ===
 export const PatchedActivityIndicator = React.forwardRef((props, ref) => {
-    let { size, ...restProps } = props;
-    
+    const { size: originalSize, ...restProps } = props;
+    let size = originalSize;
+
     // Debug logging in development
     if (__DEV__ && size && typeof size === 'string' && size !== 'small' && size !== 'large') {
         console.log(`[ActivityIndicator Patch] Converting invalid size "${size}" to valid size`);
     }
-    
+
     // Ensure size is valid
     if (size && typeof size === 'string') {
         const lowerSize = size.toLowerCase();
         if (size !== 'small' && size !== 'large') {
             // Convert common size variations
-            if (lowerSize.includes('small') || lowerSize.includes('tiny') || lowerSize === 'xs' || lowerSize === 'sm') {
+            if (
+                lowerSize.includes('small') ||
+                lowerSize.includes('tiny') ||
+                lowerSize === 'xs' ||
+                lowerSize === 'sm'
+            ) {
                 size = 'small';
             } else {
                 size = 'large';
@@ -42,14 +48,15 @@ export const PatchedActivityIndicator = React.forwardRef((props, ref) => {
         // Default size
         size = 'large';
     }
-    
+
     return <OriginalActivityIndicator ref={ref} size={size} {...restProps} />;
 });
+PatchedActivityIndicator.displayName = 'PatchedActivityIndicator';
 
 // Copy static properties and methods
 Object.setPrototypeOf(PatchedActivityIndicator, OriginalActivityIndicator);
 for (const key in OriginalActivityIndicator) {
-    if (OriginalActivityIndicator.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(OriginalActivityIndicator, key)) {
         PatchedActivityIndicator[key] = OriginalActivityIndicator[key];
     }
 }
@@ -57,27 +64,32 @@ for (const key in OriginalActivityIndicator) {
 // === PATCH 2: Text Component Number Fix ===
 export const PatchedText = React.forwardRef((props, ref) => {
     const { children, ...restProps } = props;
-    
+
     // Convert children to string if it's a number to prevent issues
     let safeChildren = children;
     if (typeof children === 'number') {
         safeChildren = String(children);
     } else if (Array.isArray(children)) {
-        safeChildren = React.Children.map(children, child => {
+        safeChildren = React.Children.map(children, (child) => {
             if (typeof child === 'number') {
                 return String(child);
             }
             return child;
         });
     }
-    
-    return <OriginalText ref={ref} {...restProps}>{safeChildren}</OriginalText>;
+
+    return (
+        <OriginalText ref={ref} {...restProps}>
+            {safeChildren}
+        </OriginalText>
+    );
 });
+PatchedText.displayName = 'PatchedText';
 
 // Copy static properties
 Object.setPrototypeOf(PatchedText, OriginalText);
 for (const key in OriginalText) {
-    if (OriginalText.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(OriginalText, key)) {
         PatchedText[key] = OriginalText[key];
     }
 }
@@ -85,25 +97,27 @@ for (const key in OriginalText) {
 // === PATCH 3: TextInput Value Sanitization ===
 export const PatchedTextInput = React.forwardRef((props, ref) => {
     const { value, defaultValue, ...restProps } = props;
-    
+
     // Ensure value is always a string
     const safeValue = value !== undefined && value !== null ? String(value) : value;
-    const safeDefaultValue = defaultValue !== undefined && defaultValue !== null ? String(defaultValue) : defaultValue;
-    
+    const safeDefaultValue =
+        defaultValue !== undefined && defaultValue !== null ? String(defaultValue) : defaultValue;
+
     return (
-        <OriginalTextInput 
-            ref={ref} 
-            value={safeValue} 
-            defaultValue={safeDefaultValue} 
-            {...restProps} 
+        <OriginalTextInput
+            ref={ref}
+            value={safeValue}
+            defaultValue={safeDefaultValue}
+            {...restProps}
         />
     );
 });
+PatchedTextInput.displayName = 'PatchedTextInput';
 
 // Copy static properties
 Object.setPrototypeOf(PatchedTextInput, OriginalTextInput);
 for (const key in OriginalTextInput) {
-    if (OriginalTextInput.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(OriginalTextInput, key)) {
         PatchedTextInput[key] = OriginalTextInput[key];
     }
 }
@@ -120,22 +134,22 @@ export const applyGlobalPatches = () => {
     if (__DEV__) {
         console.log('[Global Patches] Applying React Native component patches...');
     }
-    
+
     // Override the components globally
     const RN = require('react-native');
-    
+
     // Patch ActivityIndicator
     RN.ActivityIndicator = PatchedActivityIndicator;
-    
+
     // Patch Text
     RN.Text = PatchedText;
-    
+
     // Patch TextInput
     RN.TextInput = PatchedTextInput;
-    
+
     // Mark patches as applied
     patchesApplied = true;
-    
+
     if (__DEV__) {
         console.log('[Global Patches] ✓ ActivityIndicator patched');
         console.log('[Global Patches] ✓ Text patched');
@@ -147,7 +161,9 @@ export const applyGlobalPatches = () => {
 // === Legacy Support for patchActivityIndicator ===
 export const patchActivityIndicator = () => {
     if (__DEV__) {
-        console.log('[Global Patches] patchActivityIndicator called - redirecting to applyGlobalPatches');
+        console.log(
+            '[Global Patches] patchActivityIndicator called - redirecting to applyGlobalPatches',
+        );
     }
     applyGlobalPatches();
 };
@@ -163,7 +179,12 @@ export const validateActivityIndicatorSize = (size) => {
             return size;
         }
         const lowerSize = size.toLowerCase();
-        if (lowerSize.includes('small') || lowerSize.includes('tiny') || lowerSize === 'xs' || lowerSize === 'sm') {
+        if (
+            lowerSize.includes('small') ||
+            lowerSize.includes('tiny') ||
+            lowerSize === 'xs' ||
+            lowerSize === 'sm'
+        ) {
             return 'small';
         }
         return 'large';
@@ -226,14 +247,16 @@ export class PatchedComponentErrorBoundary extends React.Component {
         if (this.state.hasError) {
             const FallbackText = OriginalText || Text;
             return (
-                <FallbackText style={{ 
-                    color: 'red', 
-                    padding: 20, 
-                    textAlign: 'center',
-                    backgroundColor: '#fee',
-                    margin: 10,
-                    borderRadius: 5
-                }}>
+                <FallbackText
+                    style={{
+                        color: 'red',
+                        padding: 20,
+                        textAlign: 'center',
+                        backgroundColor: '#fee',
+                        margin: 10,
+                        borderRadius: 5,
+                    }}
+                >
                     Component Error: {this.state.error?.message || 'Unknown error'}
                 </FallbackText>
             );
@@ -254,8 +277,8 @@ if (Platform.OS === 'web') {
 if (__DEV__) {
     const originalRender = React.Component.prototype.render;
     let renderCount = 0;
-    
-    React.Component.prototype.render = function() {
+
+    React.Component.prototype.render = function () {
         renderCount++;
         if (renderCount % 100 === 0) {
             console.log(`[Performance] Total renders: ${renderCount}`);

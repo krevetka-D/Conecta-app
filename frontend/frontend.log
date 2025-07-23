@@ -1,0 +1,10 @@
+env: load .env
+env: export REACT_APP_API_URL REACT_APP_WS_URL REACT_APP_ENVIRONMENT
+Could not find a shared URI scheme for the dev client between the local /ios and /android directories. App launches (QR code, interstitial, terminal keys) may not work as expected. You can configure a custom scheme using the --scheme option, or by running npx expo prebuild to regenerate the native directories with URI schemes.
+Starting project at /Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend
+› Port 8082 is running this app in another window
+  /Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend (pid 57360)
+Input is required, but 'npx expo' is in non-interactive mode.
+Required input:
+> Use port 8083 instead?
+› Skipping dev server

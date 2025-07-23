@@ -1,39 +1,37 @@
-
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import Icon from '../common/Icon.js';
-import { styles } from '../../styles/components/ui/TabBarStyles';
+
 import { colors } from '../../constants/theme';
+import { styles } from '../../styles/components/ui/TabBarStyles';
+import Icon from '../common/Icon.js';
 
 export const TabBar = ({
-                           tabs,
-                           activeTab,
-                           onTabPress,
-                           variant = 'default', // 'default', 'pills', 'underline'
-                           scrollable = false,
-                           showIcon = true,
-                           showBadge = false,
-                           style,
-                           tabStyle,
-                           activeTabStyle,
-                           textStyle,
-                           activeTextStyle,
-                           indicatorStyle,
-                       }) => {
+    tabs,
+    activeTab,
+    onTabPress,
+    variant = 'default', // 'default', 'pills', 'underline'
+    scrollable = false,
+    showIcon = true,
+    showBadge = false,
+    style,
+    tabStyle,
+    activeTabStyle,
+    textStyle,
+    activeTextStyle,
+    indicatorStyle,
+}) => {
     const Container = scrollable ? ScrollView : View;
-    const containerProps = scrollable ? {
-        horizontal: true,
-        showsHorizontalScrollIndicator: false,
-        contentContainerStyle: styles.scrollContainer,
-    } : {};
+    const containerProps = scrollable
+        ? {
+            horizontal: true,
+            showsHorizontalScrollIndicator: false,
+            contentContainerStyle: styles.scrollContainer,
+        }
+        : {};
 
     return (
         <Container
-            style={[
-                styles.container,
-                styles[`${variant}Container`],
-                style
-            ]}
+            style={[styles.container, styles[`${variant}Container`], style]}
             {...containerProps}
         >
             {tabs.map((tab, index) => {
@@ -75,10 +73,7 @@ export const TabBar = ({
                         </Text>
 
                         {showBadge && tab.badge !== undefined && (
-                            <View style={[
-                                styles.badge,
-                                tab.badge === 0 && styles.badgeHidden
-                            ]}>
+                            <View style={[styles.badge, tab.badge === 0 && styles.badgeHidden]}>
                                 <Text style={styles.badgeText}>
                                     {tab.badge > 99 ? '99+' : tab.badge}
                                 </Text>

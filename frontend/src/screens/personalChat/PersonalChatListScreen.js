@@ -1,4 +1,5 @@
 // frontend/src/screens/personalChat/PersonalChatListScreen.js
+import { format } from 'date-fns';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -11,15 +12,14 @@ import {
     TextInput,
 } from 'react-native';
 import { Card, Avatar, Badge, FAB } from 'react-native-paper';
-import Icon from '../../components/common/Icon.js';
-import { format } from 'date-fns';
 
-import { useAuth } from '../../store/contexts/AuthContext.js';
+import EmptyState from '../../components/common/EmptyState.js';
+import Icon from '../../components/common/Icon.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner.js';
+import { SCREEN_NAMES } from '../../constants/routes.js';
 import { colors, spacing, fonts } from '../../constants/theme.js';
 import personalChatService from '../../services/personalChatService.js';
-import LoadingSpinner from '../../components/common/LoadingSpinner.js';
-import EmptyState from '../../components/common/EmptyState.js';
-import { SCREEN_NAMES } from '../../constants/routes.js';
+import { useAuth } from '../../store/contexts/AuthContext.js';
 
 const PersonalChatListScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -65,11 +65,11 @@ const PersonalChatListScreen = ({ navigation }) => {
 
     const formatLastMessageTime = (timestamp) => {
         if (!timestamp) return '';
-        
+
         const date = new Date(timestamp);
         const now = new Date();
         const diffInHours = (now - date) / (1000 * 60 * 60);
-        
+
         if (diffInHours < 24) {
             return format(date, 'HH:mm');
         } else if (diffInHours < 48) {
@@ -85,25 +85,20 @@ const PersonalChatListScreen = ({ navigation }) => {
         const lastMessage = item.lastMessage;
         const otherUser = item.otherUser;
         const unreadCount = item.unreadCount || 0;
-        
+
         return (
-            <TouchableOpacity
-                onPress={() => handleConversationPress(item)}
-                activeOpacity={0.7}
-            >
+            <TouchableOpacity onPress={() => handleConversationPress(item)} activeOpacity={0.7}>
                 <Card style={styles.conversationCard}>
                     <View style={styles.conversationContent}>
                         <View style={styles.avatarContainer}>
-                            <Avatar.Text 
-                                size={50} 
-                                label={otherUser.name.charAt(0).toUpperCase()} 
+                            <Avatar.Text
+                                size={50}
+                                label={otherUser.name.charAt(0).toUpperCase()}
                                 style={styles.avatar}
                             />
-                            {otherUser.isOnline && (
-                                <View style={styles.onlineIndicator} />
-                            )}
+                            {otherUser.isOnline && <View style={styles.onlineIndicator} />}
                         </View>
-                        
+
                         <View style={styles.messageContent}>
                             <View style={styles.messageHeader}>
                                 <Text style={styles.userName} numberOfLines={1}>
@@ -113,13 +108,13 @@ const PersonalChatListScreen = ({ navigation }) => {
                                     {formatLastMessageTime(lastMessage?.createdAt)}
                                 </Text>
                             </View>
-                            
+
                             <View style={styles.messagePreview}>
-                                <Text 
+                                <Text
                                     style={[
                                         styles.lastMessage,
-                                        unreadCount > 0 && styles.unreadMessage
-                                    ]} 
+                                        unreadCount > 0 && styles.unreadMessage,
+                                    ]}
                                     numberOfLines={1}
                                 >
                                     {lastMessage?.sender === user._id && 'You: '}
@@ -138,11 +133,12 @@ const PersonalChatListScreen = ({ navigation }) => {
         );
     };
 
-    const filteredConversations = conversations && Array.isArray(conversations) 
-        ? conversations.filter(conv => 
-            conv.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        : [];
+    const filteredConversations =
+        conversations && Array.isArray(conversations)
+            ? conversations.filter((conv) =>
+                conv.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase()),
+            )
+            : [];
 
     if (loading) {
         return <LoadingSpinner fullScreen text="Loading conversations..." />;
@@ -184,7 +180,10 @@ const PersonalChatListScreen = ({ navigation }) => {
                             title="No conversations yet"
                             message="Start a conversation by tapping the + button"
                             action={
-                                <TouchableOpacity style={styles.emptyStateButton} onPress={handleNewChat}>
+                                <TouchableOpacity
+                                    style={styles.emptyStateButton}
+                                    onPress={handleNewChat}
+                                >
                                     <Text style={styles.emptyStateButtonText}>Start New Chat</Text>
                                 </TouchableOpacity>
                             }

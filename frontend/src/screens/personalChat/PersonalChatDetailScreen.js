@@ -1,4 +1,5 @@
 // frontend/src/screens/personalChat/PersonalChatDetailScreen.js
+import { format } from 'date-fns';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
@@ -12,27 +13,26 @@ import {
     StyleSheet,
 } from 'react-native';
 import { Avatar } from 'react-native-paper';
-import Icon from '../../components/common/Icon.js';
-import { format } from 'date-fns';
 
-import { useAuth } from '../../store/contexts/AuthContext';
+import Icon from '../../components/common/Icon.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { SCREEN_NAMES } from '../../constants/routes';
 import { colors, spacing, fonts } from '../../constants/theme';
 import personalChatService from '../../services/personalChatService';
 import socketService from '../../services/socketService';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useAuth } from '../../store/contexts/AuthContext';
 import { showErrorAlert } from '../../utils/alerts';
-import { SCREEN_NAMES } from '../../constants/routes';
 
 const PersonalChatDetailScreen = ({ route, navigation }) => {
     const { user } = useAuth();
     const { userId, userName, conversationId } = route.params;
-    
+
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
-    
+
     const flatListRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
@@ -41,7 +41,9 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
         navigation.setOptions({
             headerRight: () => (
                 <TouchableOpacity
-                    onPress={() => navigation.navigate(SCREEN_NAMES.USER_PROFILE, { userId, userName })}
+                    onPress={() =>
+                        navigation.navigate(SCREEN_NAMES.USER_PROFILE, { userId, userName })
+                    }
                     style={{ marginRight: 15 }}
                 >
                     <Icon name="account-circle-outline" size={24} color={colors.textInverse} />
@@ -64,7 +66,7 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
         try {
             const data = await personalChatService.getMessages(userId);
             setMessages(data.reverse());
-            
+
             // Mark messages as read
             if (conversationId) {
                 await personalChatService.markAsRead(conversationId);
@@ -89,28 +91,30 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
         socketService.off('message_read', handleMessageRead);
     };
 
-    const handleNewMessage = useCallback((message) => {
-        if (message.sender === userId || message.recipient === userId) {
-            setMessages(prev => [...prev, message]);
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
-        }
-    }, [userId]);
+    const handleNewMessage = useCallback(
+        (message) => {
+            if (message.sender === userId || message.recipient === userId) {
+                setMessages((prev) => [...prev, message]);
+                setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+            }
+        },
+        [userId],
+    );
 
-    const handleUserTyping = useCallback(({ userId: typingUserId, isTyping: typing }) => {
-        if (typingUserId === userId) {
-            setIsTyping(typing);
-        }
-    }, [userId]);
+    const handleUserTyping = useCallback(
+        ({ userId: typingUserId, isTyping: typing }) => {
+            if (typingUserId === userId) {
+                setIsTyping(typing);
+            }
+        },
+        [userId],
+    );
 
     const handleMessageRead = useCallback(({ messageIds }) => {
-        setMessages(prev => 
-            prev.map(msg => 
-                messageIds.includes(msg._id) 
-                    ? { ...msg, read: true } 
-                    : msg
-            )
+        setMessages((prev) =>
+            prev.map((msg) => (messageIds.includes(msg._id) ? { ...msg, read: true } : msg)),
         );
     }, []);
 
@@ -123,7 +127,7 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
 
         try {
             await personalChatService.sendMessage(userId, messageText);
-            
+
             // Optimistically add message to UI
             const optimisticMessage = {
                 _id: `temp-${Date.now()}`,
@@ -133,9 +137,9 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                 createdAt: new Date().toISOString(),
                 read: false,
             };
-            
-            setMessages(prev => [...prev, optimisticMessage]);
-            
+
+            setMessages((prev) => [...prev, optimisticMessage]);
+
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
             }, 100);
@@ -157,7 +161,7 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
 
         if (text.trim() && socketService.isConnected()) {
             socketService.emit('typing', { recipientId: userId, isTyping: true });
-            
+
             typingTimeoutRef.current = setTimeout(() => {
                 socketService.emit('typing', { recipientId: userId, isTyping: false });
             }, 3000);
@@ -168,7 +172,8 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
 
     const renderMessage = ({ item, index }) => {
         const isOwnMessage = item.sender === user._id;
-        const showTimestamp = index === 0 || 
+        const showTimestamp =
+            index === 0 ||
             new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
 
         return (
@@ -180,22 +185,19 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                         </Text>
                     </View>
                 )}
-                
+
                 <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
-                    <View style={[
-                        styles.messageBubble,
-                        isOwnMessage && styles.ownMessageBubble
-                    ]}>
+                    <View style={[styles.messageBubble, isOwnMessage && styles.ownMessageBubble]}>
                         <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
                             {item.content}
                         </Text>
-                        
+
                         {isOwnMessage && (
                             <View style={styles.messageStatus}>
-                                <Icon 
-                                    name={item.read ? "check-all" : "check"} 
-                                    size={16} 
-                                    color={item.read ? "#60A5FA" : "#FFFFFF99"}
+                                <Icon
+                                    name={item.read ? 'check-all' : 'check'}
+                                    size={16}
+                                    color={item.read ? '#60A5FA' : '#FFFFFF99'}
                                 />
                             </View>
                         )}
@@ -211,7 +213,7 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
@@ -223,7 +225,9 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                    onContentSizeChange={() =>
+                        flatListRef.current?.scrollToEnd({ animated: false })
+                    }
                     ListFooterComponent={
                         isTyping ? (
                             <View style={styles.typingIndicator}>
@@ -246,16 +250,21 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                             onSubmitEditing={sendMessage}
                             blurOnSubmit={false}
                         />
-                        
+
                         <TouchableOpacity
                             onPress={sendMessage}
                             disabled={!inputText.trim() || sending}
-                            style={[styles.sendButton, (!inputText.trim() || sending) && styles.sendButtonDisabled]}
+                            style={[
+                                styles.sendButton,
+                                (!inputText.trim() || sending) && styles.sendButtonDisabled,
+                            ]}
                         >
-                            <Icon 
-                                name="send" 
-                                size={24} 
-                                color={inputText.trim() && !sending ? colors.primary : colors.disabled} 
+                            <Icon
+                                name="send"
+                                size={24}
+                                color={
+                                    inputText.trim() && !sending ? colors.primary : colors.disabled
+                                }
                             />
                         </TouchableOpacity>
                     </View>

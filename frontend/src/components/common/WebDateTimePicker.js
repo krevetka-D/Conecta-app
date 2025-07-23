@@ -1,6 +1,7 @@
-import React from 'react';
-import { Platform, View, Text, TouchableOpacity, TextInput } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import React, { useCallback } from 'react';
+import { Platform, TouchableOpacity, TextInput } from 'react-native';
+
 import { colors, fonts } from '../../constants/theme';
 
 const WebDateTimePicker = ({ value, mode, onChange, display, ...props }) => {

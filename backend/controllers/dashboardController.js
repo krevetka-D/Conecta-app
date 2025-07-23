@@ -217,24 +217,24 @@ async function getBudgetSummary(userId, currentDate) {
 
 // Helper function to get recent forum activity
 async function getRecentForumActivity(userId, limit) {
-    // Get forums created by user or where user has participated
-    const userForums = await Forum.find({
+    // Get recent forums where user has participated
+    const recentForums = await Forum.find({
         $or: [
             { user: userId },
             { 'threads.author': userId }
         ]
     })
-    .select('_id')
+    .select('title threads createdAt updatedAt')
+    .sort({ updatedAt: -1 })
+    .limit(limit)
     .lean();
 
-    const forumIds = userForums.map(f => f._id);
-
-    // Get recent threads in those forums
-    return Thread.find({ forum: { $in: forumIds } })
-        .select('title forum createdAt author')
-        .populate('author', 'name')
-        .populate('forum', 'title')
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .lean();
+    // Format the activity for dashboard
+    return recentForums.map(forum => ({
+        type: 'FORUM_ACTIVITY',
+        forumId: forum._id,
+        forumTitle: forum.title,
+        recentThreads: forum.threads ? forum.threads.length : 0,
+        lastActivity: forum.updatedAt || forum.createdAt
+    }));
 }

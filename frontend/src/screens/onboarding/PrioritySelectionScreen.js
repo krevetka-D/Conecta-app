@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    SafeAreaView,
-    ScrollView,
-    Alert,
-} from 'react-native';
-import { Button, Checkbox } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../../store/contexts/AuthContext';
-import { colors } from '../../constants/theme';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { Button, Checkbox } from 'react-native-paper';
+
 import { PROFESSIONAL_PATHS } from '../../constants/config';
-import { styles } from '../../styles/screens/onboarding/PrioritySelectionScreenStyles';
+import { colors } from '../../constants/theme';
 import checklistService from '../../services/checklistService';
+import { useAuth } from '../../store/contexts/AuthContext';
+import { styles } from '../../styles/screens/onboarding/PrioritySelectionScreenStyles';
 
 const PrioritySelectionScreen = ({ route, navigation }) => {
     const { professionalPath } = route.params;
@@ -39,23 +33,24 @@ const PrioritySelectionScreen = ({ route, navigation }) => {
         }
     };
 
-    const priorities = professionalPath === PROFESSIONAL_PATHS.FREELANCER
-        ? [
-            { id: 'OBTAIN_NIE', title: "Obtain your NIE" },
-            { id: 'REGISTER_AUTONOMO', title: "Register as 'Autónomo'" },
-            { id: 'UNDERSTAND_TAXES', title: 'Understand Tax Obligations' },
-            { id: 'OPEN_BANK_ACCOUNT', title: 'Open Spanish Bank Account' },
-        ]
-        : [
-            { id: 'OBTAIN_NIE', title: "Obtain your NIE" },
-            { id: 'FORM_SL_COMPANY', title: 'Form an S.L. Company' },
-            { id: 'GET_COMPANY_NIF', title: 'Get Company NIF' },
-            { id: 'RESEARCH_FUNDING', title: 'Research Funding Options' },
-        ];
+    const priorities =
+        professionalPath === PROFESSIONAL_PATHS.FREELANCER
+            ? [
+                { id: 'OBTAIN_NIE', title: 'Obtain your NIE' },
+                { id: 'REGISTER_AUTONOMO', title: 'Register as \'Autónomo\'' },
+                { id: 'UNDERSTAND_TAXES', title: 'Understand Tax Obligations' },
+                { id: 'OPEN_BANK_ACCOUNT', title: 'Open Spanish Bank Account' },
+            ]
+            : [
+                { id: 'OBTAIN_NIE', title: 'Obtain your NIE' },
+                { id: 'FORM_SL_COMPANY', title: 'Form an S.L. Company' },
+                { id: 'GET_COMPANY_NIF', title: 'Get Company NIF' },
+                { id: 'RESEARCH_FUNDING', title: 'Research Funding Options' },
+            ];
 
     const togglePriority = (priorityId) => {
         if (selectedPriorities.includes(priorityId)) {
-            setSelectedPriorities(selectedPriorities.filter(id => id !== priorityId));
+            setSelectedPriorities(selectedPriorities.filter((id) => id !== priorityId));
         } else {
             setSelectedPriorities([...selectedPriorities, priorityId]);
         }
@@ -71,10 +66,10 @@ const PrioritySelectionScreen = ({ route, navigation }) => {
         try {
             // First, initialize the checklist items in the backend
             await checklistService.initializeChecklist(selectedPriorities);
-            
+
             // Then complete the onboarding
             await completeOnboarding(selectedPriorities);
-            
+
             // Navigation will be handled by AuthContext
         } catch (error) {
             console.error('Error completing onboarding:', error);
@@ -100,19 +95,27 @@ const PrioritySelectionScreen = ({ route, navigation }) => {
                             key={priority.id}
                             style={[
                                 styles.priorityCard,
-                                selectedPriorities.includes(priority.id) && styles.priorityCardSelected,
+                                selectedPriorities.includes(priority.id) &&
+                                    styles.priorityCardSelected,
                             ]}
                             onPress={() => togglePriority(priority.id)}
                             activeOpacity={0.8}
                         >
                             <Checkbox.Android
-                                status={selectedPriorities.includes(priority.id) ? 'checked' : 'unchecked'}
+                                status={
+                                    selectedPriorities.includes(priority.id)
+                                        ? 'checked'
+                                        : 'unchecked'
+                                }
                                 color={colors.primary}
                             />
-                            <Text style={[
-                                styles.priorityText,
-                                selectedPriorities.includes(priority.id) && styles.priorityTextSelected,
-                            ]}>
+                            <Text
+                                style={[
+                                    styles.priorityText,
+                                    selectedPriorities.includes(priority.id) &&
+                                        styles.priorityTextSelected,
+                                ]}
+                            >
                                 {priority.title}
                             </Text>
                         </TouchableOpacity>
@@ -127,7 +130,7 @@ const PrioritySelectionScreen = ({ route, navigation }) => {
                         disabled={loading || selectedPriorities.length === 0}
                         style={styles.completeButton}
                         contentStyle={styles.completeButtonContent}
-                        labelStyle={{color: 'white'}}
+                        labelStyle={{ color: 'white' }}
                     >
                         Complete Setup
                     </Button>

@@ -1,10 +1,10 @@
-
-import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import PathSelectionScreen from '../screens/onboarding/PathSelectionScreen';
-import PrioritySelectionScreen from '../screens/onboarding/PrioritySelectionScreen';
+import React from 'react';
+
 import { SCREEN_NAMES } from '../constants/routes';
 import { colors } from '../constants/theme';
+import PathSelectionScreen from '../screens/onboarding/PathSelectionScreen';
+import PrioritySelectionScreen from '../screens/onboarding/PrioritySelectionScreen';
 
 const Stack = createStackNavigator();
 
@@ -34,12 +34,7 @@ const OnboardingNavigator = ({ onComplete }) => {
                     gestureEnabled: true,
                 }}
             >
-                {(props) => (
-                    <PrioritySelectionScreen
-                        {...props}
-                        onComplete={onComplete}
-                    />
-                )}
+                {(props) => <PrioritySelectionScreen {...props} onComplete={onComplete} />}
             </Stack.Screen>
         </Stack.Navigator>
     );

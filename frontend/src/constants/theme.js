@@ -1,6 +1,6 @@
 // frontend/src/constants/theme.js
-import { DefaultTheme } from 'react-native-paper';
 import { Platform } from 'react-native';
+import { DefaultTheme } from 'react-native-paper';
 
 // Color Palette
 export const colors = {
@@ -75,27 +75,27 @@ export const fonts = {
         regular: Platform.select({
             ios: 'System',
             android: 'Roboto',
-            default: 'System'
+            default: 'System',
         }),
         semiBold: Platform.select({
             ios: 'System',
             android: 'Roboto-Medium',
-            default: 'System'
+            default: 'System',
         }),
         bold: Platform.select({
             ios: 'System',
             android: 'Roboto-Bold',
-            default: 'System'
+            default: 'System',
         }),
         medium: Platform.select({
             ios: 'System',
             android: 'Roboto-Medium',
-            default: 'System'
+            default: 'System',
         }),
         light: Platform.select({
             ios: 'System',
             android: 'Roboto-Light',
-            default: 'System'
+            default: 'System',
         }),
     },
     sizes: {

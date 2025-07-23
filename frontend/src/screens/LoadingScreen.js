@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+
 import { colors } from '../constants/theme';
 
 const LoadingScreen = () => {
@@ -10,7 +10,6 @@ const LoadingScreen = () => {
         </View>
     );
 };
-
 
 const styles = StyleSheet.create({
     container: {

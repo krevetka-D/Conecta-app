@@ -1,9 +1,13 @@
 // frontend/src/utils/appStability.js
-import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { cache } from './cacheManager';
+import React from 'react';
+import { AppState, Platform } from 'react-native';
+
 import socketService from '../services/socketService';
+
+import { cache } from './cacheManager';
+
 
 class AppStabilityEnhancer {
     constructor() {
@@ -16,35 +20,35 @@ class AppStabilityEnhancer {
             apiCallDurations: [],
             memoryWarnings: 0,
         };
-        
+
         // Store subscriptions for cleanup
         this.appStateSubscription = null;
         this.networkSubscription = null;
-        
+
         this.initialize();
     }
 
     async initialize() {
         // Setup app state listener
         this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
-        
+
         // Setup network monitoring
         this.networkSubscription = NetInfo.addEventListener(this.handleNetworkChange);
-        
+
         // Setup memory warning listener (iOS)
         if (Platform.OS === 'ios') {
             const { NativeEventEmitter, NativeModules } = require('react-native');
             const { MemoryWarning } = NativeModules;
-            
+
             if (MemoryWarning) {
                 const memoryWarningEmitter = new NativeEventEmitter(MemoryWarning);
                 memoryWarningEmitter.addListener('memoryWarning', this.handleMemoryWarning);
             }
         }
-        
+
         // Restore crash recovery data
         await this.restoreCrashRecoveryData();
-        
+
         // Setup periodic health checks
         this.startHealthChecks();
     }
@@ -54,27 +58,27 @@ class AppStabilityEnhancer {
         if (this.appState === 'active' && nextAppState.match(/inactive|background/)) {
             await this.onAppBackground();
         }
-        
+
         // App is coming to foreground
         if (this.appState.match(/inactive|background/) && nextAppState === 'active') {
             await this.onAppForeground();
         }
-        
+
         this.appState = nextAppState;
     };
 
     handleNetworkChange = async (state) => {
         const wasOffline = this.networkState && !this.networkState.isConnected;
         const isNowOnline = state.isConnected;
-        
+
         this.networkState = state;
-        
+
         // Network restored
         if (wasOffline && isNowOnline) {
             console.log('Network restored');
             await this.onNetworkRestored();
         }
-        
+
         // Network lost
         if (!wasOffline && !isNowOnline) {
             console.log('Network lost');
@@ -85,19 +89,19 @@ class AppStabilityEnhancer {
     handleMemoryWarning = () => {
         console.warn('Memory warning received');
         this.performanceMetrics.memoryWarnings++;
-        
+
         // Clear caches
         cache.clear();
-        
+
         // Notify listeners
-        this.memoryWarningListeners.forEach(listener => {
+        this.memoryWarningListeners.forEach((listener) => {
             try {
                 listener();
             } catch (error) {
                 console.error('Error in memory warning listener:', error);
             }
         });
-        
+
         // Force garbage collection if available
         if (global.gc) {
             global.gc();
@@ -107,16 +111,17 @@ class AppStabilityEnhancer {
     async onAppBackground() {
         // Save app state
         await this.saveCrashRecoveryData();
-        
+
         // Clear unnecessary caches
         const cacheStats = cache.getStats();
-        if (cacheStats.estimatedSize > 5 * 1024 * 1024) { // 5MB
+        if (cacheStats.estimatedSize > 5 * 1024 * 1024) {
+            // 5MB
             await cache.clear();
         }
-        
+
         // Disconnect socket to save battery
         socketService.disconnect();
-        
+
         // Save performance metrics
         await this.savePerformanceMetrics();
     }
@@ -125,7 +130,7 @@ class AppStabilityEnhancer {
         // Reconnect socket if user is authenticated
         const token = await AsyncStorage.getItem('userToken');
         const user = await AsyncStorage.getItem('user');
-        
+
         if (token && user) {
             try {
                 const userData = JSON.parse(user);
@@ -134,10 +139,10 @@ class AppStabilityEnhancer {
                 console.error('Failed to reconnect socket:', error);
             }
         }
-        
+
         // Refresh critical data
         await this.refreshCriticalData();
-        
+
         // Check for app updates
         await this.checkForUpdates();
     }
@@ -147,7 +152,7 @@ class AppStabilityEnhancer {
         if (global.requestQueue) {
             global.requestQueue.process();
         }
-        
+
         // Reconnect socket
         const user = await AsyncStorage.getItem('user');
         if (user) {
@@ -158,7 +163,7 @@ class AppStabilityEnhancer {
                 console.error('Failed to reconnect socket:', error);
             }
         }
-        
+
         // Refresh stale data
         await this.refreshStaleData();
     }
@@ -178,7 +183,7 @@ class AppStabilityEnhancer {
                 userToken: await AsyncStorage.getItem('userToken'),
                 ...this.crashRecoveryData,
             };
-            
+
             await AsyncStorage.setItem('crash_recovery', JSON.stringify(recoveryData));
         } catch (error) {
             console.error('Failed to save crash recovery data:', error);
@@ -190,17 +195,17 @@ class AppStabilityEnhancer {
             const stored = await AsyncStorage.getItem('crash_recovery');
             if (stored) {
                 const data = JSON.parse(stored);
-                
+
                 // Check if app crashed recently (within last 5 minutes)
                 if (Date.now() - data.timestamp < 5 * 60 * 1000) {
                     this.crashRecoveryData = data;
-                    
+
                     // Notify about crash recovery
                     if (global.onCrashRecovery) {
                         global.onCrashRecovery(data);
                     }
                 }
-                
+
                 // Clear old data
                 await AsyncStorage.removeItem('crash_recovery');
             }
@@ -218,7 +223,7 @@ class AppStabilityEnhancer {
                 console.error('Failed to refresh user data:', error);
             }
         }
-        
+
         // Clear expired cache entries
         cache.cleanup();
     }
@@ -240,7 +245,7 @@ class AppStabilityEnhancer {
         try {
             await AsyncStorage.setItem(
                 'performance_metrics',
-                JSON.stringify(this.performanceMetrics)
+                JSON.stringify(this.performanceMetrics),
             );
         } catch (error) {
             console.error('Failed to save performance metrics:', error);
@@ -262,19 +267,20 @@ class AppStabilityEnhancer {
             socketConnected: socketService.isConnected(),
             timestamp: Date.now(),
         };
-        
+
         // Log health status
         if (__DEV__) {
             console.log('App Health Check:', health);
         }
-        
+
         // Take action if needed
         if (health.memoryWarnings > 5) {
             // Too many memory warnings, clear everything
             await this.emergencyCleanup();
         }
-        
-        if (health.cacheStats.estimatedSize > 10 * 1024 * 1024) { // 10MB
+
+        if (health.cacheStats.estimatedSize > 10 * 1024 * 1024) {
+            // 10MB
             // Cache too large
             await cache.clear();
         }
@@ -282,10 +288,10 @@ class AppStabilityEnhancer {
 
     async emergencyCleanup() {
         console.warn('Performing emergency cleanup');
-        
+
         // Clear all caches
         await cache.clear();
-        
+
         // Clear image cache if using FastImage
         try {
             const FastImage = require('react-native-fast-image');
@@ -296,14 +302,14 @@ class AppStabilityEnhancer {
         } catch (error) {
             // FastImage not available
         }
-        
+
         // Reset performance metrics
         this.performanceMetrics = {
             renderCounts: {},
             apiCallDurations: [],
             memoryWarnings: 0,
         };
-        
+
         // Force garbage collection
         if (global.gc) {
             global.gc();
@@ -316,10 +322,12 @@ class AppStabilityEnhancer {
             this.performanceMetrics.renderCounts[componentName] = 0;
         }
         this.performanceMetrics.renderCounts[componentName]++;
-        
+
         // Warn about excessive renders
         if (this.performanceMetrics.renderCounts[componentName] > 100) {
-            console.warn(`Component ${componentName} has rendered ${this.performanceMetrics.renderCounts[componentName]} times`);
+            console.warn(
+                `Component ${componentName} has rendered ${this.performanceMetrics.renderCounts[componentName]} times`,
+            );
         }
     }
 
@@ -330,12 +338,12 @@ class AppStabilityEnhancer {
             duration,
             timestamp: Date.now(),
         });
-        
+
         // Keep only last 100 calls
         if (this.performanceMetrics.apiCallDurations.length > 100) {
             this.performanceMetrics.apiCallDurations.shift();
         }
-        
+
         // Warn about slow API calls
         if (duration > 5000) {
             console.warn(`Slow API call to ${url}: ${duration}ms`);
@@ -345,7 +353,7 @@ class AppStabilityEnhancer {
     // Add memory warning listener
     addMemoryWarningListener(listener) {
         this.memoryWarningListeners.push(listener);
-        
+
         // Return unsubscribe function
         return () => {
             const index = this.memoryWarningListeners.indexOf(listener);
@@ -362,12 +370,18 @@ class AppStabilityEnhancer {
 
     // Get performance report
     getPerformanceReport() {
-        const avgApiDuration = this.performanceMetrics.apiCallDurations.length > 0
-            ? this.performanceMetrics.apiCallDurations.reduce((sum, call) => sum + call.duration, 0) / this.performanceMetrics.apiCallDurations.length
-            : 0;
-        
-        const slowApiCalls = this.performanceMetrics.apiCallDurations.filter(call => call.duration > 3000);
-        
+        const avgApiDuration =
+            this.performanceMetrics.apiCallDurations.length > 0
+                ? this.performanceMetrics.apiCallDurations.reduce(
+                    (sum, call) => sum + call.duration,
+                    0,
+                ) / this.performanceMetrics.apiCallDurations.length
+                : 0;
+
+        const slowApiCalls = this.performanceMetrics.apiCallDurations.filter(
+            (call) => call.duration > 3000,
+        );
+
         return {
             renderCounts: this.performanceMetrics.renderCounts,
             avgApiDuration,
@@ -401,7 +415,8 @@ const appStability = new AppStabilityEnhancer();
 // Export convenience functions
 export const trackRender = (componentName) => appStability.trackRender(componentName);
 export const trackApiCall = (url, duration) => appStability.trackApiCall(url, duration);
-export const addMemoryWarningListener = (listener) => appStability.addMemoryWarningListener(listener);
+export const addMemoryWarningListener = (listener) =>
+    appStability.addMemoryWarningListener(listener);
 export const setCrashRecoveryData = (key, value) => appStability.setCrashRecoveryData(key, value);
 export const getPerformanceReport = () => appStability.getPerformanceReport();
 

@@ -17,13 +17,14 @@ const ENV = {
     production: {
         API_BASE_URL: 'https://api.conectaalicante.com/api',
         WS_BASE_URL: 'wss://api.conectaalicante.com',
-    }
+    },
 };
 
 const getEnvironment = () => {
     // Use Expo's manifest to determine environment
-    const releaseChannel = Constants.manifest?.releaseChannel || Constants.expoConfig?.releaseChannel;
-    
+    const releaseChannel =
+        Constants.manifest?.releaseChannel || Constants.expoConfig?.releaseChannel;
+
     if (releaseChannel === 'production') return 'production';
     if (releaseChannel === 'staging') return 'staging';
     return 'development';

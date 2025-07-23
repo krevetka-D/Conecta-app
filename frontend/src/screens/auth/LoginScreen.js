@@ -12,13 +12,14 @@ import {
 import { TextInput } from 'react-native-paper';
 
 import { Button } from '../../components/ui/Button';
-import { useAuth } from '../../store/contexts/AuthContext';
-import { useForm } from '../../hooks/useForm';
-import { validateEmail, validatePassword } from '../../utils/validation';
-import { showErrorAlert } from '../../utils/alerts';
-import { loginStyles as styles } from '../../styles/screens/auth/LoginScreenStyles';
-import { colors } from '../../constants/theme';
 import { SCREEN_NAMES } from '../../constants/routes';
+import { colors } from '../../constants/theme';
+import { useForm } from '../../hooks/useForm';
+import { useAuth } from '../../store/contexts/AuthContext';
+import { loginStyles as styles } from '../../styles/screens/auth/LoginScreenStyles';
+import { showErrorAlert } from '../../utils/alerts';
+import { validateEmail, validatePassword } from '../../utils/validation';
+import { devError } from '../../utils';
 
 const LoginScreen = ({ navigation, route }) => {
     const [showPassword, setShowPassword] = useState(false);
@@ -50,12 +51,12 @@ const LoginScreen = ({ navigation, route }) => {
     // Update email if navigated with params
     useEffect(() => {
         if (emailFromParams) {
-            setValues(prev => ({ ...prev, email: emailFromParams }));
+            setValues((prev) => ({ ...prev, email: emailFromParams }));
         }
     }, [emailFromParams, setValues]);
 
     const togglePasswordVisibility = useCallback(() => {
-        setShowPassword(prev => !prev);
+        setShowPassword((prev) => !prev);
     }, []);
 
     const handleLogin = useCallback(async () => {
@@ -67,47 +68,51 @@ const LoginScreen = ({ navigation, route }) => {
             await login(values.email.trim().toLowerCase(), values.password);
             // Navigation will be handled by AuthContext after successful login
         } catch (error) {
-            console.error('Login error:', error);
-            
+            devError('Login', 'Login error', error);
+
             // Handle specific error messages
             const errorMessage = error.message?.toLowerCase() || '';
-            
+
             if (errorMessage.includes('invalid') || errorMessage.includes('incorrect')) {
                 showErrorAlert(
-                    'Login Failed', 
-                    'The email or password you entered is incorrect. Please try again.'
+                    'Login Failed',
+                    'The email or password you entered is incorrect. Please try again.',
                 );
-            } else if (errorMessage.includes('not found') || errorMessage.includes('doesn\'t exist')) {
+            } else if (
+                errorMessage.includes('not found') ||
+                errorMessage.includes('doesn\'t exist')
+            ) {
                 Alert.alert(
                     'Account Not Found',
                     'No account found with this email address. Would you like to create one?',
                     [
                         {
                             text: 'Cancel',
-                            style: 'cancel'
+                            style: 'cancel',
                         },
                         {
                             text: 'Sign Up',
-                            onPress: () => navigation.navigate(SCREEN_NAMES.REGISTER, {
-                                email: values.email.trim().toLowerCase()
-                            })
-                        }
-                    ]
+                            onPress: () =>
+                                navigation.navigate(SCREEN_NAMES.REGISTER, {
+                                    email: values.email.trim().toLowerCase(),
+                                }),
+                        },
+                    ],
                 );
             } else if (errorMessage.includes('network')) {
                 showErrorAlert(
-                    'Network Error', 
-                    'Please check your internet connection and try again.'
+                    'Network Error',
+                    'Please check your internet connection and try again.',
                 );
             } else if (errorMessage.includes('many attempts') || errorMessage.includes('locked')) {
                 showErrorAlert(
-                    'Account Locked', 
-                    'Too many failed login attempts. Please try again later or reset your password.'
+                    'Account Locked',
+                    'Too many failed login attempts. Please try again later or reset your password.',
                 );
             } else {
                 showErrorAlert(
-                    'Login Failed', 
-                    error.message || 'An error occurred. Please try again.'
+                    'Login Failed',
+                    error.message || 'An error occurred. Please try again.',
                 );
             }
         } finally {
@@ -117,7 +122,7 @@ const LoginScreen = ({ navigation, route }) => {
 
     const navigateToRegister = useCallback(() => {
         navigation.navigate(SCREEN_NAMES.REGISTER, {
-            email: values.email.trim().toLowerCase()
+            email: values.email.trim().toLowerCase(),
         });
     }, [navigation, values.email]);
 
@@ -126,20 +131,23 @@ const LoginScreen = ({ navigation, route }) => {
             'Test Credentials',
             'Email: test@example.com\nPassword: test123\n\nNote: You need to run the createTestUser script in the backend first.',
             [
-                { 
+                {
                     text: 'Copy Email',
                     onPress: () => {
-                        setValues(prev => ({ ...prev, email: 'test@example.com' }));
-                    }
+                        setValues((prev) => ({ ...prev, email: 'test@example.com' }));
+                    },
                 },
-                { text: 'OK' }
-            ]
+                { text: 'OK' },
+            ],
         );
     }, [setValues]);
 
-    const inputTheme = useMemo(() => ({
-        colors: { primary: colors.primary }
-    }), []);
+    const inputTheme = useMemo(
+        () => ({
+            colors: { primary: colors.primary },
+        }),
+        [],
+    );
 
     return (
         <KeyboardAvoidingView
@@ -172,9 +180,7 @@ const LoginScreen = ({ navigation, route }) => {
                         error={!!errors.email}
                         disabled={loading}
                     />
-                    {errors.email && (
-                        <Text style={styles.errorText}>{errors.email}</Text>
-                    )}
+                    {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
                     <TextInput
                         label="Password"
@@ -197,9 +203,7 @@ const LoginScreen = ({ navigation, route }) => {
                             />
                         }
                     />
-                    {errors.password && (
-                        <Text style={styles.errorText}>{errors.password}</Text>
-                    )}
+                    {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
                     <Button
                         title="Sign In"

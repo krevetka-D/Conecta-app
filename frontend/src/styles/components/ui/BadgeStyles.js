@@ -1,5 +1,6 @@
 // src/styles/components/ui/BadgeStyles.js
 import { StyleSheet } from 'react-native';
+
 import { colors, fonts, spacing, borderRadius } from '../../../constants/theme';
 
 export const styles = StyleSheet.create({

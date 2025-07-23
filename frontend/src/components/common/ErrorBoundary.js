@@ -1,8 +1,9 @@
-
 import React, { Component } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import Icon from './Icon.js';
+
 import { styles } from '../../styles/components/common/ErrorBoundaryStyles';
+
+import Icon from './Icon.js';
 
 class ErrorBoundary extends Component {
     constructor(props) {

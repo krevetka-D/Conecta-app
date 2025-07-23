@@ -1,7 +1,8 @@
 // src/styles/navigation/MainNavigatorStyles.js
 import { StyleSheet, Platform } from 'react-native';
-import { colors, fonts, spacing, borderRadius, shadows } from '../../constants/theme';
+
 import { TAB_BAR_DIMENSIONS, HEADER_DIMENSIONS } from '../../constants/dimensions';
+import { colors, fonts, spacing, borderRadius, shadows } from '../../constants/theme';
 
 export const styles = StyleSheet.create({
     // Tab Bar Styles
