@@ -1,34 +1,22 @@
-import { USE_MOCK } from '../config/development';
 import { devLog, devWarn, devError } from '../utils/devLog';
-
 import apiClient from './api/client';
-import mockChatService from './mockChatService';
 import socketService from './socketService';
 
 const chatService = {
     // Initialize chat connection
     async initializeChat(userId) {
-        if (USE_MOCK) {
-            devLog('Chat', 'Using mock chat service');
-            return Promise.resolve();
-        }
-
         try {
             // Try to connect socket
             await socketService.connect(userId);
             return true;
         } catch (error) {
             console.error('Failed to initialize chat:', error);
-            // Continue without socket - API fallback will be used
             return false;
         }
     },
 
-    // Get room messages with fallback
+    // Get room messages
     async getRoomMessages(roomId, options = {}) {
-        if (USE_MOCK) {
-            return mockChatService.getRoomMessages(roomId);
-        }
 
         try {
             const params = {
@@ -98,17 +86,11 @@ const chatService = {
         } catch (error) {
             devError('ChatService', 'Error fetching messages', error);
 
-            // Fallback to mock data in development
-            if (__DEV__) {
-                devLog('ChatService', 'Using mock messages due to API error');
-                return mockChatService.getRoomMessages(roomId);
-            }
-
             return [];
         }
     },
 
-    // Send message with fallback
+    // Send message
     async sendMessage(roomId, content, type = 'text', attachments = []) {
         devLog('ChatService', '📤 Sending message', { roomId, content, type });
         
@@ -142,9 +124,6 @@ const chatService = {
 
     // Get chat rooms
     async getChatRooms() {
-        if (USE_MOCK) {
-            return mockChatService.getRooms();
-        }
 
         try {
             const response = await apiClient.get('/chat/rooms', {
@@ -153,12 +132,6 @@ const chatService = {
             return response || [];
         } catch (error) {
             console.error('Error fetching chat rooms:', error);
-
-            // Fallback to mock data in development
-            if (__DEV__) {
-                console.log('Using mock rooms due to API error');
-                return mockChatService.getRooms();
-            }
 
             return [];
         }

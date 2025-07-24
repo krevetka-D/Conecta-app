@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     View,
     Text,
@@ -16,7 +16,6 @@ import { Avatar, Badge } from 'react-native-paper';
 
 import Icon from '../../components/common/Icon.js';
 import WebDateTimePicker from '../../components/common/WebDateTimePicker';
-import { colors } from '../../constants/theme';
 import apiClient from '../../services/api/client';
 import chatService from '../../services/chatService';
 import socketService from '../../services/socketService';
@@ -38,7 +37,6 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const [sending, setSending] = useState(false);
     const [typingUsers, setTypingUsers] = useState([]);
     const [onlineUsers, setOnlineUsers] = useState([]);
-    const [connectionError, setConnectionError] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
     const flatListRef = useRef(null);
@@ -58,10 +56,15 @@ const ChatRoomScreen = ({ route, navigation }) => {
                         backgroundColor: socketService.isConnected() ? 'green' : 'red',
                         marginRight: 8,
                     }} />
+                    {onlineUsers.length > 0 && (
+                        <Text style={{ color: theme.colors.textInverse, marginRight: 10 }}>
+                            {onlineUsers.length} online
+                        </Text>
+                    )}
                 </View>
             ),
         });
-    }, [navigation, roomTitle, theme.colors.primary]);
+    }, [navigation, roomTitle, theme.colors.primary, theme.colors.textInverse, onlineUsers.length]);
 
     useEffect(() => {
         // Connect to socket and join room
@@ -97,9 +100,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
         }
     };
 
-    const initializeChat = async () => {
+    const initializeChat = useCallback(async () => {
         try {
-            setConnectionError(false);
 
             // Try to connect socket if not connected
             if (!socketService.isConnected()) {
@@ -109,19 +111,23 @@ const ChatRoomScreen = ({ route, navigation }) => {
                     devLog('ChatRoom', 'Socket connected successfully');
                 } catch (error) {
                     devError('ChatRoom', 'Socket connection failed', error);
-                    setConnectionError(true);
                 }
             }
 
-            // Join the room if connected
+            // Setup socket listeners first
             if (socketService.isConnected()) {
+                setupSocketListeners();
+                
+                // Then join the room
                 devLog('ChatRoom', `Joining room ${roomId}...`);
                 socketService.joinRoom(roomId);
                 
-                // Setup socket listeners after a short delay to ensure room join is processed
-                setTimeout(() => {
-                    setupSocketListeners();
-                }, 100);
+                // Listen for room join confirmation
+                socketService.once('room_joined', (data) => {
+                    if (data.roomId === roomId) {
+                        devLog('ChatRoom', `Successfully joined room ${roomId}`);
+                    }
+                });
             }
 
             // Load initial messages from API (works even without socket)
@@ -146,25 +152,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
         } catch (error) {
             devError('ChatRoom', 'Failed to initialize chat', error);
             setLoading(false);
-            setConnectionError(true);
         }
-    };
+    }, [roomId, user._id, setupSocketListeners]);
 
-    const setupSocketListeners = () => {
-        devLog('ChatRoom', 'Setting up socket listeners...');
-        
-        // Use direct socket access for better reliability
-        const socket = socketService.socket;
-        if (!socket) {
-            devError('ChatRoom', 'No socket instance available');
-            return;
-        }
-
-        // Remove old listeners first to prevent duplicates
-        cleanupSocketListeners();
-
-        // Define handlers inline to avoid stale closures
-        const messageHandler = (data) => {
+    // Define message handler outside to avoid recreation
+    const messageHandler = useCallback((data) => {
             devLog('ChatRoom', '🔴 NEW MESSAGE RECEIVED', {
                 messageId: data?._id,
                 roomId: data?.roomId,
@@ -194,21 +186,12 @@ const ChatRoomScreen = ({ route, navigation }) => {
             }
             
             setMessages((prev) => {
-                // Remove any temporary messages with same content from same sender
-                const filteredPrev = prev.filter(msg => {
-                    if (msg._id.startsWith('temp-') && 
-                        msg.content === message.content && 
-                        msg.sender._id === message.sender._id) {
-                        devLog('ChatRoom', 'Removing optimistic message');
-                        return false;
-                    }
-                    return true;
-                });
+                // Remove any temporary messages
+                const filtered = prev.filter(msg => !msg._id.startsWith('temp-'));
                 
                 // Check if message already exists
-                if (filteredPrev.some(msg => msg._id === message._id)) {
-                    devLog('ChatRoom', 'Message already exists, skipping');
-                    return filteredPrev;
+                if (filtered.some(msg => msg._id === message._id)) {
+                    return filtered;
                 }
                 
                 devLog('ChatRoom', '✅ Adding new message', {
@@ -216,24 +199,35 @@ const ChatRoomScreen = ({ route, navigation }) => {
                     content: message.content?.substring(0, 30) + '...'
                 });
                 
-                // Add message and sort by createdAt
-                const newMessages = [...filteredPrev, message].sort((a, b) => 
+                // Add new message and sort
+                const newMessages = [...filtered, message].sort((a, b) => 
                     new Date(a.createdAt) - new Date(b.createdAt)
                 );
                 
-                // Scroll to bottom after adding message
+                // Scroll to bottom
                 setTimeout(() => {
                     flatListRef.current?.scrollToEnd({ animated: true });
                 }, 100);
                 
                 return newMessages;
             });
-        };
+    }, [roomId]);
 
-        // New message handler - listen to multiple event names for compatibility
+    const setupSocketListeners = useCallback(() => {
+        devLog('ChatRoom', 'Setting up socket listeners...');
+        
+        // Use direct socket access for better reliability
+        const socket = socketService.socket;
+        if (!socket) {
+            devError('ChatRoom', 'No socket instance available');
+            return;
+        }
+
+        // Remove old listeners first to prevent duplicates
+        cleanupSocketListeners();
+
+        // New message handler - listen to the correct event name
         socket.on('new_message', messageHandler);
-        socket.on('newMessage', messageHandler);
-        socket.on('message', messageHandler);
         
         // Other event handlers
         socket.on('message_sent', (data) => {
@@ -260,6 +254,17 @@ const ChatRoomScreen = ({ route, navigation }) => {
             devLog('ChatRoom', 'Room users update:', users);
             setOnlineUsers(users || []);
         });
+        
+        socket.on('user_status_update', ({ userId, isOnline }) => {
+            devLog('ChatRoom', 'User status update:', { userId, isOnline });
+            setOnlineUsers((prev) => {
+                if (isOnline) {
+                    return prev.includes(userId) ? prev : [...prev, userId];
+                } else {
+                    return prev.filter(id => id !== userId);
+                }
+            });
+        });
 
         // Global message handler for debugging
         socket.onAny((eventName, ...args) => {
@@ -270,21 +275,20 @@ const ChatRoomScreen = ({ route, navigation }) => {
         
         // Store cleanup function reference
         eventHandlersRef.current = { messageHandler };
-    };
+    }, [messageHandler]);
 
-    const cleanupSocketListeners = () => {
+    const cleanupSocketListeners = useCallback(() => {
         const socket = socketService.socket;
         if (!socket) return;
 
-        socket.off('new_message');
-        socket.off('newMessage');
-        socket.off('message');
+        socket.off('new_message', eventHandlersRef.current.messageHandler);
         socket.off('message_sent');
         socket.off('message_deleted');
         socket.off('user_typing');
         socket.off('room_users');
+        socket.off('user_status_update');
         socket.offAny();
-    };
+    }, []);
 
 
     const sendMessage = async () => {
@@ -446,15 +450,6 @@ const ChatRoomScreen = ({ route, navigation }) => {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={90}
             >
-                {connectionError && (
-                    <View style={styles.connectionError}>
-                        <Icon name="wifi-off" size={16} color={colors.error} />
-                        <Text style={styles.connectionErrorText}>Connection issues</Text>
-                        <TouchableOpacity onPress={initializeChat}>
-                            <Text style={styles.retryText}>Retry</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
 
                 <FlatList
                     ref={flatListRef}
@@ -471,7 +466,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
                 {typingUsers.length > 0 && (
                     <View style={styles.typingIndicator}>
-                        <Text style={styles.typingText}>Someone is typing...</Text>
+                        <Text style={styles.typingText}>
+                            {typingUsers.length === 1 
+                                ? 'Someone is typing...'
+                                : `${typingUsers.length} people are typing...`}
+                        </Text>
                     </View>
                 )}
 

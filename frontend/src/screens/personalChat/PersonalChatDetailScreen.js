@@ -64,7 +64,7 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                 clearTimeout(typingTimeoutRef.current);
             }
         };
-    }, [userId]);
+    }, [userId, handleNewMessage, handleUserTyping, handleMessageRead]);
 
     const loadMessages = async () => {
         try {
@@ -103,31 +103,16 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
     };
 
     const setupSocketListeners = () => {
-        // Listen for new messages from this user - use both event names for compatibility
+        // Listen for new messages from this user
         socketService.on('private_message', handleNewMessage);
-        socketService.on('personal_message', handleNewMessage);
-        socketService.on('new_personal_message', handleNewMessage);
         socketService.on('user_typing', handleUserTyping);
         socketService.on('message_read', handleMessageRead);
-
-        // Also listen with direct socket for better reliability
-        if (socketService.socket) {
-            socketService.socket.on('private_message', handleNewMessage);
-            socketService.socket.on('personal_message', handleNewMessage);
-        }
     };
 
     const cleanupSocketListeners = () => {
         socketService.off('private_message', handleNewMessage);
-        socketService.off('personal_message', handleNewMessage);
-        socketService.off('new_personal_message', handleNewMessage);
         socketService.off('user_typing', handleUserTyping);
         socketService.off('message_read', handleMessageRead);
-
-        if (socketService.socket) {
-            socketService.socket.off('private_message', handleNewMessage);
-            socketService.socket.off('personal_message', handleNewMessage);
-        }
     };
 
     const handleNewMessage = useCallback(

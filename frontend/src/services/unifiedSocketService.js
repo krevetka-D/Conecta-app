@@ -127,6 +127,7 @@ class UnifiedSocketService {
                     
                     // Emit authentication
                     if (userId) {
+                        devLog('UnifiedSocket', `Emitting authenticate with userId: ${userId}`);
                         this.socket.emit('authenticate', { userId });
                     } else {
                         clearTimeout(timeout);
@@ -517,6 +518,7 @@ class UnifiedSocketService {
 
         // Chat messages
         this.on('new_message', (data) => {
+            devLog('UnifiedSocket', 'Received new_message event', data);
             if (data.roomId) {
                 apiClient.clearCache(`/chat/rooms/${data.roomId}/messages`);
             }
@@ -525,6 +527,7 @@ class UnifiedSocketService {
 
         // Personal messages
         this.on('private_message', (data) => {
+            devLog('UnifiedSocket', 'Received private_message event', data);
             apiClient.clearCache('/messages');
             this.emitLocal('private_message', data);
         });

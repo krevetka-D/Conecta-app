@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import { getIO } from '../websocket.js';
 
 /**
  * @desc    Get user's conversations
@@ -77,6 +78,18 @@ export const sendMessage = asyncHandler(async (req, res) => {
     // Populate sender and recipient
     await message.populate('sender', 'name email');
     await message.populate('recipient', 'name email');
+    
+    // Emit socket event to recipient
+    const io = getIO();
+    if (io) {
+        // Emit to recipient's user room
+        io.to(`user_${recipientId}`).emit('private_message', message);
+        
+        // Also emit back to sender for confirmation
+        io.to(`user_${req.user._id}`).emit('private_message', message);
+        
+        console.log(`Personal message sent from ${req.user._id} to ${recipientId}`);
+    }
     
     res.status(201).json(message);
 });
