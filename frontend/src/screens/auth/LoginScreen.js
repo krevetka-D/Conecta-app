@@ -17,9 +17,9 @@ import { colors } from '../../constants/theme';
 import { useForm } from '../../hooks/useForm';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { loginStyles as styles } from '../../styles/screens/auth/LoginScreenStyles';
+import { devError } from '../../utils';
 import { showErrorAlert } from '../../utils/alerts';
 import { validateEmail, validatePassword } from '../../utils/validation';
-import { devError } from '../../utils';
 
 const LoginScreen = ({ navigation, route }) => {
     const [showPassword, setShowPassword] = useState(false);

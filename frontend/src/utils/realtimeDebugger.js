@@ -4,6 +4,7 @@
  */
 
 import socketService from '../services/socketService';
+
 import { devLog } from './devLog';
 
 class RealtimeDebugger {
@@ -39,7 +40,7 @@ class RealtimeDebugger {
             'reconnect',
             'reconnect_attempt',
             'reconnect_error',
-            'reconnect_failed'
+            'reconnect_failed',
         ];
 
         eventsToMonitor.forEach(event => {
@@ -74,7 +75,7 @@ class RealtimeDebugger {
             event,
             data: this.sanitizeData(data),
             socketId: socketService.getSocketId(),
-            isConnected: socketService.isConnected()
+            isConnected: socketService.isConnected(),
         };
 
         this.events.push(eventLog);
@@ -89,7 +90,7 @@ class RealtimeDebugger {
         console.log(
             `%c[RT-${event}] ${timestamp}`,
             `color: ${color}; font-weight: bold`,
-            data
+            data,
         );
 
         // Special handling for specific events
@@ -133,7 +134,7 @@ class RealtimeDebugger {
             'budget_update': 'teal',
             'checklist_update': 'teal',
             'event_update': 'teal',
-            'forum_update': 'teal'
+            'forum_update': 'teal',
         };
 
         return colorMap[event] || 'gray';
@@ -144,36 +145,36 @@ class RealtimeDebugger {
      */
     handleSpecialEvents(event, data) {
         switch (event) {
-            case 'connect':
-                devLog('RealtimeDebugger', '✅ Socket connected', {
-                    socketId: socketService.getSocketId(),
-                    transport: socketService.socket?.io?.engine?.transport?.name
-                });
-                break;
+        case 'connect':
+            devLog('RealtimeDebugger', '✅ Socket connected', {
+                socketId: socketService.getSocketId(),
+                transport: socketService.socket?.io?.engine?.transport?.name,
+            });
+            break;
 
-            case 'disconnect':
-                devLog('RealtimeDebugger', '❌ Socket disconnected', {
-                    reason: data
-                });
-                break;
+        case 'disconnect':
+            devLog('RealtimeDebugger', '❌ Socket disconnected', {
+                reason: data,
+            });
+            break;
 
-            case 'authenticated':
-                devLog('RealtimeDebugger', '🔐 Socket authenticated', {
-                    userId: data?.userId
-                });
-                break;
+        case 'authenticated':
+            devLog('RealtimeDebugger', '🔐 Socket authenticated', {
+                userId: data?.userId,
+            });
+            break;
 
-            case 'error':
-                devLog('RealtimeDebugger', '⚠️ Socket error', data);
-                break;
+        case 'error':
+            devLog('RealtimeDebugger', '⚠️ Socket error', data);
+            break;
 
-            case 'new_message':
-                devLog('RealtimeDebugger', '💬 New message received', {
-                    roomId: data?.roomId,
-                    sender: data?.sender?.name,
-                    messageCount: data?.messages?.length || 1
-                });
-                break;
+        case 'new_message':
+            devLog('RealtimeDebugger', '💬 New message received', {
+                roomId: data?.roomId,
+                sender: data?.sender?.name,
+                messageCount: data?.messages?.length || 1,
+            });
+            break;
         }
     }
 
@@ -186,7 +187,7 @@ class RealtimeDebugger {
             socketId: socketService.getSocketId(),
             connectionState: socketService.getConnectionState(),
             transport: socketService.socket?.io?.engine?.transport?.name,
-            readyState: socketService.socket?.connected
+            readyState: socketService.socket?.connected,
         };
 
         devLog('RealtimeDebugger', '📊 Connection State', state);
@@ -210,7 +211,7 @@ class RealtimeDebugger {
             if (!stats[event.event]) {
                 stats[event.event] = {
                     count: 0,
-                    lastOccurred: null
+                    lastOccurred: null,
                 };
             }
             
@@ -256,8 +257,8 @@ class RealtimeDebugger {
             socketInfo: {
                 id: socketService.getSocketId(),
                 connected: socketService.isConnected(),
-                authenticated: socketService.isAuthenticated
-            }
+                authenticated: socketService.isAuthenticated,
+            },
         };
     }
 }

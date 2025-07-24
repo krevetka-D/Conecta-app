@@ -1,5 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
+import Event from '../models/Event.js';
+import Forum from '../models/Forum.js';
 import generateToken from '../utils/generateToken.js';
 import { createChecklistForUser } from './checklistController.js';
 
@@ -248,6 +250,43 @@ const logoutUser = asyncHandler(async (req, res) => {
     res.json({ message: 'Logged out successfully' });
 });
 
+// @desc Get public user profile
+// @route GET /api/users/profile/:userId
+// @access Public
+const getPublicProfile = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId)
+        .select('name email professionalPath bio interests skills createdAt location');
+    
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    
+    // Get user stats
+    const [eventsAttended, forumsJoined] = await Promise.all([
+        Event.countDocuments({ attendees: userId }),
+        Forum.countDocuments({ members: userId })
+    ]);
+    
+    res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        professionalPath: user.professionalPath,
+        bio: user.bio,
+        interests: user.interests || [],
+        skills: user.skills || [],
+        memberSince: user.createdAt,
+        location: user.location,
+        stats: {
+            eventsAttended,
+            forumsJoined
+        }
+    });
+});
+
 export {
     loginUser,
     registerUser,
@@ -257,4 +296,5 @@ export {
     getOnboardingStatus,
     updateProfile,
     logoutUser,
+    getPublicProfile,
 };

@@ -126,8 +126,6 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
         setSending(true);
 
         try {
-            await personalChatService.sendMessage(userId, messageText);
-
             // Optimistically add message to UI
             const optimisticMessage = {
                 _id: `temp-${Date.now()}`,
@@ -140,6 +138,23 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
 
             setMessages((prev) => [...prev, optimisticMessage]);
 
+            // Send message and get response
+            const sentMessage = await personalChatService.sendMessage(userId, messageText);
+            
+            // Replace optimistic message with real one
+            if (sentMessage) {
+                setMessages((prev) => {
+                    // Remove optimistic message
+                    const filtered = prev.filter(msg => msg._id !== optimisticMessage._id);
+                    // Add real message (check if not already added by socket)
+                    const exists = filtered.some(msg => msg._id === sentMessage._id);
+                    if (!exists) {
+                        return [...filtered, sentMessage];
+                    }
+                    return filtered;
+                });
+            }
+
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
             }, 100);
@@ -147,6 +162,8 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
             console.error('Failed to send message:', error);
             showErrorAlert('Error', 'Failed to send message');
             setInputText(messageText);
+            // Remove optimistic message on error
+            setMessages((prev) => prev.filter(msg => !msg._id.startsWith('temp-')));
         } finally {
             setSending(false);
         }

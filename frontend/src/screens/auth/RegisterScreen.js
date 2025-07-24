@@ -19,9 +19,9 @@ import { colors } from '../../constants/theme';
 import { useForm } from '../../hooks/useForm';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { registerStyles as styles } from '../../styles/screens/auth/RegisterScreenStyles';
+import { devLog, devError } from '../../utils';
 import { showErrorAlert } from '../../utils/alerts';
 import { validateEmail, validatePassword, validateName } from '../../utils/validation';
-import { devLog, devError } from '../../utils';
 
 const CHECKLIST_ITEMS = {
     FREELANCER: [

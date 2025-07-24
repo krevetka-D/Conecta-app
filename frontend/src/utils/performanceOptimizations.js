@@ -1,5 +1,5 @@
-import React, { memo, useCallback, useMemo, useRef, useEffect } from 'react';
-import { InteractionManager } from 'react-native';
+import React, { memo, useCallback, useMemo, useRef, useEffect, useState } from 'react';
+import { InteractionManager, Animated } from 'react-native';
 
 // Memoization helper for expensive computations
 export const memoizeComputation = (fn, dependencies = []) => {
@@ -115,7 +115,7 @@ export const useVirtualList = (items, itemHeight, containerHeight) => {
         
         return {
             start: Math.max(0, startIndex - overscan),
-            end: Math.min(items.length, endIndex + overscan)
+            end: Math.min(items.length, endIndex + overscan),
         };
     }, [scrollTop, items.length, itemHeight, containerHeight]);
     
@@ -123,7 +123,7 @@ export const useVirtualList = (items, itemHeight, containerHeight) => {
         visibleItems,
         totalHeight: items.length * itemHeight,
         offsetY: visibleItems.start * itemHeight,
-        onScroll: (e) => setScrollTop(e.nativeEvent.contentOffset.y)
+        onScroll: (e) => setScrollTop(e.nativeEvent.contentOffset.y),
     };
 };
 

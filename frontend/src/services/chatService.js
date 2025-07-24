@@ -1,5 +1,5 @@
-import { USE_MOCK, devLog } from '../config/development';
-import { devWarn, devError } from '../utils/devLog';
+import { USE_MOCK } from '../config/development';
+import { devLog, devWarn, devError } from '../utils/devLog';
 
 import apiClient from './api/client';
 import mockChatService from './mockChatService';
@@ -36,8 +36,11 @@ const chatService = {
                 ...(options.before && { before: options.before }),
             };
 
-            // Fixed: Use correct endpoint structure
-            const response = await apiClient.get(`/chat/rooms/${roomId}/messages`, { params });
+            // Fixed: Use correct endpoint structure with cache disabled
+            const response = await apiClient.get(`/chat/rooms/${roomId}/messages`, { 
+                params,
+                cache: false // Disable caching for real-time messages
+            });
 
             // Handle different response structures from backend
             let messages = [];
@@ -62,17 +65,40 @@ const chatService = {
                 devLog('ChatService', 'Converting array-like response to array');
                 messages = Array.from(response);
             }
+            
+            // Return the entire response if it contains messages
+            if (response && response.messages) {
+                return response; // Return entire response object
+            }
 
             // Validate messages have required structure
-            const validMessages = messages.filter(
-                (msg) => msg && msg._id && msg.sender && msg.content !== undefined,
-            );
+            const validMessages = messages.filter((msg) => {
+                if (!msg) return false;
+                if (!msg._id) {
+                    devLog('ChatService', 'Message missing _id:', msg);
+                    return false;
+                }
+                if (!msg.sender) {
+                    devLog('ChatService', 'Message missing sender:', msg);
+                    return false;
+                }
+                if (msg.content === undefined) {
+                    devLog('ChatService', 'Message missing content:', msg);
+                    return false;
+                }
+                return true;
+            });
 
             if (validMessages.length !== messages.length) {
                 devWarn(
                     'ChatService',
-                    `Filtered out ${messages.length - validMessages.length} invalid messages`
+                    `Filtered out ${messages.length - validMessages.length} invalid messages from room ${roomId}`,
                 );
+                // Log the first few invalid messages for debugging
+                const invalidMessages = messages.filter(msg => !validMessages.includes(msg));
+                invalidMessages.slice(0, 3).forEach((msg, index) => {
+                    devLog('ChatService', `Invalid message ${index + 1}:`, msg);
+                });
             }
 
             return validMessages;
@@ -91,28 +117,24 @@ const chatService = {
 
     // Send message with fallback
     async sendMessage(roomId, content, type = 'text', attachments = []) {
-        // Try socket first if connected
-        if (socketService.isConnected()) {
-            socketService.sendMessage({
-                roomId,
-                content,
-                type,
-                attachments,
-            });
-            return;
-        }
-
-        // Fallback to API
+        devLog('ChatService', '📤 Sending message', { roomId, content, type });
+        
+        // Always use API to ensure message is saved
+        // Socket will handle real-time delivery
         try {
-            // Fixed: Use correct endpoint structure
             const response = await apiClient.post(`/chat/rooms/${roomId}/messages`, {
                 content,
                 type,
                 attachments,
             });
+            
+            devLog('ChatService', '✅ Message sent via API', response);
+            
+            // The backend should emit the message via socket
+            // so we just return the response
             return response;
         } catch (error) {
-            console.error('Error sending message:', error);
+            devError('ChatService', 'Error sending message', error);
             throw error;
         }
     },
@@ -124,7 +146,9 @@ const chatService = {
         }
 
         try {
-            const response = await apiClient.get('/chat/rooms');
+            const response = await apiClient.get('/chat/rooms', {
+                cache: false // Disable caching for real-time room data
+            });
             return response || [];
         } catch (error) {
             console.error('Error fetching chat rooms:', error);

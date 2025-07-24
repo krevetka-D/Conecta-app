@@ -71,15 +71,8 @@ export const getEvents = asyncHandler(async (req, res) => {
         // Get total count for pagination
         const total = await Event.countDocuments(query);
         
-        res.status(200).json({
-            events,
-            pagination: {
-                total,
-                limit: Number(limit),
-                skip: Number(skip),
-                hasMore: skip + events.length < total
-            }
-        });
+        // Return events array directly for compatibility
+        res.status(200).json(events);
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500);

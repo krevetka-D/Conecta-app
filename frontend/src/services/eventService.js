@@ -5,7 +5,10 @@ const eventService = {
     getEvents: async (params = {}) => {
         try {
             // Convert the response to handle both array and object responses
-            const response = await apiClient.get('/events', { params });
+            const response = await apiClient.get('/events', { 
+                params,
+                cache: false // Disable caching for real-time updates
+            });
 
             // If response has events property, return that, otherwise assume it's an array
             if (response && response.events) {
@@ -48,6 +51,10 @@ const eventService = {
             };
 
             const response = await apiClient.post('/events', formattedData);
+            
+            // Clear events cache after creating
+            await apiClient.clearCache('/events');
+            
             return response;
         } catch (error) {
             console.error('Error creating event:', error);
@@ -62,6 +69,10 @@ const eventService = {
     updateEvent: async (id, eventData) => {
         try {
             const response = await apiClient.put(`/events/${id}`, eventData);
+            
+            // Clear events cache after updating
+            await apiClient.clearCache('/events');
+            
             return response;
         } catch (error) {
             console.error('Error updating event:', error);
@@ -75,6 +86,10 @@ const eventService = {
     deleteEvent: async (id) => {
         try {
             const response = await apiClient.delete(`/events/${id}`);
+            
+            // Clear events cache after deleting
+            await apiClient.clearCache('/events');
+            
             return response;
         } catch (error) {
             console.error('Error deleting event:', error);
@@ -88,6 +103,10 @@ const eventService = {
     joinEvent: async (id) => {
         try {
             const response = await apiClient.post(`/events/${id}/join`);
+            
+            // Clear events cache after joining
+            await apiClient.clearCache('/events');
+            
             return response;
         } catch (error) {
             console.error('Error joining event:', error);
@@ -101,6 +120,10 @@ const eventService = {
     leaveEvent: async (id) => {
         try {
             const response = await apiClient.post(`/events/${id}/leave`);
+            
+            // Clear events cache after leaving
+            await apiClient.clearCache('/events');
+            
             return response;
         } catch (error) {
             console.error('Error leaving event:', error);
@@ -131,6 +154,7 @@ const eventService = {
                     upcoming: 'true',
                     limit,
                 },
+                cache: false // Disable caching for real-time upcoming events
             });
 
             if (response && response.events) {

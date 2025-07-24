@@ -15,15 +15,15 @@ import EmptyState from '../../components/common/EmptyState';
 import Icon from '../../components/common/Icon.js';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { colors, fonts, spacing } from '../../constants/theme';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
+import apiClient from '../../services/api/client';
 import eventService from '../../services/eventService';
 import socketService from '../../services/socketService';
-import apiClient from '../../services/api/client';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { showErrorAlert } from '../../utils/alerts';
 import { devLog } from '../../utils/devLog';
-import { useSocketEvents } from '../../hooks/useSocketEvents';
 
-const EventsScreen = ({ navigation }) => {
+const EventsScreen = ({ navigation, route }) => {
     const { user } = useAuth();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -32,6 +32,9 @@ const EventsScreen = ({ navigation }) => {
     
     const loadEvents = useCallback(async () => {
         try {
+            // Clear cache before loading to ensure fresh data
+            await apiClient.clearCache('/events');
+            
             const params = {
                 upcoming: filter === 'upcoming' ? 'true' : undefined,
                 myEvents: filter === 'myEvents' ? 'true' : undefined,
@@ -39,6 +42,8 @@ const EventsScreen = ({ navigation }) => {
 
             const data = await eventService.getEvents(params);
             setEvents(data || []);
+            
+            devLog('Events', `Loaded ${data?.length || 0} events with filter: ${filter}`);
         } catch (error) {
             console.error('Failed to load events:', error);
             if (!refreshing) {
@@ -68,16 +73,16 @@ const EventsScreen = ({ navigation }) => {
                 // Update existing event
                 setEvents(prevEvents => 
                     prevEvents.map(event => 
-                        event._id === data.event._id ? data.event : event
-                    )
+                        event._id === data.event._id ? data.event : event,
+                    ),
                 );
             } else if (data.type === 'delete') {
                 // Remove deleted event
                 setEvents(prevEvents => 
-                    prevEvents.filter(event => event._id !== data.eventId)
+                    prevEvents.filter(event => event._id !== data.eventId),
                 );
             }
-        }, [loadEvents])
+        }, [loadEvents]),
     };
     
     // Use socket events hook
@@ -86,6 +91,16 @@ const EventsScreen = ({ navigation }) => {
     useEffect(() => {
         loadEvents();
     }, [filter, loadEvents]);
+    
+    // Handle refresh from navigation params
+    useEffect(() => {
+        if (route.params?.refresh) {
+            devLog('Events', 'Refreshing from navigation params');
+            loadEvents();
+            // Clear the refresh param
+            navigation.setParams({ refresh: false });
+        }
+    }, [route.params?.refresh, loadEvents, navigation]);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);

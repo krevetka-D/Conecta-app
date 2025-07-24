@@ -13,10 +13,9 @@ import { cacheMiddleware } from '../middleware/cacheMiddleware.js';
 
 const router = express.Router();
 
-// Get all budget entries with optional caching
+// Get all budget entries - no caching for real-time data
 router.get('/',
     protect,
-    cacheMiddleware(300), // Cache for 5 minutes
     getBudget
 );
 
@@ -28,10 +27,9 @@ router.post('/',
     setBudget
 );
 
-// Get budget summary
+// Get budget summary - no caching for real-time data
 router.get('/summary',
     protect,
-    cacheMiddleware(600), // Cache for 10 minutes
     getBudgetSummary
 );
 

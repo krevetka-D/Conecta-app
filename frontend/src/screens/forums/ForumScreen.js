@@ -26,16 +26,19 @@ import EmptyState from '../../components/common/EmptyState';
 import Icon from '../../components/common/Icon.js';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { colors } from '../../constants/theme';
-import forumService from '../../services/forumService';
-import socketService from '../../services/socketService';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
 import apiClient from '../../services/api/client';
+import forumService from '../../services/forumService';
+import realtimeService from '../../services/realtimeService';
+import socketService from '../../services/socketService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import { forumsStyles as createStyles } from '../../styles/screens/forums/ForumScreenStyles';
+import { devError, devWarn } from '../../utils';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import { debounce } from '../../utils/debounce';
-import { devError, devWarn } from '../../utils';
-import { useSocketEvents } from '../../hooks/useSocketEvents';
+
+import ConnectionDebugModal from './ConnectionDebugModal';
 
 // Add formatRelativeTime helper function
 const formatRelativeTime = (dateString) => {
@@ -156,7 +159,8 @@ GroupItem.displayName = 'GroupItem';
 const ForumScreen = ({ navigation }) => {
     const theme = useTheme();
     const { user } = useAuth();
-    const isConnected = socketService.isConnected();
+    const [isConnected, setIsConnected] = useState(false);
+    const [connectionMode, setConnectionMode] = useState('none');
 
     const [forums, setForums] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -166,6 +170,7 @@ const ForumScreen = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [displaySearchQuery, setDisplaySearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
+    const [debugModalVisible, setDebugModalVisible] = useState(false);
 
     // Form state - kept in parent to avoid losing data
     const [formData, setFormData] = useState({
@@ -273,11 +278,11 @@ const ForumScreen = ({ navigation }) => {
                 // Update existing forum
                 setForums((prevForums) => 
                     prevForums.map(forum => 
-                        forum._id === data.forum._id ? data.forum : forum
-                    )
+                        forum._id === data.forum._id ? data.forum : forum,
+                    ),
                 );
             }
-        }, [loadForums])
+        }, [loadForums]),
     };
     
     // Use socket events hook
@@ -285,6 +290,23 @@ const ForumScreen = ({ navigation }) => {
 
     useEffect(() => {
         loadForums();
+        
+        // Setup connection state monitoring
+        const checkConnectionStatus = () => {
+            const status = realtimeService.getStatus();
+            setIsConnected(status.connected);
+            setConnectionMode(status.mode);
+        };
+        
+        // Check initial status
+        checkConnectionStatus();
+        
+        // Check periodically
+        const interval = setInterval(checkConnectionStatus, 3000);
+        
+        return () => {
+            clearInterval(interval);
+        };
     }, [loadForums]);
 
     const handleRefresh = useCallback(() => {
@@ -426,13 +448,27 @@ const ForumScreen = ({ navigation }) => {
                     Join conversations and connect in real-time
                 </Text>
 
-                {!isConnected && (
-                    <View style={styles.connectionWarning}>
-                        <Icon name="wifi-off" size={16} color={colors.warning} />
+                {(!isConnected || connectionMode === 'polling') && (
+                    <TouchableOpacity 
+                        style={[styles.connectionWarning, connectionMode === 'polling' && { backgroundColor: colors.info + '20' }]}
+                        onPress={() => setDebugModalVisible(true)}
+                        activeOpacity={0.8}
+                    >
+                        <Icon 
+                            name={connectionMode === 'polling' ? 'refresh' : 'wifi-off'} 
+                            size={16} 
+                            color={connectionMode === 'polling' ? colors.info : colors.warning} 
+                        />
                         <Text style={styles.connectionWarningText}>
-                            Offline - Updates may be delayed
+                            {connectionMode === 'polling' 
+                                ? 'Using polling mode (WebSocket unavailable)' 
+                                : 'Connecting... Real-time updates may be delayed'
+                            }
                         </Text>
-                    </View>
+                        <Text style={[styles.connectionWarningText, { textDecorationLine: 'underline', marginLeft: 5 }]}>
+                            Details
+                        </Text>
+                    </TouchableOpacity>
                 )}
 
                 <Searchbar
@@ -572,6 +608,12 @@ const ForumScreen = ({ navigation }) => {
                         </Button>
                     </View>
                 </Modal>
+
+                <ConnectionDebugModal
+                    visible={debugModalVisible}
+                    onDismiss={() => setDebugModalVisible(false)}
+                    userId={user?._id}
+                />
             </View>
         </SafeAreaView>
     );

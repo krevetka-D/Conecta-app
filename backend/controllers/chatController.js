@@ -4,6 +4,8 @@ import Forum from '../models/Forum.js';
 import User from '../models/User.js';
 import { getIO } from '../websocket.js';
 import { emitForumMessage } from '../socket/realtimeEvents.js';
+import { clearCache } from '../utils/cacheUtils.js';
+import roomManager from '../socket/roomManager.js';
 
 /**
  * @desc    Get messages for a room with pagination
@@ -109,6 +111,10 @@ export const sendMessage = asyncHandler(async (req, res) => {
             populate: { path: 'sender', select: 'name' }
         })
         .lean();
+    
+    // Ensure roomId is included in the message as string for consistency
+    populatedMessage.roomId = roomId.toString();
+    populatedMessage.room = roomId.toString(); // Add both for compatibility
 
     // Update forum activity
     await Forum.findByIdAndUpdate(roomId, {
@@ -118,24 +124,68 @@ export const sendMessage = asyncHandler(async (req, res) => {
     // Emit real-time message event
     const io = getIO();
     if (io) {
-        // Emit to room
-        io.to(`room_${roomId}`).emit('new_message', {
-            roomId,
-            message: populatedMessage,
-            timestamp: new Date()
-        });
+        const roomName = `room_${roomId}`;
+        console.log(`📤 Emitting message to ${roomName}`);
+        
+        // Get all sockets in the room
+        const roomSockets = await io.in(roomName).fetchSockets();
+        console.log(`👥 Users in ${roomName}: ${roomSockets.length}`);
+        
+        if (roomSockets.length > 0) {
+            // List socket IDs for debugging
+            const socketIds = roomSockets.map(s => s.id);
+            console.log(`   Socket IDs: ${socketIds.join(', ')}`);
+            
+            // Emit to room with detailed logging
+            const messageData = {
+                roomId,
+                message: populatedMessage,
+                timestamp: new Date()
+            };
+            
+            // Emit the message in a consistent format
+            const standardizedMessage = {
+                ...populatedMessage,
+                roomId: roomId.toString(),
+                timestamp: new Date()
+            };
+            
+            // Emit to room
+            io.to(roomName).emit('new_message', standardizedMessage);
+            console.log('✅ Message emitted to room:', {
+                room: roomName,
+                messageId: standardizedMessage._id,
+                roomId: standardizedMessage.roomId,
+                content: standardizedMessage.content.substring(0, 50) + '...'
+            });
+            
+            // Also emit to each socket individually as backup
+            roomSockets.forEach(socket => {
+                socket.emit('new_message', standardizedMessage);
+            });
+            console.log(`✅ Message emitted to ${roomSockets.length} individual sockets`);
+        } else {
+            console.warn(`⚠️ No users in ${roomName} to receive the message`);
+        }
         
         // Also emit general new_message event for ForumScreen updates
-        io.emit('new_message', {
+        io.emit('forum_new_message', {
             roomId,
             content: populatedMessage.content,
             sender: populatedMessage.sender,
             createdAt: populatedMessage.createdAt
         });
+        
+        console.log('✅ Forum update emitted globally');
+    } else {
+        console.error('❌ Socket.IO instance not available');
     }
     
     // Emit forum message event
     emitForumMessage(roomId, populatedMessage);
+    
+    // Clear cache for this room's messages
+    clearCache([`/chat/rooms/${roomId}/messages`, `/api/chat/rooms/${roomId}/messages`]);
 
     res.status(201).json(populatedMessage);
 });

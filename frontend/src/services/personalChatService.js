@@ -32,23 +32,24 @@ const personalChatService = {
 
     // Send a personal message
     async sendMessage(recipientId, content, type = 'text') {
-        // Try socket first if connected
-        if (socketService.isConnected()) {
-            socketService.sendPersonalMessage({
-                recipientId,
-                content,
-                type,
-            });
-            return;
-        }
-
-        // Fallback to API
+        // Always send via API to ensure persistence
         try {
             const response = await apiClient.post('/messages', {
                 recipientId,
                 content,
                 type,
             });
+            
+            // Also emit via socket for real-time delivery if connected
+            if (socketService.isConnected()) {
+                socketService.sendPersonalMessage({
+                    recipientId,
+                    content,
+                    type,
+                    messageId: response._id, // Include the saved message ID
+                });
+            }
+            
             return response;
         } catch (error) {
             console.error('Error sending message:', error);

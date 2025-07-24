@@ -7,6 +7,7 @@ import { colors } from '../constants/theme';
 import ForumDetailScreen from '../screens/forums/ForumDetailScreen';
 import ForumScreen from '../screens/forums/ForumScreen';
 import ThreadDetailScreen from '../screens/forums/ThreadDetailScreen';
+import PublicProfileScreen from '../screens/profile/PublicProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -40,6 +41,13 @@ const ForumNavigator = () => {
                 component={ThreadDetailScreen}
                 options={({ route }) => ({
                     title: route.params?.threadTitle || 'Thread',
+                })}
+            />
+            <Stack.Screen
+                name={SCREEN_NAMES.PUBLIC_PROFILE}
+                component={PublicProfileScreen}
+                options={({ route }) => ({
+                    title: route.params?.userName || 'Profile',
                 })}
             />
         </Stack.Navigator>

@@ -10,16 +10,16 @@ const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
  * @param {any} data - Additional data to log
  */
 export const devLog = (category, message, data = null) => {
-  if (!isDevelopment) return;
+    if (!isDevelopment) return;
 
-  const timestamp = new Date().toISOString();
-  const prefix = `[${timestamp}] [${category}]`;
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [${category}]`;
 
-  if (data) {
-    console.log(`${prefix} ${message}`, data);
-  } else {
-    console.log(`${prefix} ${message}`);
-  }
+    if (data) {
+        console.log(`${prefix} ${message}`, data);
+    } else {
+        console.log(`${prefix} ${message}`);
+    }
 };
 
 /**
@@ -29,16 +29,16 @@ export const devLog = (category, message, data = null) => {
  * @param {Error|any} error - Error object or data
  */
 export const devError = (category, message, error = null) => {
-  if (!isDevelopment && !error) return;
+    if (!isDevelopment && !error) return;
 
-  const timestamp = new Date().toISOString();
-  const prefix = `[${timestamp}] [ERROR] [${category}]`;
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [ERROR] [${category}]`;
 
-  if (error) {
-    console.error(`${prefix} ${message}`, error);
-  } else {
-    console.error(`${prefix} ${message}`);
-  }
+    if (error) {
+        console.error(`${prefix} ${message}`, error);
+    } else {
+        console.error(`${prefix} ${message}`);
+    }
 };
 
 /**
@@ -48,20 +48,20 @@ export const devError = (category, message, error = null) => {
  * @param {any} data - Additional data
  */
 export const devWarn = (category, message, data = null) => {
-  if (!isDevelopment) return;
+    if (!isDevelopment) return;
 
-  const timestamp = new Date().toISOString();
-  const prefix = `[${timestamp}] [WARN] [${category}]`;
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [WARN] [${category}]`;
 
-  if (data) {
-    console.warn(`${prefix} ${message}`, data);
-  } else {
-    console.warn(`${prefix} ${message}`);
-  }
+    if (data) {
+        console.warn(`${prefix} ${message}`, data);
+    } else {
+        console.warn(`${prefix} ${message}`);
+    }
 };
 
 export default {
-  log: devLog,
-  error: devError,
-  warn: devWarn,
+    log: devLog,
+    error: devError,
+    warn: devWarn,
 };

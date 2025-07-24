@@ -1,5 +1,7 @@
 // backend/socket/socketHandlers.js
 import User from '../models/User.js';
+import { getIO } from '../websocket.js';
+import roomManager from './roomManager.js';
 
 const socketHandlers = (io) => {
     // Store user socket mappings
@@ -54,6 +56,9 @@ const socketHandlers = (io) => {
 
         socket.on('disconnect', async () => {
             const userId = socketUsers.get(socket.id);
+            
+            // Leave all rooms
+            roomManager.leaveAllRooms(socket);
             
             if (userId) {
                 // Remove this socket from user's set
@@ -112,17 +117,111 @@ const socketHandlers = (io) => {
         });
         
         // Join/leave chat rooms
-        socket.on('joinRoom', (roomId) => {
-            if (roomId) {
-                socket.join(`room_${roomId}`);
-                console.log(`Socket ${socket.id} joined room ${roomId}`);
+        socket.on('joinRoom', async (roomId) => {
+            if (!roomId) {
+                console.error(`❌ No roomId provided for joinRoom from socket ${socket.id}`);
+                socket.emit('error', { message: 'Room ID is required' });
+                return;
+            }
+            
+            // Use room manager for consistent handling
+            const joined = roomManager.joinRoom(socket, roomId);
+            
+            if (joined) {
+                const roomName = `room_${roomId}`;
+                const members = roomManager.getRoomMembers(roomId);
+                
+                // Emit confirmation
+                socket.emit('room_joined', { 
+                    roomId, 
+                    roomName, 
+                    memberCount: members.size,
+                    success: true 
+                });
+                
+                // Notify other room members
+                socket.to(roomName).emit('user_joined_room', {
+                    userId: socket.userId,
+                    roomId
+                });
+            } else {
+                socket.emit('room_join_error', { 
+                    roomId, 
+                    error: 'Failed to join room' 
+                });
             }
         });
         
         socket.on('leaveRoom', (roomId) => {
             if (roomId) {
-                socket.leave(`room_${roomId}`);
-                console.log(`Socket ${socket.id} left room ${roomId}`);
+                const roomName = `room_${roomId}`;
+                
+                // Notify other room members before leaving
+                socket.to(roomName).emit('user_left_room', {
+                    userId: socket.userId,
+                    roomId
+                });
+                
+                roomManager.leaveRoom(socket, roomId);
+            }
+        });
+        
+        // Handle typing indicators
+        socket.on('typing', ({ roomId, recipientId, isTyping }) => {
+            if (roomId && socket.userId) {
+                socket.to(`room_${roomId}`).emit('user_typing', {
+                    userId: socket.userId,
+                    roomId,
+                    isTyping
+                });
+            } else if (recipientId) {
+                // Personal chat typing indicator
+                socket.to(`user_${recipientId}`).emit('user_typing', {
+                    userId: socket.userId,
+                    isTyping
+                });
+            }
+        });
+        
+        // Handle personal messages
+        socket.on('sendPersonalMessage', async ({ recipientId, content, type, messageId }) => {
+            if (!recipientId || !content) {
+                socket.emit('error', { message: 'Invalid message data' });
+                return;
+            }
+            
+            try {
+                // Get the saved message from database if messageId provided
+                let messageData;
+                if (messageId) {
+                    const Message = await import('../models/Message.js').then(m => m.default);
+                    messageData = await Message.findById(messageId)
+                        .populate('sender', 'name email')
+                        .populate('recipient', 'name email')
+                        .lean();
+                } else {
+                    // Fallback message structure
+                    messageData = {
+                        _id: new Date().getTime().toString(),
+                        sender: socket.userId,
+                        recipient: recipientId,
+                        content,
+                        type: type || 'text',
+                        createdAt: new Date(),
+                        read: false
+                    };
+                }
+                
+                // Emit to recipient
+                socket.to(`user_${recipientId}`).emit('private_message', messageData);
+                
+                // Also emit back to sender for confirmation
+                socket.emit('private_message', messageData);
+                
+                console.log(`Personal message sent from ${socket.userId} to ${recipientId}`);
+            } catch (error) {
+                console.error('Error sending personal message:', error);
+                socket.emit('error', { message: 'Failed to send message' });
             }
         });
     });

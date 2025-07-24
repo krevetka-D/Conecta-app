@@ -21,6 +21,7 @@ import { ThemeProvider } from './store/contexts/ThemeContext';
 import { devLog, devError, devWarn } from './utils';
 import { showErrorAlert } from './utils/alerts';
 import appStability, { getPerformanceReport } from './utils/appStability';
+import appStabilityManager from './utils/appStabilityEnhancements';
 import { cache } from './utils/cacheManager';
 import { loadFonts } from './utils/fontLoader';
 import { applyGlobalPatches } from './utils/globalPatches';
@@ -112,6 +113,9 @@ export default function App() {
                     },
                 ]);
 
+                // Initialize app stability monitoring
+                appStabilityManager.initialize();
+                
                 // Add artificial delay for splash screen (native only)
                 if (Platform.OS !== 'web') {
                     await new Promise((resolve) => setTimeout(resolve, 1000));

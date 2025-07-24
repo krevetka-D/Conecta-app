@@ -63,23 +63,8 @@ export const getBudget = asyncHandler(async (req, res) => {
     const income = summary.find(s => s._id === 'INCOME')?.total || 0;
     const expenses = summary.find(s => s._id === 'EXPENSE')?.total || 0;
 
-    res.status(200).json({
-        entries: budgetEntries,
-        pagination: {
-            total: totalCount,
-            page: Math.floor(skip / limit) + 1,
-            pages: Math.ceil(totalCount / limit),
-            hasNext: skip + limit < totalCount,
-            hasPrev: skip > 0
-        },
-        summary: {
-            income,
-            expenses,
-            balance: income - expenses,
-            incomeCount: summary.find(s => s._id === 'INCOME')?.count || 0,
-            expenseCount: summary.find(s => s._id === 'EXPENSE')?.count || 0
-        }
-    });
+    // Return entries array directly for compatibility with frontend
+    res.status(200).json(budgetEntries);
 });
 
 /**
@@ -190,22 +175,33 @@ export const updateBudget = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const deleteBudget = asyncHandler(async (req, res) => {
-    const budgetEntry = await BudgetEntry.findById(req.params.id);
+    // Use atomic operation to prevent race conditions
+    const deletedEntry = await BudgetEntry.findOneAndDelete({
+        _id: req.params.id,
+        user: req.user._id
+    });
 
-    if (!budgetEntry) {
-        res.status(404);
-        throw new Error('Budget entry not found');
+    // If entry was not found or already deleted, return success (idempotent)
+    if (!deletedEntry) {
+        // Check if entry exists but user doesn't own it
+        const existingEntry = await BudgetEntry.findById(req.params.id);
+        
+        if (existingEntry) {
+            res.status(403);
+            throw new Error('Not authorized to delete this entry');
+        }
+        
+        // Entry doesn't exist - likely already deleted
+        // Return success for idempotency
+        res.status(200).json({
+            message: 'Budget entry deleted successfully',
+            id: req.params.id,
+            alreadyDeleted: true
+        });
+        return;
     }
 
-    // Check ownership
-    if (budgetEntry.user.toString() !== req.user._id.toString()) {
-        res.status(403);
-        throw new Error('Not authorized to delete this entry');
-    }
-
-    await BudgetEntry.findByIdAndDelete(req.params.id);
-
-    // Clear cache
+    // Clear cache after successful deletion
     clearCache(`budget_${req.user._id}`);
     
     // Emit real-time update
@@ -213,7 +209,8 @@ export const deleteBudget = asyncHandler(async (req, res) => {
 
     res.status(200).json({
         message: 'Budget entry deleted successfully',
-        id: req.params.id
+        id: req.params.id,
+        entry: deletedEntry
     });
 });
 

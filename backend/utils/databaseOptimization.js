@@ -5,11 +5,28 @@ import mongoose from 'mongoose';
  */
 export const createDatabaseIndexes = async () => {
     try {
+        // Wait for connection to be ready
+        if (mongoose.connection.readyState !== 1) {
+            console.log('Waiting for database connection to be ready...');
+            await new Promise((resolve) => {
+                mongoose.connection.once('connected', resolve);
+                // If already connected, resolve immediately
+                if (mongoose.connection.readyState === 1) {
+                    resolve();
+                }
+            });
+        }
+        
         console.log('Creating database indexes...');
         
         // Helper function to safely create indexes
         const createIndexSafely = async (collection, index, options = {}) => {
             try {
+                // Ensure collection exists before creating index
+                if (!collection || !collection.createIndex) {
+                    console.error(`Collection ${collection?.collectionName || 'unknown'} not ready for indexing`);
+                    return;
+                }
                 await collection.createIndex(index, options);
             } catch (error) {
                 if (error.code === 85) {

@@ -4,6 +4,7 @@ import { View, ScrollView, Text, TouchableOpacity, Platform, SafeAreaView } from
 import { TextInput, Button, Chip, Portal, Modal } from 'react-native-paper';
 
 import Icon from '../../components/common/Icon.js';
+import apiClient from '../../services/api/client';
 import eventService from '../../services/eventService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
@@ -93,8 +94,14 @@ const CreateEventScreen = ({ navigation }) => {
             };
 
             await eventService.createEvent(eventData);
+            
+            // Clear events cache to ensure the new event appears
+            await apiClient.clearCache('/events');
+            
             showSuccessAlert('Success', 'Event created successfully!');
-            navigation.goBack();
+            
+            // Navigate back and force refresh
+            navigation.navigate('Events', { refresh: true });
         } catch (error) {
             console.error('Failed to create event:', error);
             showErrorAlert('Error', error.message || 'Failed to create event');

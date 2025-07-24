@@ -1,4 +1,5 @@
 import apiClient from '../services/api/client';
+
 import { devLog } from './devLog';
 
 /**
@@ -60,7 +61,7 @@ export const realtimeUpdateHandlers = {
     handleReconnect: () => {
         devLog('RealtimeUpdates', 'Socket reconnected, clearing all caches');
         apiClient.clearAllCache();
-    }
+    },
 };
 
 /**
@@ -92,7 +93,7 @@ export const useRealtimeUpdates = (handlers = {}) => {
         authenticated: () => {
             realtimeUpdateHandlers.handleReconnect();
             handlers.authenticated?.();
-        }
+        },
     };
 
     return allHandlers;

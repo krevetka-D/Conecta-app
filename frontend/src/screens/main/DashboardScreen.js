@@ -5,14 +5,16 @@ import { Card } from 'react-native-paper';
 import Icon from '../../components/common/Icon.js';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { SCREEN_NAMES } from '../../constants/routes';
+import apiClient from '../../services/api/client';
 import budgetService from '../../services/budgetService';
 import checklistService from '../../services/checklistService';
 import eventService from '../../services/eventService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import { dashboardStyles } from '../../styles/screens/main/DashboardScreenStyles';
+import { devError, devLog } from '../../utils';
 import { formatCurrency } from '../../utils/formatting';
-import { devError } from '../../utils';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
 
 // Simple date formatting function
 const formatEventDate = (dateString) => {
@@ -57,6 +59,9 @@ const DashboardScreen = ({ navigation }) => {
 
     const loadDashboardData = useCallback(async () => {
         try {
+            // Clear events cache to ensure fresh data
+            await apiClient.clearCache('/events');
+            
             const [eventsResponse, budgetData, checklistData] = await Promise.all([
                 eventService.getUpcomingEvents(5).catch(() => ({ events: [] })),
                 budgetService.getBudgetSummary('month').catch(() => null),
@@ -82,6 +87,8 @@ const DashboardScreen = ({ navigation }) => {
                 checklistProgress,
                 recentForumActivity: [],
             });
+            
+            devLog('Dashboard', `Loaded ${events.length} upcoming events`);
         } catch (error) {
             devError('Dashboard', 'Failed to load dashboard data', error);
         } finally {
@@ -98,6 +105,30 @@ const DashboardScreen = ({ navigation }) => {
         setRefreshing(true);
         loadDashboardData();
     }, [loadDashboardData]);
+    
+    // Socket event handlers for real-time updates
+    const socketEventHandlers = {
+        'event_update': useCallback((data) => {
+            devLog('Dashboard', 'Received event update:', data);
+            
+            // Clear cache and reload dashboard data when events change
+            apiClient.clearCache('/events').then(() => {
+                loadDashboardData();
+            });
+        }, [loadDashboardData]),
+        
+        'budget_update': useCallback((data) => {
+            devLog('Dashboard', 'Received budget update:', data);
+            
+            // Clear cache and reload dashboard data when budget changes
+            apiClient.clearCache('/budget').then(() => {
+                loadDashboardData();
+            });
+        }, [loadDashboardData]),
+    };
+    
+    // Use socket events hook
+    useSocketEvents(socketEventHandlers, [loadDashboardData]);
 
     const renderEventCard = ({ item }) => {
         if (!item) return null;

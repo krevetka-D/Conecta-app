@@ -1,6 +1,7 @@
-import socketService from '../services/socketService';
 import apiClient from '../services/api/client';
-import { devLog } from './devLog';
+import socketService from '../services/socketService';
+
+import { devLog, devError } from './devLog';
 
 /**
  * Socket Event Manager - Centralized handler for all socket events
@@ -9,6 +10,7 @@ import { devLog } from './devLog';
 class SocketEventManager {
     constructor() {
         this.eventHandlers = new Map();
+        this.localListeners = new Map(); // Store local listeners
         this.isInitialized = false;
     }
 
@@ -121,6 +123,18 @@ class SocketEventManager {
             devLog('SocketEvent', 'User status update:', data);
             this.emit('user_status_update', data);
         });
+        
+        // Cache invalidation events
+        this.registerHandler('cache_invalidated', (data) => {
+            devLog('SocketEvent', 'Cache invalidation received:', data);
+            if (data.all) {
+                apiClient.clearAllCache();
+            } else if (data.endpoints) {
+                data.endpoints.forEach(endpoint => {
+                    apiClient.clearCache(endpoint);
+                });
+            }
+        });
     }
 
     /**
@@ -130,16 +144,25 @@ class SocketEventManager {
         // Store handler
         this.eventHandlers.set(event, handler);
         
-        // Register with socket service
-        socketService.on(event, handler);
-        
-        devLog('SocketEventManager', `Registered handler for event: ${event}`);
+        // Register with socket service only if connected
+        if (socketService.isConnected()) {
+            socketService.on(event, handler);
+            devLog('SocketEventManager', `Registered handler for event: ${event}`);
+        } else {
+            devLog('SocketEventManager', `Deferred registration for event: ${event} (socket not connected)`);
+        }
     }
 
     /**
      * Ensure all listeners are active (called after reconnection)
      */
     ensureAllListenersActive() {
+        if (!socketService.isConnected()) {
+            devLog('SocketEventManager', 'Socket not connected, skipping listener activation');
+            return;
+        }
+        
+        devLog('SocketEventManager', 'Ensuring all listeners are active...');
         this.eventHandlers.forEach((handler, event) => {
             // Re-register handler
             socketService.off(event, handler);
@@ -152,9 +175,57 @@ class SocketEventManager {
      * Emit event to local listeners (screens)
      */
     emit(event, data) {
-        // This will be handled by individual screens
-        // For now, just log
         devLog('SocketEventManager', `Emitting local event: ${event}`, data);
+        
+        // Get all listeners for this event
+        const listeners = this.localListeners.get(event) || [];
+        
+        // Call each listener
+        listeners.forEach(listener => {
+            try {
+                listener(data);
+            } catch (error) {
+                devError('SocketEventManager', `Error in listener for ${event}:`, error);
+            }
+        });
+    }
+    
+    /**
+     * Register a local listener for events
+     */
+    on(event, callback) {
+        if (!this.localListeners.has(event)) {
+            this.localListeners.set(event, []);
+        }
+        this.localListeners.get(event).push(callback);
+        
+        // Return unsubscribe function
+        return () => {
+            const listeners = this.localListeners.get(event);
+            if (listeners) {
+                const index = listeners.indexOf(callback);
+                if (index > -1) {
+                    listeners.splice(index, 1);
+                }
+            }
+        };
+    }
+    
+    /**
+     * Remove all listeners for an event
+     */
+    off(event, callback = null) {
+        if (callback) {
+            const listeners = this.localListeners.get(event);
+            if (listeners) {
+                const index = listeners.indexOf(callback);
+                if (index > -1) {
+                    listeners.splice(index, 1);
+                }
+            }
+        } else {
+            this.localListeners.delete(event);
+        }
     }
 
     /**
@@ -165,6 +236,7 @@ class SocketEventManager {
             socketService.off(event, handler);
         });
         this.eventHandlers.clear();
+        this.localListeners.clear();
         this.isInitialized = false;
         devLog('SocketEventManager', 'Cleaned up all event listeners');
     }

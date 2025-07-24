@@ -16,14 +16,14 @@ import Icon from '../../components/common/Icon.js';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
 import { colors } from '../../constants/theme';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
+import apiClient from '../../services/api/client';
 import checklistService from '../../services/checklistService';
 import socketService from '../../services/socketService';
-import apiClient from '../../services/api/client';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { checklistStyles as styles } from '../../styles/screens/checklist/ChecklistScreenStyles';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import { devLog, devError } from '../../utils/devLog';
-import { useSocketEvents } from '../../hooks/useSocketEvents';
 
 const CHECKLIST_ITEMS = {
     FREELANCER: [
@@ -210,14 +210,14 @@ const ChecklistScreen = ({ navigation }) => {
                     prevData.map(item => 
                         item.itemKey === data.item.itemKey 
                             ? data.item 
-                            : item
-                    )
+                            : item,
+                    ),
                 );
             } else if (data.type === 'create') {
                 // Reload to get fresh data
                 loadChecklist();
             }
-        }, [loadChecklist])
+        }, [loadChecklist]),
     };
     
     // Use socket events hook
@@ -245,8 +245,8 @@ const ChecklistScreen = ({ navigation }) => {
                     prevData.map(item => 
                         item.itemKey === itemKey 
                             ? { ...item, isCompleted: !currentStatus }
-                            : item
-                    )
+                            : item,
+                    ),
                 );
 
                 if (!currentStatus) {

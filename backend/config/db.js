@@ -63,10 +63,14 @@ const connectDB = async () => {
             await import('../models/ChecklistItem.js');
             await import('../models/Guide.js');
             
-            // Create indexes in background
-            if (process.env.CREATE_INDEXES === 'true') {
+            // Create indexes after connection is established
+            try {
+                console.log('Creating database indexes...');
                 const { createDatabaseIndexes } = await import('../utils/databaseOptimization.js');
-                createDatabaseIndexes().catch(console.error);
+                await createDatabaseIndexes();
+            } catch (error) {
+                console.error('Error during index creation:', error);
+                // Don't throw - indexes can be created later if needed
             }
             
             // Enable slow query logging in development

@@ -2,9 +2,13 @@ env: load .env
 env: export REACT_APP_API_URL REACT_APP_WS_URL REACT_APP_ENVIRONMENT
 Could not find a shared URI scheme for the dev client between the local /ios and /android directories. App launches (QR code, interstitial, terminal keys) may not work as expected. You can configure a custom scheme using the --scheme option, or by running npx expo prebuild to regenerate the native directories with URI schemes.
 Starting project at /Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend
-› Port 8082 is running this app in another window
-  /Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend (pid 57360)
-Input is required, but 'npx expo' is in non-interactive mode.
-Required input:
-> Use port 8083 instead?
-› Skipping dev server
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Recrawled this watch 17 times, most recently because:
+MustScanSubDirs UserDroppedTo resolve, please review the information on
+https://facebook.github.io/watchman/docs/troubleshooting.html#recrawl
+To clear this warning, run:
+`watchman watch-del '/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend' ; watchman watch-project '/Users/macbook/Documents/projects/erasmus_proj/mobile_app_main/frontend'`
+

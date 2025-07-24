@@ -24,8 +24,8 @@ import socketService from '../../services/socketService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { useTheme } from '../../store/contexts/ThemeContext';
 import { chatRoomStyles } from '../../styles/screens/chat/ChatRoomStyles';
-import { showErrorAlert } from '../../utils/alerts';
 import { devLog, devError } from '../../utils';
+import { showErrorAlert, showAlert } from '../../utils/alerts';
 
 const ForumDetailScreen = ({ route, navigation }) => {
     const theme = useTheme();
@@ -333,7 +333,7 @@ const ForumDetailScreen = ({ route, navigation }) => {
                             <Menu.Item
                                 onPress={() => {
                                     setMenuVisible((prev) => ({ ...prev, [item._id]: false }));
-                                    navigation.navigate(SCREEN_NAMES.USER_PROFILE, {
+                                    navigation.navigate(SCREEN_NAMES.PUBLIC_PROFILE, {
                                         userId: item.sender._id,
                                         userName: item.sender.name,
                                     });

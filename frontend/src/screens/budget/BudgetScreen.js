@@ -28,15 +28,15 @@ import WebDateTimePicker from '../../components/common/WebDateTimePicker';
 import { OptimizedInput } from '../../components/ui/OptimizedInput';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/messages';
 import { colors } from '../../constants/theme';
+import { useSocketEvents } from '../../hooks/useSocketEvents';
+import apiClient from '../../services/api/client';
 import budgetService from '../../services/budgetService';
 import socketService from '../../services/socketService';
-import apiClient from '../../services/api/client';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { budgetStyles as styles } from '../../styles/screens/budget/BudgetScreenStyles';
 import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '../../utils/alerts';
-import { formatCurrency, formatDate } from '../../utils/formatting';
 import { devLog, devError } from '../../utils/devLog';
-import { useSocketEvents } from '../../hooks/useSocketEvents';
+import { formatCurrency, formatDate } from '../../utils/formatting';
 
 const BudgetScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -47,6 +47,7 @@ const BudgetScreen = ({ navigation }) => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showCategoryPicker, setShowCategoryPicker] = useState(false);
     const [categories, setCategories] = useState({ income: [], expense: [] });
+    const [deletingEntries, setDeletingEntries] = useState(new Set());
 
     const [formData, setFormData] = useState({
         type: 'EXPENSE',
@@ -67,11 +68,20 @@ const BudgetScreen = ({ navigation }) => {
     }, [user?.professionalPath]);
 
     // Move loadBudgetEntries up before it's used
-    const loadBudgetEntries = useCallback(async () => {
+    const loadBudgetEntries = useCallback(async (forceRefresh = false) => {
         try {
-            setLoading(true);
+            if (!refreshing && !forceRefresh) {
+                setLoading(true);
+            }
+            
+            // Always clear cache before loading to ensure fresh data
+            await apiClient.clearCache('/budget');
+            await apiClient.clearCache('/budget/summary');
+            
             const data = await budgetService.getBudgetEntries();
             setEntries(data || []);
+            
+            devLog('Budget', `Loaded ${data?.length || 0} entries`);
         } catch (error) {
             devError('Budget', 'Failed to load budget entries', error);
             if (!refreshing) {
@@ -92,27 +102,27 @@ const BudgetScreen = ({ navigation }) => {
             apiClient.clearCache('/budget');
             apiClient.clearCache('/budget/summary');
             
-            if (data.type === 'create') {
-                // Reload to get fresh data
-                loadBudgetEntries();
-            } else if (data.type === 'update') {
-                // Update existing entry
-                setEntries(prevEntries => 
-                    prevEntries.map(entry => 
-                        entry._id === data.entry._id ? data.entry : entry
-                    )
-                );
-            } else if (data.type === 'delete') {
-                // Remove deleted entry
-                setEntries(prevEntries => 
-                    prevEntries.filter(entry => entry._id !== data.entryId)
-                );
-            }
-        }, [loadBudgetEntries])
+            // Always reload to ensure consistency
+            loadBudgetEntries(true);
+        }, [loadBudgetEntries]),
     };
     
     // Use socket events hook
     useSocketEvents(socketEventHandlers, [loadBudgetEntries]);
+    
+    // Also listen directly to socketEventManager for budget updates
+    useEffect(() => {
+        import('../../utils/socketEventManager').then(({ default: socketEventManager }) => {
+            const unsubscribe = socketEventManager.on('budget_update', (data) => {
+                devLog('Budget', 'Received budget update from event manager:', data);
+                loadBudgetEntries(true);
+            });
+            
+            return () => {
+                unsubscribe();
+            };
+        });
+    }, [loadBudgetEntries]);
     
     useEffect(() => {
         loadBudgetEntries();
@@ -174,7 +184,7 @@ const BudgetScreen = ({ navigation }) => {
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
-        loadBudgetEntries();
+        loadBudgetEntries(true);
         if (user?.professionalPath) {
             loadCategories(user.professionalPath);
         }
@@ -204,8 +214,8 @@ const BudgetScreen = ({ navigation }) => {
             setModalVisible(false);
             resetForm();
             
-            // Reload in background to sync
-            loadBudgetEntries();
+            // Force reload to get fresh data
+            setTimeout(() => loadBudgetEntries(true), 500);
         } catch (error) {
             devError('Budget', 'Failed to add budget entry', error);
             showErrorAlert('Error', ERROR_MESSAGES.BUDGET_ENTRY_FAILED);
@@ -213,22 +223,58 @@ const BudgetScreen = ({ navigation }) => {
     };
 
     const handleDelete = (entryId) => {
+        // Prevent duplicate deletion attempts
+        if (deletingEntries.has(entryId)) {
+            devLog('Budget', 'Already deleting entry', entryId);
+            return;
+        }
+
+        // Check if entry still exists in local state
+        const entryExists = entries.some(entry => entry._id === entryId);
+        if (!entryExists) {
+            devLog('Budget', 'Entry already removed from local state', entryId);
+            return;
+        }
+
         showConfirmAlert('Delete Entry', 'Are you sure?', async () => {
             try {
-                await budgetService.deleteBudgetEntry(entryId);
+                // Mark entry as being deleted
+                setDeletingEntries(prev => new Set(prev).add(entryId));
                 
-                // Update local state immediately
+                // Optimistically update UI
                 setEntries(prevEntries => prevEntries.filter(entry => entry._id !== entryId));
+                
+                const response = await budgetService.deleteBudgetEntry(entryId);
+                
+                // Check if it was already deleted
+                if (response?.alreadyDeleted) {
+                    devLog('Budget', 'Entry was already deleted', entryId);
+                }
                 
                 showSuccessAlert('Success', SUCCESS_MESSAGES.ENTRY_DELETED);
                 
-                // Reload in background to sync
-                loadBudgetEntries();
+                // Force reload to sync with server
+                setTimeout(() => loadBudgetEntries(true), 500);
             } catch (error) {
                 devError('Budget', 'Failed to delete entry', error);
-                showErrorAlert('Error', ERROR_MESSAGES.BUDGET_DELETE_FAILED);
-                // Reload to revert on error
-                loadBudgetEntries();
+                
+                // Only show error and revert if it's not a 404
+                if (error.response?.status !== 404) {
+                    showErrorAlert('Error', ERROR_MESSAGES.BUDGET_DELETE_FAILED);
+                    // Force reload to revert on error
+                    loadBudgetEntries(true);
+                } else {
+                    // Entry was already deleted, just sync
+                    devLog('Budget', 'Entry not found, syncing state');
+                    loadBudgetEntries(true);
+                }
+            } finally {
+                // Remove from deleting set
+                setDeletingEntries(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(entryId);
+                    return newSet;
+                });
             }
         });
     };
@@ -304,8 +350,13 @@ const BudgetScreen = ({ navigation }) => {
                         </View>
                     </Card.Content>
                     <Card.Actions>
-                        <Button onPress={() => handleDelete(item._id)} textColor={colors.error}>
-                            Delete
+                        <Button 
+                            onPress={() => handleDelete(item._id)} 
+                            textColor={colors.error}
+                            disabled={deletingEntries.has(item._id)}
+                            loading={deletingEntries.has(item._id)}
+                        >
+                            {deletingEntries.has(item._id) ? 'Deleting...' : 'Delete'}
                         </Button>
                     </Card.Actions>
                 </Card>

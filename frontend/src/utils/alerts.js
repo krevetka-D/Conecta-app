@@ -20,3 +20,7 @@ export const showConfirmAlert = (title, message, onConfirm, onCancel) => {
 export const showSuccessAlert = (title, message, onPress) => {
     Alert.alert(title, message, [{ text: 'OK', onPress }], { cancelable: false });
 };
+
+export const showAlert = (title, message, onPress) => {
+    Alert.alert(title, message, [{ text: 'OK', onPress }], { cancelable: false });
+};

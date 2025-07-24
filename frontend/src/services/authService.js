@@ -1,9 +1,10 @@
 // frontend/src/services/authService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { devLog, devError } from '../utils';
+
 import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
-import { devLog, devError } from '../utils';
 
 const authService = {
     login: async (email, password) => {

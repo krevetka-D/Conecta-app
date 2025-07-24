@@ -6,9 +6,9 @@ import apiClient from '../../services/api/client';
 import authService from '../../services/authService';
 import budgetService from '../../services/budgetService';
 import checklistService from '../../services/checklistService';
-import socketService from '../../services/socketService';
-import socketEventManager from '../../utils/socketEventManager';
 import { devLog, devError, devWarn } from '../../utils';
+import socketConnectionManager from '../../utils/socketConnectionManager';
+import socketEventManager from '../../utils/socketEventManager';
 
 const AuthContext = createContext(null);
 
@@ -81,13 +81,17 @@ export const AuthProvider = ({ children }) => {
 
                             // Connect socket service if user is authenticated
                             if (currentUser._id) {
-                                socketService.connect(currentUser._id)
+                                // Start monitoring socket connection - this will handle the connection
+                                socketConnectionManager.startMonitoring(currentUser._id)
                                     .then(() => {
-                                        // Initialize socket event manager after connection
+                                        devLog('AuthContext', 'Socket connection manager initialized');
+                                        // Initialize socket event manager after connection manager is ready
                                         socketEventManager.initialize();
                                     })
                                     .catch((err) => {
-                                        devLog('AuthContext', 'Socket connection failed, continuing without realtime features');
+                                        devLog('AuthContext', 'Socket connection manager failed, continuing without realtime');
+                                        // Still initialize event manager for later connection attempts
+                                        socketEventManager.initialize();
                                     });
                             }
                         } else {
@@ -130,7 +134,7 @@ export const AuthProvider = ({ children }) => {
             }
             budgetService.clearCategoriesCache();
             socketEventManager.cleanup();
-            socketService.disconnect();
+            socketConnectionManager.stopMonitoring();
             apiClient.clearAllCache();
         } catch (error) {
             devError('AuthContext', 'Error clearing auth data', error);
@@ -162,13 +166,17 @@ export const AuthProvider = ({ children }) => {
 
             // Connect socket service
             if (data.user._id) {
-                socketService.connect(data.user._id)
+                // Start monitoring socket connection - this will handle the connection
+                socketConnectionManager.startMonitoring(data.user._id)
                     .then(() => {
-                        // Initialize socket event manager after connection
+                        devLog('AuthContext', 'Socket connection manager initialized after login');
+                        // Initialize socket event manager after connection manager is ready
                         socketEventManager.initialize();
                     })
                     .catch((err) => {
-                        devLog('AuthContext', 'Socket connection failed, continuing without realtime features');
+                        devLog('AuthContext', 'Socket connection manager failed, continuing without realtime');
+                        // Still initialize event manager for later connection attempts
+                        socketEventManager.initialize();
                     });
             }
 
@@ -244,13 +252,16 @@ export const AuthProvider = ({ children }) => {
 
             // Connect socket service
             if (data.user._id) {
-                socketService.connect(data.user._id)
+                socketConnectionManager.startMonitoring(data.user._id)
                     .then(() => {
-                        // Initialize socket event manager after connection
+                        devLog('AuthContext', 'Socket connection manager initialized after registration');
+                        // Initialize socket event manager after connection manager is ready
                         socketEventManager.initialize();
                     })
                     .catch((err) => {
-                        devLog('AuthContext', 'Socket connection failed, continuing without realtime features');
+                        devLog('AuthContext', 'Socket connection manager failed, continuing without realtime features');
+                        // Still initialize event manager for later connection attempts
+                        socketEventManager.initialize();
                     });
             }
 
@@ -407,8 +418,10 @@ export const AuthProvider = ({ children }) => {
     const updateOnlineStatus = useCallback(
         async (isOnline) => {
             try {
-                if (user && socketService.isConnected()) {
-                    socketService.emit('update_status', { isOnline });
+                if (user) {
+                    // Use realtimeService through socketConnectionManager
+                    const realtimeService = require('../../services/realtimeService').default;
+                    realtimeService.emit('update_status', { isOnline });
                 }
             } catch (error) {
                 devError('AuthContext', 'Failed to update online status', error);

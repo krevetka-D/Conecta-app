@@ -3,9 +3,10 @@ import apiClient from './api/client';
 import { API_ENDPOINTS } from './api/endpoints';
 
 const checklistService = {
-    getChecklist: async () => {
+    getChecklist: async (forceRefresh = false) => {
         try {
-            const response = await apiClient.get(API_ENDPOINTS.CHECKLIST.LIST);
+            const config = forceRefresh ? { cache: false } : { cacheTTL: 30000 }; // 30 seconds cache
+            const response = await apiClient.get(API_ENDPOINTS.CHECKLIST.LIST, config);
             // Ensure we always return an array
             return Array.isArray(response) ? response : response?.items || [];
         } catch (error) {
@@ -19,6 +20,8 @@ const checklistService = {
         const response = await apiClient.put(API_ENDPOINTS.CHECKLIST.UPDATE(itemKey), {
             isCompleted,
         });
+        // Clear checklist cache after update
+        apiClient.clearCache('/checklist');
         return response;
     },
 

@@ -7,7 +7,8 @@ import {
     completeOnboarding,
     getOnboardingStatus,
     updateProfile,
-    logoutUser
+    logoutUser,
+    getPublicProfile
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validationRules, handleValidationErrors } from '../middleware/validationMiddleware.js';
@@ -40,5 +41,8 @@ router.put('/profile', protect, updateProfile);
 
 // Logout endpoint
 router.post('/logout', protect, logoutUser);
+
+// Public profile route
+router.get('/profile/:userId', getPublicProfile);
 
 export default router;

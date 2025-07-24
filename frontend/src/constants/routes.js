@@ -48,6 +48,7 @@ export const SCREEN_NAMES = {
     PERSONAL_CHAT_LIST: 'PersonalChatList',
     PERSONAL_CHAT_DETAIL: 'PersonalChatDetail',
     USER_PROFILE: 'UserProfile',
+    PUBLIC_PROFILE: 'PublicProfile',
 };
 
 export const TAB_NAMES = {

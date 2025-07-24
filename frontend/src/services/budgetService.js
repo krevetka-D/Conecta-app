@@ -13,8 +13,10 @@ let entriesCacheTimestamp = null;
 const budgetService = {
     getBudgetEntries: async (filters = {}) => {
         try {
+            // Force fresh data - no cache
             const response = await apiClient.get(API_ENDPOINTS.BUDGET.LIST, {
                 params: filters,
+                cache: false, // Disable caching for budget entries
             });
             // Response is now the data directly from interceptor
             return Array.isArray(response) ? response : response?.entries || [];
@@ -27,6 +29,12 @@ const budgetService = {
     createBudgetEntry: async (entry) => {
         try {
             const response = await apiClient.post(API_ENDPOINTS.BUDGET.CREATE, entry);
+            // Clear all budget-related caches after creating
+            await apiClient.clearCache('/budget');
+            await apiClient.clearCache('/budget/summary');
+            // Clear local cache
+            entriesCache = null;
+            entriesCacheTimestamp = null;
             return response;
         } catch (error) {
             console.error('Error creating budget entry:', error);
@@ -37,6 +45,12 @@ const budgetService = {
     updateBudgetEntry: async (id, entry) => {
         try {
             const response = await apiClient.put(API_ENDPOINTS.BUDGET.UPDATE(id), entry);
+            // Clear all budget-related caches after updating
+            await apiClient.clearCache('/budget');
+            await apiClient.clearCache('/budget/summary');
+            // Clear local cache
+            entriesCache = null;
+            entriesCacheTimestamp = null;
             return response;
         } catch (error) {
             console.error('Error updating budget entry:', error);
@@ -47,6 +61,12 @@ const budgetService = {
     deleteBudgetEntry: async (id) => {
         try {
             const response = await apiClient.delete(API_ENDPOINTS.BUDGET.DELETE(id));
+            // Clear all budget-related caches after deleting
+            await apiClient.clearCache('/budget');
+            await apiClient.clearCache('/budget/summary');
+            // Clear local cache
+            entriesCache = null;
+            entriesCacheTimestamp = null;
             return response;
         } catch (error) {
             console.error('Error deleting budget entry:', error);
@@ -56,8 +76,10 @@ const budgetService = {
 
     getBudgetSummary: async (period = 'month') => {
         try {
+            // Force fresh data for summary
             const response = await apiClient.get(API_ENDPOINTS.BUDGET.SUMMARY, {
                 params: { period },
+                cache: false, // Disable caching for budget summary
             });
             return response;
         } catch (error) {
