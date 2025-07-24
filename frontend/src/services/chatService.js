@@ -36,7 +36,7 @@ const chatService = {
                 ...(options.before && { before: options.before }),
             };
 
-            // Fixed: Use correct endpoint structure with cache disabled
+            // Use correct endpoint structure with cache disabled for real-time messages
             const response = await apiClient.get(`/chat/rooms/${roomId}/messages`, { 
                 params,
                 cache: false // Disable caching for real-time messages
@@ -65,11 +65,6 @@ const chatService = {
                 devLog('ChatService', 'Converting array-like response to array');
                 messages = Array.from(response);
             }
-            
-            // Return the entire response if it contains messages
-            if (response && response.messages) {
-                return response; // Return entire response object
-            }
 
             // Validate messages have required structure
             const validMessages = messages.filter((msg) => {
@@ -94,12 +89,10 @@ const chatService = {
                     'ChatService',
                     `Filtered out ${messages.length - validMessages.length} invalid messages from room ${roomId}`,
                 );
-                // Log the first few invalid messages for debugging
-                const invalidMessages = messages.filter(msg => !validMessages.includes(msg));
-                invalidMessages.slice(0, 3).forEach((msg, index) => {
-                    devLog('ChatService', `Invalid message ${index + 1}:`, msg);
-                });
             }
+
+            // Sort messages by createdAt to ensure correct order
+            validMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             return validMessages;
         } catch (error) {
@@ -120,7 +113,6 @@ const chatService = {
         devLog('ChatService', '📤 Sending message', { roomId, content, type });
         
         // Always use API to ensure message is saved
-        // Socket will handle real-time delivery
         try {
             const response = await apiClient.post(`/chat/rooms/${roomId}/messages`, {
                 content,
@@ -130,9 +122,18 @@ const chatService = {
             
             devLog('ChatService', '✅ Message sent via API', response);
             
-            // The backend should emit the message via socket
-            // so we just return the response
-            return response;
+            // Ensure response has proper structure
+            const message = response.message || response;
+            
+            // Add roomId if not present
+            if (!message.roomId && !message.room) {
+                message.roomId = roomId;
+            }
+            
+            // Note: The backend will emit the socket event to all room members
+            // We don't need to emit here as it's handled server-side
+            
+            return message;
         } catch (error) {
             devError('ChatService', 'Error sending message', error);
             throw error;

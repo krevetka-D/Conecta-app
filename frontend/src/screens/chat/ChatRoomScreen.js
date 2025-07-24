@@ -25,11 +25,6 @@ import { useTheme } from '../../store/contexts/ThemeContext';
 import { chatRoomStyles } from '../../styles/screens/chat/ChatRoomStyles';
 import { devLog, devError } from '../../utils';
 import { showErrorAlert } from '../../utils/alerts';
-import { ensureChatSocketConnection, setupChatListeners } from '../../utils/chatSocketFix';
-import { setupRealtimeMessageListener } from '../../utils/realtimeMessageFix';
-import { socketDebugger } from '../../utils/socketDebugger';
-import { testDirectSocketConnection } from '../../utils/connectionTest';
-import { useForceRealtimeUpdate } from '../../utils/forceRealtimeUpdate';
 
 const ChatRoomScreen = ({ route, navigation }) => {
     const theme = useTheme();
@@ -45,26 +40,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [connectionError, setConnectionError] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const [debugInfo, setDebugInfo] = useState({
-        socketConnected: false,
-        socketAuthenticated: false,
-        roomJoined: false,
-        eventsRegistered: false,
-        lastEvent: null,
-    });
 
     const flatListRef = useRef(null);
     const typingTimeoutRef = useRef(null);
-
-    // Debug function
-    const updateDebugInfo = (key, value) => {
-        setDebugInfo(prev => ({
-            ...prev,
-            [key]: value,
-            lastUpdate: new Date().toISOString(),
-        }));
-        devLog('ChatDebug', `${key}: ${value}`);
-    };
+    const eventHandlersRef = useRef({});
 
     useEffect(() => {
         // Set navigation header
@@ -76,116 +55,29 @@ const ChatRoomScreen = ({ route, navigation }) => {
                         width: 8, 
                         height: 8, 
                         borderRadius: 4, 
-                        backgroundColor: debugInfo.socketConnected ? 'green' : 'red',
+                        backgroundColor: socketService.isConnected() ? 'green' : 'red',
                         marginRight: 8,
                     }} />
-                    <TouchableOpacity
-                        onPress={() => {
-                            Alert.alert(
-                                'Debug Options',
-                                'Choose an action:',
-                                [
-                                    {
-                                        text: 'View Debug Info',
-                                        onPress: () => {
-                                            const debugData = {
-                                                ...debugInfo,
-                                                socketDebugger: socketDebugger.getDebugInfo(),
-                                            };
-                                            Alert.alert('Debug Info', JSON.stringify(debugData, null, 2));
-                                        },
-                                    },
-                                    {
-                                        text: 'Test Socket Connection',
-                                        onPress: () => {
-                                            devLog('ChatRoom', 'Running socket connection test...');
-                                            testDirectSocketConnection();
-                                        },
-                                    },
-                                    {
-                                        text: 'Cancel',
-                                        style: 'cancel',
-                                    },
-                                ],
-                            );
-                        }}
-                        style={{ marginRight: 15 }}
-                    >
-                        <Icon name="bug" size={24} color={theme.colors.primary} />
-                    </TouchableOpacity>
                 </View>
             ),
         });
-    }, [navigation, roomTitle, theme.colors.primary, user._id, debugInfo]);
-
-    // Setup force realtime update as a fallback
-    const fetchLatestMessages = useCallback(async () => {
-        try {
-            await apiClient.clearCache(`/chat/rooms/${roomId}/messages`);
-            const response = await chatService.getRoomMessages(roomId);
-            const latestMessages = response?.messages || response || [];
-            return latestMessages;
-        } catch (error) {
-            devError('ChatRoom', 'Failed to fetch latest messages', error);
-            return [];
-        }
-    }, [roomId]);
-
-    const handlePolledMessages = useCallback((newMessages) => {
-        setMessages((prevMessages) => {
-            // Create a map of existing messages by ID
-            const existingIds = new Set(prevMessages.map(msg => msg._id));
-            
-            // Filter truly new messages
-            const trulyNewMessages = newMessages.filter(msg => !existingIds.has(msg._id));
-            
-            if (trulyNewMessages.length > 0) {
-                devLog('ChatRoom', `Polling found ${trulyNewMessages.length} new messages`);
-                const allMessages = [...prevMessages, ...trulyNewMessages].sort((a, b) => 
-                    new Date(a.createdAt) - new Date(b.createdAt)
-                );
-                return allMessages;
-            }
-            
-            return prevMessages;
-        });
-    }, []);
+    }, [navigation, roomTitle, theme.colors.primary]);
 
     useEffect(() => {
-        // Start socket debugger
-        const stopDebugger = socketDebugger.start(roomId);
-        
         // Connect to socket and join room
         initializeChat();
-        
-        // Setup force realtime update as fallback (polls every 2 seconds)
-        const stopPolling = useForceRealtimeUpdate(
-            roomId,
-            fetchLatestMessages,
-            handlePolledMessages,
-            { enabled: true, interval: 2000 }
-        );
 
         return () => {
-            // Stop debugger
-            stopDebugger();
-            
-            // Stop polling
-            stopPolling();
-            
             // Leave room and cleanup
             if (socketService.isConnected()) {
                 socketService.leaveRoom(roomId);
-                updateDebugInfo('roomJoined', false);
             }
-            
-            // Cleanup handled by useEffect return function
-            
+            cleanupSocketListeners();
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
         };
-    }, [roomId, fetchLatestMessages, handlePolledMessages]);
+    }, [roomId]);
 
     const refreshMessages = async () => {
         try {
@@ -194,9 +86,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
             await apiClient.clearCache(`/chat/rooms/${roomId}/messages`);
             
             // Reload messages
-            const freshMessages = await chatService.getRoomMessages(roomId);
-            setMessages(freshMessages || []);
-            devLog('ChatRoom', `Refreshed ${freshMessages?.length || 0} messages`);
+            const response = await chatService.getRoomMessages(roomId);
+            const freshMessages = response?.messages || response || [];
+            setMessages(freshMessages);
+            devLog('ChatRoom', `Refreshed ${freshMessages.length} messages`);
         } catch (error) {
             devError('ChatRoom', 'Failed to refresh messages', error);
         } finally {
@@ -208,72 +101,27 @@ const ChatRoomScreen = ({ route, navigation }) => {
         try {
             setConnectionError(false);
 
-            // Use the chat socket fix to ensure proper connection
-            const connected = await ensureChatSocketConnection(user._id, roomId);
-            
-            updateDebugInfo('socketConnected', connected);
-            updateDebugInfo('socketAuthenticated', socketService.isAuthenticated);
-            updateDebugInfo('roomJoined', connected);
-            
-            // Double-check room join with direct emit
-            if (connected && socketService.socket) {
-                devLog('ChatRoom', 'Double-checking room join...');
-                
-                // Listen for room join confirmation
-                socketService.socket.on('room_joined', (data) => {
-                    devLog('ChatRoom', '✅ Room join confirmed:', data);
-                    updateDebugInfo('roomJoinConfirmed', true);
-                    updateDebugInfo('roomMemberCount', data.memberCount);
-                });
-                
-                socketService.socket.emit('joinRoom', roomId);
-                
-                // Also try with the service method
-                socketService.joinRoom(roomId);
-            }
-            
-            if (!connected) {
-                setConnectionError(true);
-                updateDebugInfo('error', 'Failed to establish socket connection');
-            } else {
-                // Setup listeners using the fix
-                const cleanup = setupChatListeners(roomId, {
-                    onNewMessage: handleNewMessage,
-                    onUserTyping: handleUserTyping,
-                    onRoomUsers: handleRoomUsers,
-                });
-                
-                // Also setup enhanced real-time message listener
-                const realtimeCleanup = setupRealtimeMessageListener(roomId, handleNewMessage);
-                
-                // Add direct socket listener for new_message (like personal chat)
-                if (socketService.socket) {
-                    const directHandler = (data) => {
-                        devLog('ChatRoom', 'Direct socket new_message:', data);
-                        handleNewMessage(data);
-                    };
-                    socketService.socket.on('new_message', directHandler);
-                    
-                    // Store cleanup for direct handler
-                    const directCleanup = () => {
-                        if (socketService.socket) {
-                            socketService.socket.off('new_message', directHandler);
-                        }
-                    };
-                    
-                    return () => {
-                        cleanup();
-                        realtimeCleanup();
-                        directCleanup();
-                    };
+            // Try to connect socket if not connected
+            if (!socketService.isConnected()) {
+                devLog('ChatRoom', 'Attempting to connect socket...');
+                try {
+                    await socketService.connect(user._id);
+                    devLog('ChatRoom', 'Socket connected successfully');
+                } catch (error) {
+                    devError('ChatRoom', 'Socket connection failed', error);
+                    setConnectionError(true);
                 }
+            }
+
+            // Join the room if connected
+            if (socketService.isConnected()) {
+                devLog('ChatRoom', `Joining room ${roomId}...`);
+                socketService.joinRoom(roomId);
                 
-                // Return cleanup function for useEffect
-                return () => {
-                    cleanup();
-                    realtimeCleanup();
-                };
-                updateDebugInfo('eventsRegistered', true);
+                // Setup socket listeners after a short delay to ensure room join is processed
+                setTimeout(() => {
+                    setupSocketListeners();
+                }, 100);
             }
 
             // Load initial messages from API (works even without socket)
@@ -284,12 +132,12 @@ const ChatRoomScreen = ({ route, navigation }) => {
                 const response = await chatService.getRoomMessages(roomId);
                 const initialMessages = response?.messages || response || [];
                 setMessages(initialMessages);
-                devLog('ChatRoom', `📥 Loaded ${initialMessages.length} initial messages`, {
-                    responseType: typeof response,
-                    hasMessagesKey: !!response?.messages,
-                    firstMessage: initialMessages[0],
-                    lastMessage: initialMessages[initialMessages.length - 1],
-                });
+                devLog('ChatRoom', `📥 Loaded ${initialMessages.length} initial messages`);
+                
+                // Scroll to bottom after loading
+                setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({ animated: false });
+                }, 100);
             } catch (error) {
                 devError('ChatRoom', 'Failed to load messages', error);
             }
@@ -305,53 +153,123 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const setupSocketListeners = () => {
         devLog('ChatRoom', 'Setting up socket listeners...');
         
-        // Use direct socket access for debugging
+        // Use direct socket access for better reliability
         const socket = socketService.socket;
         if (!socket) {
             devError('ChatRoom', 'No socket instance available');
             return;
         }
 
-        // Add listeners with debugging
-        socket.on('new_message', (data) => {
-            devLog('ChatRoom', '🔥 new_message event received:', data);
-            updateDebugInfo('lastEvent', `new_message at ${new Date().toISOString()}`);
-            handleNewMessage(data);
-        });
+        // Remove old listeners first to prevent duplicates
+        cleanupSocketListeners();
 
-        socket.on('message_sent', (data) => {
-            devLog('ChatRoom', '🔥 message_sent event received:', data);
-            updateDebugInfo('lastEvent', `message_sent at ${new Date().toISOString()}`);
-            handleMessageSent(data);
-        });
-
-        socket.on('user_typing', (data) => {
-            devLog('ChatRoom', '🔥 user_typing event received:', data);
-            updateDebugInfo('lastEvent', `user_typing at ${new Date().toISOString()}`);
-            handleUserTyping(data);
-        });
-
-        socket.on('room_users', (data) => {
-            devLog('ChatRoom', '🔥 room_users event received:', data);
-            updateDebugInfo('lastEvent', `room_users at ${new Date().toISOString()}`);
-            handleRoomUsers(data);
-        });
-
-        // Also listen for any event for debugging
-        socket.onAny((eventName, ...args) => {
-            devLog('ChatRoom', `📡 Socket event: ${eventName}`, args);
-            updateDebugInfo('lastAnyEvent', `${eventName} at ${new Date().toISOString()}`);
+        // Define handlers inline to avoid stale closures
+        const messageHandler = (data) => {
+            devLog('ChatRoom', '🔴 NEW MESSAGE RECEIVED', {
+                messageId: data?._id,
+                roomId: data?.roomId,
+                currentRoomId: roomId,
+                timestamp: new Date().toISOString(),
+            });
             
-            // Handle any message-like events
-            if (eventName.includes('message') && eventName !== 'disconnect') {
-                devLog('ChatRoom', `🔴 MESSAGE EVENT DETECTED: ${eventName}`, args);
+            // Handle different message formats
+            const message = data.message || data;
+            
+            // Validate message structure
+            if (!message?._id || !message?.sender || message?.content === undefined) {
+                devLog('ChatRoom', 'Invalid message structure, skipping');
+                return;
+            }
+            
+            // Check if message is for this room
+            const messageRoomId = String(message.roomId || message.room || data.roomId || '');
+            const currentRoomId = String(roomId);
+            
+            if (messageRoomId && messageRoomId !== currentRoomId) {
+                devLog('ChatRoom', 'Message for different room', {
+                    messageRoom: messageRoomId,
+                    currentRoom: currentRoomId
+                });
+                return;
+            }
+            
+            setMessages((prev) => {
+                // Remove any temporary messages with same content from same sender
+                const filteredPrev = prev.filter(msg => {
+                    if (msg._id.startsWith('temp-') && 
+                        msg.content === message.content && 
+                        msg.sender._id === message.sender._id) {
+                        devLog('ChatRoom', 'Removing optimistic message');
+                        return false;
+                    }
+                    return true;
+                });
                 
-                // Try to handle as new message
-                if (args[0] && (args[0].message || args[0].content)) {
-                    handleNewMessage(args[0]);
+                // Check if message already exists
+                if (filteredPrev.some(msg => msg._id === message._id)) {
+                    devLog('ChatRoom', 'Message already exists, skipping');
+                    return filteredPrev;
                 }
+                
+                devLog('ChatRoom', '✅ Adding new message', {
+                    messageId: message._id,
+                    content: message.content?.substring(0, 30) + '...'
+                });
+                
+                // Add message and sort by createdAt
+                const newMessages = [...filteredPrev, message].sort((a, b) => 
+                    new Date(a.createdAt) - new Date(b.createdAt)
+                );
+                
+                // Scroll to bottom after adding message
+                setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+                
+                return newMessages;
+            });
+        };
+
+        // New message handler - listen to multiple event names for compatibility
+        socket.on('new_message', messageHandler);
+        socket.on('newMessage', messageHandler);
+        socket.on('message', messageHandler);
+        
+        // Other event handlers
+        socket.on('message_sent', (data) => {
+            devLog('ChatRoom', 'Message sent confirmation:', data);
+        });
+        
+        socket.on('message_deleted', ({ messageId }) => {
+            setMessages((prev) =>
+                prev.map((msg) => (msg._id === messageId ? { ...msg, deleted: true } : msg)),
+            );
+        });
+        
+        socket.on('user_typing', ({ userId, isTyping }) => {
+            setTypingUsers((prev) => {
+                if (isTyping) {
+                    return prev.includes(userId) ? prev : [...prev, userId];
+                } else {
+                    return prev.filter((id) => id !== userId);
+                }
+            });
+        });
+        
+        socket.on('room_users', (users) => {
+            devLog('ChatRoom', 'Room users update:', users);
+            setOnlineUsers(users || []);
+        });
+
+        // Global message handler for debugging
+        socket.onAny((eventName, ...args) => {
+            if (eventName.includes('message') && !eventName.includes('typing')) {
+                devLog('ChatRoom', `📡 Socket event: ${eventName}`, args);
             }
         });
+        
+        // Store cleanup function reference
+        eventHandlersRef.current = { messageHandler };
     };
 
     const cleanupSocketListeners = () => {
@@ -359,98 +277,15 @@ const ChatRoomScreen = ({ route, navigation }) => {
         if (!socket) return;
 
         socket.off('new_message');
+        socket.off('newMessage');
+        socket.off('message');
         socket.off('message_sent');
+        socket.off('message_deleted');
         socket.off('user_typing');
         socket.off('room_users');
         socket.offAny();
     };
 
-    const handleNewMessage = useCallback((data) => {
-        devLog('ChatRoom', '🔴 NEW MESSAGE RECEIVED', {
-            messageId: data?._id,
-            roomId: data?.roomId,
-            currentRoomId: roomId,
-            timestamp: new Date().toISOString(),
-        });
-        
-        // Validate message structure
-        if (!data?._id || !data?.sender || data?.content === undefined) {
-            devLog('ChatRoom', 'Invalid message structure, skipping');
-            return;
-        }
-        
-        // Check if message is for this room
-        const messageRoomId = String(data.roomId || data.room || '');
-        const currentRoomId = String(roomId);
-        
-        if (messageRoomId && messageRoomId !== currentRoomId) {
-            devLog('ChatRoom', 'Message for different room', {
-                messageRoom: messageRoomId,
-                currentRoom: currentRoomId
-            });
-            return;
-        }
-        
-        setMessages((prev) => {
-            // Remove any temporary messages with same content from same sender
-            const filteredPrev = prev.filter(msg => {
-                if (msg._id.startsWith('temp-') && 
-                    msg.content === data.content && 
-                    msg.sender._id === data.sender._id) {
-                    devLog('ChatRoom', 'Removing optimistic message');
-                    return false;
-                }
-                return true;
-            });
-            
-            // Check if message already exists
-            if (filteredPrev.some(msg => msg._id === data._id)) {
-                devLog('ChatRoom', 'Message already exists, skipping');
-                return filteredPrev;
-            }
-            
-            devLog('ChatRoom', '✅ Adding new message', {
-                messageId: data._id,
-                content: data.content?.substring(0, 30) + '...'
-            });
-            
-            // Add message and sort by createdAt
-            return [...filteredPrev, data].sort((a, b) => 
-                new Date(a.createdAt) - new Date(b.createdAt)
-            );
-        });
-        
-        // Scroll to bottom
-        setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-    }, [roomId]);
-    
-    const handleMessageSent = useCallback((data) => {
-        devLog('ChatRoom', 'Message sent confirmation:', data);
-        updateDebugInfo('lastMessageSent', new Date().toISOString());
-    }, []);
-
-    const handleMessageDeleted = useCallback(({ messageId }) => {
-        setMessages((prev) =>
-            prev.map((msg) => (msg._id === messageId ? { ...msg, deleted: true } : msg)),
-        );
-    }, []);
-
-    const handleUserTyping = useCallback(({ userId, isTyping }) => {
-        setTypingUsers((prev) => {
-            if (isTyping) {
-                return prev.includes(userId) ? prev : [...prev, userId];
-            } else {
-                return prev.filter((id) => id !== userId);
-            }
-        });
-    }, []);
-
-    const handleRoomUsers = useCallback((users) => {
-        // Handle online users if needed
-        devLog('ChatRoom', 'Room users update:', users);
-    }, []);
 
     const sendMessage = async () => {
         if (!inputText.trim() || sending) return;
@@ -462,7 +297,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         try {
             devLog('ChatRoom', 'Sending message via API...');
             
-            // Optimistically add message to UI (like personal chat does)
+            // Optimistically add message to UI
             const optimisticMessage = {
                 _id: `temp-${Date.now()}`,
                 content: messageText,
@@ -472,6 +307,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
                     email: user.email
                 },
                 roomId: roomId,
+                room: roomId,
                 createdAt: new Date().toISOString(),
                 readBy: [{ user: user._id, readAt: new Date() }]
             };
@@ -493,19 +329,14 @@ const ChatRoomScreen = ({ route, navigation }) => {
                 // Check if message already exists (from socket)
                 const exists = filtered.some(msg => msg._id === sentMessage._id);
                 if (!exists) {
-                    return [...filtered, sentMessage];
+                    return [...filtered, sentMessage].sort((a, b) => 
+                        new Date(a.createdAt) - new Date(b.createdAt)
+                    );
                 }
                 return filtered;
             });
             
             devLog('ChatRoom', 'Message sent successfully:', sentMessage);
-            updateDebugInfo('lastMessageSentId', sentMessage._id);
-            
-            // Force immediate polling check after sending
-            setTimeout(() => {
-                devLog('ChatRoom', 'Force checking for new messages after send');
-                fetchLatestMessages().then(handlePolledMessages);
-            }, 500);
         } catch (error) {
             devError('ChatRoom', 'Failed to send message', error);
             showErrorAlert('Error', 'Failed to send message');
@@ -584,7 +415,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
                         style={[
                             styles.messageBubble,
                             isOwnMessage ? styles.ownMessage : styles.otherMessage,
-                            !showAvatar && !isOwnMessage && styles.messageBubbleNoAvatar,
+                            !showAvatar && !isOwnMessage && styles.messageBubbleWithoutAvatar,
                         ]}
                     >
                         {!isOwnMessage && showAvatar && (

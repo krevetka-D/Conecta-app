@@ -11,6 +11,7 @@ import {
     Platform,
     SafeAreaView,
     StyleSheet,
+    ActivityIndicator,
 } from 'react-native';
 import { Avatar } from 'react-native-paper';
 
@@ -18,10 +19,12 @@ import Icon from '../../components/common/Icon.js';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { SCREEN_NAMES } from '../../constants/routes';
 import { colors, spacing, fonts } from '../../constants/theme';
+import apiClient from '../../services/api/client';
 import personalChatService from '../../services/personalChatService';
 import socketService from '../../services/socketService';
 import { useAuth } from '../../store/contexts/AuthContext';
 import { showErrorAlert } from '../../utils/alerts';
+import { devLog, devError } from '../../utils';
 
 const PersonalChatDetailScreen = ({ route, navigation }) => {
     const { user } = useAuth();
@@ -32,6 +35,7 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const flatListRef = useRef(null);
     const typingTimeoutRef = useRef(null);
@@ -64,43 +68,110 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
 
     const loadMessages = async () => {
         try {
+            // Clear cache to get fresh messages
+            await apiClient.clearCache('/messages');
+            
             const data = await personalChatService.getMessages(userId);
-            setMessages(data.reverse());
+            const sortedMessages = (data || []).sort((a, b) => 
+                new Date(a.createdAt) - new Date(b.createdAt)
+            );
+            setMessages(sortedMessages);
+            
+            devLog('PersonalChat', `Loaded ${sortedMessages.length} messages`);
 
             // Mark messages as read
             if (conversationId) {
                 await personalChatService.markAsRead(conversationId);
             }
+            
+            // Scroll to bottom after loading
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: false });
+            }, 100);
         } catch (error) {
-            console.error('Failed to load messages:', error);
+            devError('PersonalChat', 'Failed to load messages:', error);
+            showErrorAlert('Error', 'Failed to load messages');
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
+    const refreshMessages = async () => {
+        setRefreshing(true);
+        await loadMessages();
+    };
+
     const setupSocketListeners = () => {
-        // Listen for new messages from this user
+        // Listen for new messages from this user - use both event names for compatibility
         socketService.on('private_message', handleNewMessage);
+        socketService.on('personal_message', handleNewMessage);
+        socketService.on('new_personal_message', handleNewMessage);
         socketService.on('user_typing', handleUserTyping);
         socketService.on('message_read', handleMessageRead);
+
+        // Also listen with direct socket for better reliability
+        if (socketService.socket) {
+            socketService.socket.on('private_message', handleNewMessage);
+            socketService.socket.on('personal_message', handleNewMessage);
+        }
     };
 
     const cleanupSocketListeners = () => {
         socketService.off('private_message', handleNewMessage);
+        socketService.off('personal_message', handleNewMessage);
+        socketService.off('new_personal_message', handleNewMessage);
         socketService.off('user_typing', handleUserTyping);
         socketService.off('message_read', handleMessageRead);
+
+        if (socketService.socket) {
+            socketService.socket.off('private_message', handleNewMessage);
+            socketService.socket.off('personal_message', handleNewMessage);
+        }
     };
 
     const handleNewMessage = useCallback(
-        (message) => {
-            if (message.sender === userId || message.recipient === userId) {
-                setMessages((prev) => [...prev, message]);
+        (data) => {
+            devLog('PersonalChat', 'Received new message:', data);
+            
+            // Handle different message formats
+            const message = data.message || data;
+            
+            // Check if message is related to this conversation
+            const isRelevant = 
+                (message.sender === userId && message.recipient === user._id) ||
+                (message.sender === user._id && message.recipient === userId) ||
+                (message.sender?._id === userId && message.recipient?._id === user._id) ||
+                (message.sender?._id === user._id && message.recipient?._id === userId);
+                
+            if (!isRelevant) {
+                devLog('PersonalChat', 'Message not for this conversation, skipping');
+                return;
+            }
+            
+            setMessages((prev) => {
+                // Remove any temporary messages
+                const filtered = prev.filter(msg => !msg._id.startsWith('temp-'));
+                
+                // Check if message already exists
+                if (filtered.some(msg => msg._id === message._id)) {
+                    return filtered;
+                }
+                
+                // Add new message and sort
+                const newMessages = [...filtered, message].sort((a, b) => 
+                    new Date(a.createdAt) - new Date(b.createdAt)
+                );
+                
+                // Scroll to bottom
                 setTimeout(() => {
                     flatListRef.current?.scrollToEnd({ animated: true });
                 }, 100);
-            }
+                
+                return newMessages;
+            });
         },
-        [userId],
+        [userId, user._id],
     );
 
     const handleUserTyping = useCallback(
@@ -137,9 +208,16 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
             };
 
             setMessages((prev) => [...prev, optimisticMessage]);
+            
+            // Scroll to bottom immediately
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
 
             // Send message and get response
             const sentMessage = await personalChatService.sendMessage(userId, messageText);
+            
+            devLog('PersonalChat', 'Message sent successfully:', sentMessage);
             
             // Replace optimistic message with real one
             if (sentMessage) {
@@ -149,17 +227,15 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                     // Add real message (check if not already added by socket)
                     const exists = filtered.some(msg => msg._id === sentMessage._id);
                     if (!exists) {
-                        return [...filtered, sentMessage];
+                        return [...filtered, sentMessage].sort((a, b) => 
+                            new Date(a.createdAt) - new Date(b.createdAt)
+                        );
                     }
                     return filtered;
                 });
             }
-
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
         } catch (error) {
-            console.error('Failed to send message:', error);
+            devError('PersonalChat', 'Failed to send message:', error);
             showErrorAlert('Error', 'Failed to send message');
             setInputText(messageText);
             // Remove optimistic message on error
@@ -188,7 +264,9 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
     };
 
     const renderMessage = ({ item, index }) => {
-        const isOwnMessage = item.sender === user._id;
+        if (!item || item.sender === undefined) return null;
+        
+        const isOwnMessage = item.sender === user._id || item.sender?._id === user._id;
         const showTimestamp =
             index === 0 ||
             new Date(item.createdAt) - new Date(messages[index - 1]?.createdAt) > 300000;
@@ -245,6 +323,8 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                     onContentSizeChange={() =>
                         flatListRef.current?.scrollToEnd({ animated: false })
                     }
+                    refreshing={refreshing}
+                    onRefresh={refreshMessages}
                     ListFooterComponent={
                         isTyping ? (
                             <View style={styles.typingIndicator}>
@@ -266,6 +346,7 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                             maxLength={1000}
                             onSubmitEditing={sendMessage}
                             blurOnSubmit={false}
+                            editable={!sending}
                         />
 
                         <TouchableOpacity
@@ -276,13 +357,17 @@ const PersonalChatDetailScreen = ({ route, navigation }) => {
                                 (!inputText.trim() || sending) && styles.sendButtonDisabled,
                             ]}
                         >
-                            <Icon
-                                name="send"
-                                size={24}
-                                color={
-                                    inputText.trim() && !sending ? colors.primary : colors.disabled
-                                }
-                            />
+                            {sending ? (
+                                <ActivityIndicator size="small" color={colors.primary} />
+                            ) : (
+                                <Icon
+                                    name="send"
+                                    size={24}
+                                    color={
+                                        inputText.trim() && !sending ? colors.primary : colors.disabled
+                                    }
+                                />
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>

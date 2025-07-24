@@ -113,8 +113,15 @@ export default function App() {
                     },
                 ]);
 
-                // Initialize app stability monitoring
-                appStabilityManager.initialize();
+                // Initialize app stability monitoring (delayed for Android)
+                if (Platform.OS === 'android') {
+                    // Delay initialization on Android to prevent startup crashes
+                    setTimeout(() => {
+                        appStabilityManager.initialize();
+                    }, 2000);
+                } else {
+                    appStabilityManager.initialize();
+                }
                 
                 // Add artificial delay for splash screen (native only)
                 if (Platform.OS !== 'web') {
